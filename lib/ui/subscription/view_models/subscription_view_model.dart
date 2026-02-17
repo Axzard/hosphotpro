@@ -19,6 +19,8 @@ class SubscriptionViewModel extends GetxController {
   final currentSubscription = Rx<UserSubscriptionModel?>(null);
   final isLoading = false.obs;
   final isProcessingPayment = false.obs;
+  final selectedDuration = 1.obs; // Duration in months
+  final selectedPaymentMethod = ''.obs;
 
   @override
   void onInit() {
@@ -117,7 +119,77 @@ class SubscriptionViewModel extends GetxController {
     }
   }
 
-  Future<void> processPayment(TransactionModel transaction) async {
+  double calculateTotalPrice(SubscriptionPackageModel package) {
+    final basePrice = package.price;
+    final duration = selectedDuration.value;
+    
+    // Apply discount for longer durations
+    double discount = 0;
+    if (duration == 3) {
+      discount = 0.10; // 10% off for 3 months
+    } else if (duration == 6) {
+      discount = 0.15; // 15% off for 6 months
+    } else if (duration == 12) {
+      discount = 0.20; // 20% off for 12 months
+    }
+    
+    final totalPrice = basePrice * duration * (1 - discount);
+    return totalPrice;
+  }
+
+  void navigateToPaymentMethod(SubscriptionPackageModel package) {
+    final totalPrice = calculateTotalPrice(package);
+    Get.toNamed(
+      Routes.PAYMENT_METHOD,
+      arguments: {
+        'package': package,
+        'duration': selectedDuration.value,
+        'totalPrice': totalPrice,
+      },
+    );
+  }
+
+  Future<void> processPayment(SubscriptionPackageModel package, double totalPrice) async {
+    if (selectedPaymentMethod.value.isEmpty) {
+      Get.snackbar('Error', 'Pilih metode pembayaran terlebih dahulu');
+      return;
+    }
+
+    try {
+      isProcessingPayment.value = true;
+
+      // Step 1: Create Subscription to get id_langganan
+      final int packageId = int.tryParse(package.id) ?? 0;
+      final subscriptionData = await _subscriptionRepository.createSubscription(packageId);
+      
+      if (subscriptionData == null || subscriptionData['id_langganan'] == null) {
+        throw Exception('Gagal mendapatkan ID Langganan');
+      }
+
+      final int idLangganan = subscriptionData['id_langganan'];
+
+      // Step 2: Create Transaction (Checkout)
+      final transaction = await _subscriptionRepository.createTransaction(
+        idLangganan: idLangganan,
+        amount: totalPrice,
+      );
+
+      if (transaction.redirectUrl != null && transaction.redirectUrl!.isNotEmpty) {
+        // Step 3: Open WebView for in-app payment
+        Get.toNamed(Routes.MIDTRANS_WEBVIEW, arguments: transaction.redirectUrl);
+      } else if (transaction.snapToken != null && transaction.snapToken!.isNotEmpty) {
+        Get.snackbar('Informasi', 'Token pembayaran: ${transaction.snapToken}');
+      } else {
+        Get.snackbar('Error', 'Gagal mendapatkan tautan pembayaran');
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal memproses pembayaran: $e');
+    } finally {
+      isProcessingPayment.value = false;
+    }
+  }
+
+  Future<void> processPaymentOld(TransactionModel transaction) async {
     if (transaction.snapToken == null) {
       Get.snackbar('Error', 'Invalid transaction token');
       return;

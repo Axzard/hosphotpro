@@ -30,8 +30,7 @@ class DashboardViewModel extends GetxController {
   }
 
   void navigateToRouters() {
-    // Get.toNamed(Routes.ROUTERS);
-    Get.snackbar('Info', 'Router feature coming soon');
+    Get.toNamed('/mikrotik-routers');
   }
 
   void navigateToVouchers() {

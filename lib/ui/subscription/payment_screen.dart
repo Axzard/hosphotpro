@@ -104,7 +104,7 @@ class PaymentScreen extends GetView<SubscriptionViewModel> {
                   child: ElevatedButton(
                     onPressed: controller.isProcessingPayment.value
                         ? null
-                        : () => controller.processPayment(transaction),
+                        : () => controller.processPaymentOld(transaction),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),

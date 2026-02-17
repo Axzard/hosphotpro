@@ -11,6 +11,11 @@ import '../../ui/subscription/view_models/subscription_view_model.dart';
 import '../../ui/voucher/print_voucher_screen.dart';
 import '../../ui/voucher/voucher_detail_screen.dart';
 import '../../ui/voucher/view_models/voucher_view_model.dart';
+import '../../ui/router/router_management_screen.dart';
+import '../../ui/router/view_models/router_view_model.dart';
+import '../../ui/subscription/package_detail_screen.dart';
+import '../../ui/subscription/payment_method_screen.dart';
+import '../../ui/subscription/midtrans_webview_screen.dart';
 import 'app_routes.dart';
 export 'app_routes.dart';
 
@@ -73,6 +78,31 @@ class AppPages {
       binding: BindingsBuilder(() {
         Get.lazyPut(() => VoucherViewModel());
       }),
+    ),
+    GetPage(
+      name: '/mikrotik-routers',
+      page: () => const RouterManagementScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => RouterViewModel(Get.find()));
+      }),
+    ),
+    GetPage(
+      name: Routes.PACKAGE_DETAIL,
+      page: () => const PackageDetailScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => SubscriptionViewModel(Get.find()));
+      }),
+    ),
+    GetPage(
+      name: Routes.PAYMENT_METHOD,
+      page: () => const PaymentMethodScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => SubscriptionViewModel(Get.find()));
+      }),
+    ),
+    GetPage(
+      name: Routes.MIDTRANS_WEBVIEW,
+      page: () => const MidtransWebViewScreen(),
     ),
   ];
 }

@@ -11,6 +11,9 @@ class ApiConfig {
   static const String checkout = '$baseUrl/api/transaksi/checkout';
   static const String callback = '$baseUrl/api/transaksi/callback';
   
+  // Router endpoints
+  static const String routers = '$baseUrl/api/router';
+  
   // Headers
   static Map<String, String> headers({String? token}) {
     final Map<String, String> headers = {
