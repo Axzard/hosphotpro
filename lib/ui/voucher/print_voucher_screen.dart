@@ -52,7 +52,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
               decoration: BoxDecoration(
                 color: const Color(0xFF162529),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.cyan.withOpacity(0.3)),
+                border: Border.all(color: Colors.cyan.withValues(alpha: 0.3)),
               ),
               child: const Icon(Icons.arrow_back_ios_new, color: Colors.cyan, size: 20),
             ),
@@ -72,7 +72,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
               Text(
                 'MANAJEMEN VOUCHER',
                 style: TextStyle(
-                  color: Colors.cyan.withOpacity(0.6),
+                  color: Colors.cyan.withValues(alpha: 0.6),
                   fontSize: 12,
                   letterSpacing: 1.2,
                   fontWeight: FontWeight.w600,
@@ -176,9 +176,9 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.cyan.withOpacity(0.1),
+            color: Colors.cyan.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.cyan.withOpacity(0.3)),
+            border: Border.all(color: Colors.cyan.withValues(alpha: 0.3)),
           ),
           child: Obx(() => Text(
             '${controller.vouchers.length} Items',
@@ -240,7 +240,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
               ],
             ),
           ),
-          _buildActionIcon(Icons.visibility, () {}),
+          _buildActionIcon(Icons.visibility, () => controller.navigateToDetail(voucher)),
           const SizedBox(width: 8),
           _buildActionIcon(Icons.print, () => controller.printVoucher(voucher)),
           const SizedBox(width: 8),
@@ -256,7 +256,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color == Colors.redAccent ? color.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+          color: color == Colors.redAccent ? color.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: color, size: 18),

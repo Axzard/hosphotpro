@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../config/routing/app_routes.dart';
 import '../../../domain/models/voucher_model.dart';
 
 class VoucherViewModel extends GetxController {
@@ -20,6 +21,10 @@ class VoucherViewModel extends GetxController {
       VoucherModel(id: '4', code: 'HSP-77Q1', createdAt: DateTime.now()),
       VoucherModel(id: '5', code: 'HSP-05Z4', createdAt: DateTime.now()),
     ]);
+  }
+
+  void navigateToDetail(VoucherModel voucher) {
+    Get.toNamed(Routes.VOUCHER_DETAIL, arguments: voucher);
   }
 
   void generateVoucher() async {

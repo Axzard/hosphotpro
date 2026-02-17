@@ -12,6 +12,7 @@ abstract class _Paths {
   static const TRANSACTIONS = '/transactions';
   static const SUBSCRIPTION_STATUS = '/subscription-status';
   static const VOUCHERS = '/vouchers';
+  static const VOUCHER_DETAIL = '/voucher-detail';
 }
 
 abstract class Routes {
@@ -25,4 +26,5 @@ abstract class Routes {
   static const TRANSACTIONS = _Paths.TRANSACTIONS;
   static const SUBSCRIPTION_STATUS = _Paths.SUBSCRIPTION_STATUS;
   static const VOUCHERS = _Paths.VOUCHERS;
+  static const VOUCHER_DETAIL = _Paths.VOUCHER_DETAIL;
 }
