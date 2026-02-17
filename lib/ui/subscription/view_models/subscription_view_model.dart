@@ -7,6 +7,7 @@ import '../../../domain/models/user_subscription_model.dart';
 import '../../../data/services/midtrans_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../config/routing/app_routes.dart';
+import '../midtrans_webview_screen.dart';
 
 class SubscriptionViewModel extends GetxController {
   final SubscriptionRepository _subscriptionRepository;
@@ -137,26 +138,10 @@ class SubscriptionViewModel extends GetxController {
     return totalPrice;
   }
 
-  void navigateToPaymentMethod(SubscriptionPackageModel package) {
-    final totalPrice = calculateTotalPrice(package);
-    Get.toNamed(
-      Routes.PAYMENT_METHOD,
-      arguments: {
-        'package': package,
-        'duration': selectedDuration.value,
-        'totalPrice': totalPrice,
-      },
-    );
-  }
-
-  Future<void> processPayment(SubscriptionPackageModel package, double totalPrice) async {
-    if (selectedPaymentMethod.value.isEmpty) {
-      Get.snackbar('Error', 'Pilih metode pembayaran terlebih dahulu');
-      return;
-    }
-
+  Future<void> initiatePayment(SubscriptionPackageModel package) async {
     try {
       isProcessingPayment.value = true;
+      final totalPrice = calculateTotalPrice(package);
 
       // Step 1: Create Subscription to get id_langganan
       final int packageId = int.tryParse(package.id) ?? 0;
@@ -175,8 +160,12 @@ class SubscriptionViewModel extends GetxController {
       );
 
       if (transaction.redirectUrl != null && transaction.redirectUrl!.isNotEmpty) {
-        // Step 3: Open WebView for in-app payment
-        Get.toNamed(Routes.MIDTRANS_WEBVIEW, arguments: transaction.redirectUrl);
+        // Step 3: Navigate to WebView screen
+        // Use MidtransWebViewScreen for both Mobile and Windows (with fallback in screen)
+        Get.to(
+          () => const MidtransWebViewScreen(), 
+          arguments: transaction.redirectUrl
+        );
       } else if (transaction.snapToken != null && transaction.snapToken!.isNotEmpty) {
         Get.snackbar('Informasi', 'Token pembayaran: ${transaction.snapToken}');
       } else {
@@ -188,6 +177,7 @@ class SubscriptionViewModel extends GetxController {
       isProcessingPayment.value = false;
     }
   }
+
 
   Future<void> processPaymentOld(TransactionModel transaction) async {
     if (transaction.snapToken == null) {

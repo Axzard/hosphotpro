@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'view_models/subscription_view_model.dart';
 import '../auth/widgets/auth_widgets.dart';
-import '../../config/routing/app_routes.dart';
+import 'package_detail_screen.dart';
 
 class PackageListScreen extends GetView<SubscriptionViewModel> {
   const PackageListScreen({super.key});
@@ -76,7 +76,13 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
                         isPopuler: package.name.toLowerCase().contains('pro'),
                         isSelected: isCurrentPackage,
                         isLoading: controller.isProcessingPayment.value,
-                        onBuy: () => Get.toNamed(Routes.PACKAGE_DETAIL, arguments: package),
+                        onBuy: () {
+                          // Ensure SubscriptionViewModel is available
+                          if (!Get.isRegistered<SubscriptionViewModel>()) {
+                            Get.put(SubscriptionViewModel(Get.find()));
+                          }
+                          Get.to(() => const PackageDetailScreen(), arguments: package);
+                        },
                       );
                     },
                   ),

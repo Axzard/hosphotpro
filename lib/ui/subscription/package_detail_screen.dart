@@ -337,7 +337,9 @@ class PackageDetailScreen extends GetView<SubscriptionViewModel> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => controller.navigateToPaymentMethod(package),
+              onPressed: controller.isProcessingPayment.value 
+                  ? null 
+                  : () => controller.initiatePayment(package),
               style: ElevatedButton.styleFrom(
                 backgroundColor: accentColor,
                 foregroundColor: Colors.white,
@@ -346,17 +348,23 @@ class PackageDetailScreen extends GetView<SubscriptionViewModel> {
                 elevation: 10,
                 shadowColor: accentColor.withValues(alpha: 0.4),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Lanjutkan ke Pembayaran',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward, size: 20),
-                ],
-              ),
+              child: controller.isProcessingPayment.value
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Bayar Sekarang',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.payment, size: 20),
+                      ],
+                    ),
             ),
           ),
         ],
