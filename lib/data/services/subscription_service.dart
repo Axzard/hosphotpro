@@ -71,27 +71,58 @@ class SubscriptionService extends GetxService {
     }
   }
 
-  // Create transaction and get Midtrans Snap token (Mock)
-  // Create transaction
-  Future<ApiResponse<TransactionApiModel>> createTransaction(
-    String packageId,
-    String userId, {
-    double? amount,
+  // Create subscription record
+  Future<ApiResponse<Map<String, dynamic>>> createSubscription(int packageId) async {
+    try {
+      print('=== CREATE SUBSCRIPTION DEBUG ===');
+      print('URL: ${ApiConfig.createSubscription}');
+      
+      final token = _tokenService.getToken();
+      final data = {'id_paket_langganan': packageId};
+      
+      final response = await _dio.post(
+        ApiConfig.createSubscription,
+        data: data,
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      print('Response data: ${response.data}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Subscription created',
+          data: response.data['data'],
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Failed to create subscription',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  // Create checkout transaction
+  Future<ApiResponse<TransactionApiModel>> createTransaction({
+    required int idLangganan,
+    required double amount,
   }) async {
     try {
-      print('=== CREATE TRANSACTION DEBUG ===');
+      print('=== CREATE TRANSACTION (CHECKOUT) DEBUG ===');
       print('URL: ${ApiConfig.checkout}');
-      print('Package ID: $packageId');
       
       final token = _tokenService.getToken();
       
-      // Request body based on user requirement
-      // Trying to add total_bayar as it might be required
       final data = {
-        'id_paket_langganan': int.tryParse(packageId) ?? packageId,
+        'id_langganan': idLangganan,
+        'total_bayar': amount.toInt(), // Usually integer for currency in many backends
         'metode_pembayaran': 'midtrans',
-        if (amount != null) 'total_bayar': amount,
-        'quantity': 1, // Common field, might be needed
       };
       
       print('Request Body: $data');
@@ -117,17 +148,19 @@ class SubscriptionService extends GetxService {
         // Use ID for both id and maybe fill others with defaults if missing
         
         // Check if we have snap_token or similar
-        final snapToken = responseData['token'] ?? responseData['snap_token'] ?? '';
+        final snapToken = responseData['data']?['snap_token'] ?? responseData['snap_token'] ?? '';
+        final redirectUrl = responseData['data']?['redirect_url'] ?? responseData['redirect_url'];
         
         final transaction = TransactionApiModel(
-          id: responseData['id_langganan']?.toString() ?? '0',
-          packageId: packageId, // We know this from request
-          packageName: 'Subscription Package', // Placeholder or fetch if needed
-          userId: userId,
-          amount: double.tryParse(responseData['total_bayar']?.toString() ?? '0') ?? 0,
+          id: responseData['id_langganan']?.toString() ?? responseData['data']?['id_langganan']?.toString() ?? '0',
+          packageId: '0',
+          packageName: 'Subscription Package',
+          userId: '0',
+          amount: double.tryParse(responseData['total_bayar']?.toString() ?? responseData['data']?['total_bayar']?.toString() ?? '0') ?? 0,
           status: 'pending',
           createdAt: DateTime.now().toIso8601String(),
           snapToken: snapToken,
+          redirectUrl: redirectUrl,
         );
 
         return ApiResponse(

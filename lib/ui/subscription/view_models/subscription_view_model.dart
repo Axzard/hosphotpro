@@ -5,7 +5,8 @@ import '../../../domain/models/subscription_repository.dart';
 import '../../../domain/models/transaction_model.dart';
 import '../../../domain/models/user_subscription_model.dart';
 import '../../../data/services/midtrans_service.dart';
-import '../../../config/routing/app_pages.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../config/routing/app_routes.dart';
 
 class SubscriptionViewModel extends GetxController {
   final SubscriptionRepository _subscriptionRepository;
@@ -63,23 +64,54 @@ class SubscriptionViewModel extends GetxController {
     try {
       isProcessingPayment.value = true;
 
-      // Create transaction
-      final transaction = await _subscriptionRepository.createTransaction(package);
+      // Step 1: Create Subscription to get id_langganan
+      final int packageId = int.tryParse(package.id) ?? 0;
+      final subscriptionData = await _subscriptionRepository.createSubscription(packageId);
+      
+      if (subscriptionData == null || subscriptionData['id_langganan'] == null) {
+        throw Exception('Gagal mendapatkan ID Langganan');
+      }
 
-      if (transaction.snapToken != null) {
-        // Navigate to payment screen
-        Get.toNamed(
-          Routes.PAYMENT,
-          arguments: {
-            'transaction': transaction,
-            'package': package,
-          },
-        );
+      final int idLangganan = subscriptionData['id_langganan'];
+
+      // Step 2: Create Transaction (Checkout)
+      final transaction = await _subscriptionRepository.createTransaction(
+        idLangganan: idLangganan,
+        amount: package.price,
+      );
+
+      if (transaction.redirectUrl != null && transaction.redirectUrl!.isNotEmpty) {
+        // Step 3: Redirect to web for payment
+        final Uri url = Uri.parse(transaction.redirectUrl!);
+        try {
+          // Attempt to launch in external browser first
+          bool launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+          if (!launched) {
+            // Fallback to platform default
+            launched = await launchUrl(url, mode: LaunchMode.platformDefault);
+          }
+          
+          if (launched) {
+            Get.snackbar(
+              'Lanjutkan Pembayaran',
+              'Silakan selesaikan pembayaran di browser Anda',
+              backgroundColor: Colors.cyan.withValues(alpha: 0.1),
+              colorText: Colors.white,
+            );
+          } else {
+            throw Exception('Gagal membuka browser');
+          }
+        } catch (e) {
+          Get.snackbar('Error', 'Gagal membuka halaman pembayaran: $e');
+        }
+      } else if (transaction.snapToken != null && transaction.snapToken!.isNotEmpty) {
+        // Fallback or specific logic if only snap token is present
+        Get.snackbar('Informasi', 'Token pembayaran: ${transaction.snapToken}');
       } else {
-        Get.snackbar('Error', 'Failed to create transaction');
+        Get.snackbar('Error', 'Gagal mendapatkan tautan pembayaran');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to process payment: $e');
+      Get.snackbar('Error', 'Gagal memproses pembelian: $e');
     } finally {
       isProcessingPayment.value = false;
     }

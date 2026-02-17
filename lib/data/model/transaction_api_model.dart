@@ -11,6 +11,7 @@ class TransactionApiModel {
   final String createdAt;
   final String? paidAt;
   final String? snapToken;
+  final String? redirectUrl;
 
   TransactionApiModel({
     required this.id,
@@ -22,6 +23,7 @@ class TransactionApiModel {
     required this.createdAt,
     this.paidAt,
     this.snapToken,
+    this.redirectUrl,
   });
 
   factory TransactionApiModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class TransactionApiModel {
       createdAt: json['created_at'] ?? DateTime.now().toIso8601String(),
       paidAt: json['paid_at'],
       snapToken: json['snap_token'],
+      redirectUrl: json['redirect_url'],
     );
   }
 
@@ -49,6 +52,7 @@ class TransactionApiModel {
       'created_at': createdAt,
       'paid_at': paidAt,
       'snap_token': snapToken,
+      'redirect_url': redirectUrl,
     };
   }
 
@@ -64,6 +68,7 @@ class TransactionApiModel {
       createdAt: DateTime.parse(createdAt),
       paidAt: paidAt != null ? DateTime.parse(paidAt!) : null,
       snapToken: snapToken,
+      redirectUrl: redirectUrl,
     );
   }
 

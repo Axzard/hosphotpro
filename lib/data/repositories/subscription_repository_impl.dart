@@ -22,15 +22,20 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
   }
 
   @override
-  Future<TransactionModel> createTransaction(SubscriptionPackageModel package) async {
+  Future<Map<String, dynamic>?> createSubscription(int packageId) async {
+    final response = await _subscriptionService.createSubscription(packageId);
+    if (response.success) {
+      return response.data;
+    }
+    throw Exception(response.message);
+  }
+
+  @override
+  Future<TransactionModel> createTransaction({required int idLangganan, required double amount}) async {
     try {
-      // Get current user ID (mock)
-      const userId = '1';
-      
       final response = await _subscriptionService.createTransaction(
-        package.id,
-        userId,
-        amount: package.price,
+        idLangganan: idLangganan,
+        amount: amount,
       );
       
       if (response.success && response.data != null) {

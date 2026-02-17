@@ -33,6 +33,7 @@ class TransactionModel {
   final DateTime createdAt;
   final DateTime? paidAt;
   final String? snapToken;
+  final String? redirectUrl;
 
   TransactionModel({
     required this.id,
@@ -44,5 +45,6 @@ class TransactionModel {
     required this.createdAt,
     this.paidAt,
     this.snapToken,
+    this.redirectUrl,
   });
 }
