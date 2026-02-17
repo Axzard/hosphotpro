@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import '../../../config/routing/app_pages.dart';
+import '../../../config/routing/app_routes.dart';
 
 class DashboardViewModel extends GetxController {
   // final AuthRepository _authRepository = Get.find<AuthRepository>();
@@ -35,8 +35,7 @@ class DashboardViewModel extends GetxController {
   }
 
   void navigateToVouchers() {
-    // Get.toNamed(Routes.VOUCHERS);
-    Get.snackbar('Info', 'Voucher feature coming soon');
+    Get.toNamed(Routes.VOUCHERS);
   }
 
   void navigateToProfile() {
