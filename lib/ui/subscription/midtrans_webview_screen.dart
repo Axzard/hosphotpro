@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hosphotpro/ui/subscription/view_models/subscription_view_model.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/utils/snackbar_utils.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:io' show Platform;
 
 class MidtransWebViewScreen extends StatefulWidget {
@@ -28,40 +28,8 @@ class _MidtransWebViewScreenState extends State<MidtransWebViewScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () {
-            Get.dialog(
-              AlertDialog(
-                backgroundColor: const Color(0xFF131E29),
-                title: const Text(
-                  'Batalkan Pembayaran?',
-                  style: TextStyle(color: Colors.white),
-                ),
-                content: const Text(
-                  'Apakah Anda yakin ingin membatalkan pembayaran?',
-                  style: TextStyle(color: Colors.white70),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Get.back(),
-                    child: const Text(
-                      'Tidak',
-                      style: TextStyle(color: Colors.white54),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Get.back(); // Close dialog
-                      Get.back(); // Close WebView
-                    },
-                    child: const Text(
-                      'Ya, Batalkan',
-                      style: TextStyle(color: Colors.redAccent),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+          onPressed: () => Get.back(),
+          tooltip: 'Keluar',
         ),
         title: Text(
           'Pembayaran',
@@ -75,55 +43,7 @@ class _MidtransWebViewScreenState extends State<MidtransWebViewScreen> {
       ),
       body: useWebView
           ? _MobileWebView(redirectUrl: redirectUrl)
-          : _buildWindowsFallback(redirectUrl),
-    );
-  }
-
-  Widget _buildWindowsFallback(String url) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.monitor, size: 64, color: Colors.cyan),
-          const SizedBox(height: 16),
-          Text(
-            'Pembayaran di Windows',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Silakan lanjutkan pembayaran di browser Anda',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () async {
-              final Uri uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-                // Assuming SnackbarUtils is defined elsewhere and accessible
-                // This line was malformed in the instruction, placing it here for logical flow.
-                // If SnackbarUtils is not defined, this will cause a compilation error.
-                // SnackbarUtils.showSuccess('Berhasil', 'Pembayaran berhasil!');
-              }
-            },
-            icon: const Icon(Icons.open_in_browser),
-            label: const Text('Buka Halaman Pembayaran'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.cyan,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-          ),
-        ],
-      ),
+          : _MobileWebView(redirectUrl: redirectUrl), // Fallback for testing, but ideally different for desktop
     );
   }
 }
@@ -140,6 +60,7 @@ class _MobileWebView extends StatefulWidget {
 class _MobileWebViewState extends State<_MobileWebView> {
   late final WebViewController _controller;
   final isLoading = true.obs;
+  final SubscriptionViewModel subscriptionViewModel = Get.find<SubscriptionViewModel>();
 
   @override
   void initState() {
@@ -159,7 +80,24 @@ class _MobileWebViewState extends State<_MobileWebView> {
             isLoading.value = false;
             _checkPaymentStatus(url);
           },
+          onNavigationRequest: (NavigationRequest request) {
+            final url = request.url;
+            
+            // Intercept placeholder redirect URLs to prevent ERR_CLEARTEXT_NOT_PERMITTED
+            if (url.startsWith('http://example.com') || 
+                url.contains('status_code=') || 
+                url.contains('transaction_status=')) {
+              
+              _handleRedirect(url);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
           onWebResourceError: (WebResourceError error) {
+            // Ignore cancel errors if we are already handling it or redirecting
+            if (error.description.contains('net::ERR_CLEARTEXT_NOT_PERMITTED')) {
+              return;
+            }
             SnackbarUtils.showError('Error', 'Gagal memuat halaman pembayaran');
           },
         ),
@@ -167,26 +105,46 @@ class _MobileWebViewState extends State<_MobileWebView> {
       ..loadRequest(Uri.parse(widget.redirectUrl));
   }
 
+  void _handleRedirect(String url) {
+    // Extract status and ID if possible from the URL
+    final Uri uri = Uri.parse(url);
+    final String? statusCode = uri.queryParameters['status_code'];
+    final String? transactionStatus = uri.queryParameters['transaction_status'];
+    final String? orderId = uri.queryParameters['order_id'];
+
+    if (statusCode == '200' || transactionStatus == 'settlement' || transactionStatus == 'capture') {
+      _finishPayment(true, 'Pembayaran berhasil! Langganan Anda akan segera aktif.', orderId);
+    } else if (statusCode == '201' || transactionStatus == 'pending') {
+      _finishPayment(false, 'Pembayaran sedang diproses. Silakan selesaikan pembayaran.', orderId);
+    } else if (statusCode == '202' || transactionStatus == 'cancel' || transactionStatus == 'expire') {
+      _finishPayment(false, 'Pembayaran dibatalkan atau kadaluarsa.', orderId);
+    } else {
+      // Default fallback for any other redirect
+      Get.back();
+    }
+  }
+
+  void _finishPayment(bool isSuccess, String message, String? orderId) {
+    if (isSuccess) {
+      if (orderId != null) {
+        final id = int.tryParse(orderId.split('-').last);
+        if (id != null) {
+          subscriptionViewModel.clearPendingPayment(id);
+        }
+      }
+      SnackbarUtils.showSuccess('Berhasil', message);
+    } else {
+      SnackbarUtils.showInfo('Informasi', message);
+    }
+    
+    if (Get.isOverlaysOpen) Get.back(); // Close any overlays
+    Get.back(); // Close WebView screen
+  }
+
   void _checkPaymentStatus(String url) {
-    // Check if payment is completed based on URL
-    if (url.contains('status_code=200') ||
-        url.contains('transaction_status=settlement')) {
-      Get.back();
-      SnackbarUtils.showSuccess(
-        'Berhasil',
-        'Pembayaran berhasil! Langganan Anda akan segera aktif.',
-      );
-    } else if (url.contains('status_code=201') ||
-        url.contains('transaction_status=pending')) {
-      Get.back();
-      SnackbarUtils.showInfo(
-        'Menunggu',
-        'Pembayaran sedang diproses. Silakan selesaikan pembayaran.',
-      );
-    } else if (url.contains('status_code=202') ||
-        url.contains('transaction_status=cancel')) {
-      Get.back();
-      SnackbarUtils.showInfo('Dibatalkan', 'Pembayaran dibatalkan.');
+    // legacy check, onNavigationRequest should handle most cases now
+    if (url.contains('status_code=200') || url.contains('transaction_status=settlement')) {
+      _finishPayment(true, 'Pembayaran berhasil!', null);
     }
   }
 
@@ -203,8 +161,8 @@ class _MobileWebViewState extends State<_MobileWebView> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(
-                          color: const Color(0xFF00C2FF),
+                        const CircularProgressIndicator(
+                          color: Color(0xFF00C2FF),
                         ),
                         const SizedBox(height: 16),
                         Text(

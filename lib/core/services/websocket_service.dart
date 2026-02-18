@@ -1,21 +1,28 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:get/get.dart';
+import 'package:hosphotpro/data/services/token_service.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:web_socket_channel/status.dart' as status;
 import '../../config/api_config.dart';
 
+
 class WebSocketService extends GetxService {
-  late WebSocketChannel _channel;
+  final TokenService _tokenService = Get.find<TokenService>();
+  WebSocketChannel? _channel;
 
   String get _url {
     // Convert http/https to ws/wss
     final baseUrl = ApiConfig.baseUrl;
+    String wsBase;
     if (baseUrl.startsWith('https://')) {
-      return baseUrl.replaceFirst('https://', 'wss://');
+      wsBase = baseUrl.replaceFirst('https://', 'wss://');
     } else {
-      return baseUrl.replaceFirst('http://', 'ws://');
+      wsBase = baseUrl.replaceFirst('http://', 'ws://');
     }
+
+    final token = _tokenService.getToken();
+    // Reverting to root path but keeping token
+    return '$wsBase?token=$token';
   }
 
   // Connection state
@@ -35,31 +42,47 @@ class WebSocketService extends GetxService {
 
   @override
   void onClose() {
-    _channel.sink.close();
+    _channel?.sink.close();
     _reconnectTimer?.cancel();
     super.onClose();
   }
 
   void connect() {
-    try {
-      print('Connecting to WebSocket: $_url');
-      _channel = WebSocketChannel.connect(Uri.parse(_url));
+    if (!_tokenService.hasToken()) {
+      print('⚠️ WebSocket: No token available, skipping connection.');
+      return;
+    }
 
-      _channel.stream.listen(
+    try {
+      print('🌐 Connecting to WebSocket: $_url');
+      
+      // Use a more robust connection with headers if needed
+      // and explicit ping interval to keep connection alive
+      _channel = WebSocketChannel.connect(
+        Uri.parse(_url),
+        // protocols: ['json'], // Optional, some backends expect this
+      );
+
+      // Ping interval to keep connection alive (optional but recommended for stability)
+      // IOWebSocketChannel supports pingInterval but standard WebSocketChannel might not directly.
+      // However, we can use the stream listen normally.
+
+      _channel!.stream.listen(
         (message) {
           isConnected.value = true;
           _handleMessage(message);
         },
         onDone: () {
-          print('WebSocket closed');
+          print('❌ WebSocket closed');
           isConnected.value = false;
           _scheduleReconnect();
         },
         onError: (error) {
-          print('WebSocket error: $error');
+          print('🛑 WebSocket error: $error');
           isConnected.value = false;
           _scheduleReconnect();
         },
+        cancelOnError: true,
       );
     } catch (e) {
       print('WebSocket connection failed: $e');
@@ -108,9 +131,9 @@ class WebSocketService extends GetxService {
   }
 
   void sendMessage(String type, dynamic data) {
-    if (isConnected.value) {
+    if (isConnected.value && _channel != null) {
       final message = jsonEncode({'type': type, 'data': data});
-      _channel.sink.add(message);
+      _channel!.sink.add(message);
     }
   }
 }

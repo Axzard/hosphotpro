@@ -1,16 +1,16 @@
-import 'package:blue_thermal_printer/blue_thermal_printer.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart' as fbp;
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:get/get.dart';
 import '../../domain/models/voucher_model.dart';
 import 'package:intl/intl.dart';
 import 'dart:typed_data';
+import 'dart:async';
 
 class PrinterService extends GetxService {
-  final BlueThermalPrinter bluetooth = BlueThermalPrinter.instance;
-
   final isConnected = false.obs;
-  final devices = <BluetoothDevice>[].obs;
-  final selectedDevice = Rxn<BluetoothDevice>();
+  final devices = <fbp.BluetoothDevice>[].obs;
+  final selectedDevice = Rxn<fbp.BluetoothDevice>();
+  StreamSubscription? _connectionSubscription;
 
   @override
   void onInit() {
@@ -18,49 +18,58 @@ class PrinterService extends GetxService {
     _initPrinter();
   }
 
+  @override
+  void onClose() {
+    _connectionSubscription?.cancel();
+    super.onClose();
+  }
+
   void _initPrinter() {
-    bluetooth.onStateChanged().listen((state) {
-      switch (state) {
-        case BlueThermalPrinter.CONNECTED:
-          isConnected.value = true;
-          break;
-        case BlueThermalPrinter.DISCONNECTED:
-          isConnected.value = false;
-          break;
-        default:
-          break;
+    fbp.FlutterBluePlus.adapterState.listen((state) {
+      if (state == fbp.BluetoothAdapterState.on) {
+        scanDevices();
       }
     });
-
-    scanDevices();
   }
 
   Future<void> scanDevices() async {
     try {
       devices.clear();
-      final List<BluetoothDevice> scannedDevices = await bluetooth
-          .getBondedDevices();
-      devices.assignAll(scannedDevices);
+      // Get bonded devices first
+      final List<fbp.BluetoothDevice> bonded = await fbp.FlutterBluePlus.bondedDevices;
+      devices.assignAll(bonded);
+
+      // Also start a short scan for new devices
+      await fbp.FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
+      fbp.FlutterBluePlus.scanResults.listen((results) {
+        for (fbp.ScanResult r in results) {
+          if (!devices.any((d) => d.remoteId == r.device.remoteId)) {
+            devices.add(r.device);
+          }
+        }
+      });
     } catch (e) {
       print("Error scanning devices: $e");
-      if (e.toString().contains('MissingPluginException')) {
-        Get.snackbar(
-          'Restart Diperlukan',
-          'Fitur Bluetooth memerlukan restart aplikasi untuk berjalan.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
-      }
     }
   }
 
-  Future<void> connect(BluetoothDevice device) async {
+  Future<void> connectToDevice(fbp.BluetoothDevice device) async {
     if (isConnected.value) {
       await disconnect();
     }
 
     try {
-      await bluetooth.connect(device);
+      await device.connect(license: fbp.License.free);
       selectedDevice.value = device;
+      isConnected.value = true;
+
+      _connectionSubscription?.cancel();
+      _connectionSubscription = device.connectionState.listen((state) {
+        if (state == fbp.BluetoothConnectionState.disconnected) {
+          isConnected.value = false;
+          selectedDevice.value = null;
+        }
+      });
     } catch (e) {
       print("Error connecting to device: $e");
       rethrow;
@@ -69,7 +78,10 @@ class PrinterService extends GetxService {
 
   Future<void> disconnect() async {
     try {
-      await bluetooth.disconnect();
+      if (selectedDevice.value != null) {
+        await selectedDevice.value!.disconnect();
+      }
+      isConnected.value = false;
       selectedDevice.value = null;
     } catch (e) {
       print("Error disconnecting: $e");
@@ -77,7 +89,7 @@ class PrinterService extends GetxService {
   }
 
   Future<void> printVoucher(VoucherModel voucher) async {
-    if (!isConnected.value) return;
+    if (!isConnected.value || selectedDevice.value == null) return;
 
     final profile = await CapabilityProfile.load();
     final generator = Generator(PaperSize.mm58, profile);
@@ -174,8 +186,42 @@ class PrinterService extends GetxService {
     bytes += generator.feed(2);
     bytes += generator.cut();
 
-    await bluetooth.writeBytes(Uint8List.fromList(bytes));
+    await _writeToPrinter(Uint8List.fromList(bytes));
   }
 
-  // Future method needed for bulk printing if necessary
+  Future<void> _writeToPrinter(Uint8List bytes) async {
+    final device = selectedDevice.value;
+    if (device == null) return;
+
+    List<fbp.BluetoothService> services = await device.discoverServices();
+    fbp.BluetoothCharacteristic? writeCharacteristic;
+
+    for (var service in services) {
+      for (var characteristic in service.characteristics) {
+        if (characteristic.properties.write || characteristic.properties.writeWithoutResponse) {
+          writeCharacteristic = characteristic;
+          break;
+        }
+      }
+      if (writeCharacteristic != null) break;
+    }
+
+    if (writeCharacteristic != null) {
+      // Split into chunks if necessary (typical BLE MTU is 20-512 bytes)
+      int actualMtu = 23; 
+      try {
+        actualMtu = await device.mtu.first;
+      } catch(_) {}
+      
+      int chunkSize = actualMtu - 3;
+      if (chunkSize < 20) chunkSize = 20; // Ensure a sane minimum
+      
+      for (int i = 0; i < bytes.length; i += chunkSize) {
+        int end = (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
+        await writeCharacteristic.write(bytes.sublist(i, end), withoutResponse: writeCharacteristic.properties.writeWithoutResponse);
+      }
+    } else {
+      throw Exception("Could not find a writable characteristic on the device");
+    }
+  }
 }

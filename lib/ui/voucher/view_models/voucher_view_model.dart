@@ -5,6 +5,7 @@ import '../../../domain/models/voucher_package_model.dart';
 import '../../../domain/models/voucher_repository.dart';
 import '../../../domain/models/router_repository.dart';
 import '../../../domain/models/router_model.dart';
+import '../../../domain/models/hotspot_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
 // import '../../../domain/models/subscription_package_model.dart'; // No longer used for hotspot vouchers
 // import '../../../domain/models/subscription_repository.dart'; // No longer used for hotspot vouchers
@@ -17,6 +18,7 @@ class VoucherViewModel extends GetxController {
   final vouchers = <VoucherModel>[].obs;
   final routers = <RouterModel>[].obs;
   final voucherPackages = <VoucherPackageModel>[].obs;
+  final hotspots = <HotspotModel>[].obs;
 
   final isLoading = false.obs;
   final isGenerating = false.obs;
@@ -60,6 +62,21 @@ class VoucherViewModel extends GetxController {
       print('Error loading voucher packages: $e');
       SnackbarUtils.showError('Error', 'Gagal memuat daftar paket: $e');
       voucherPackages.clear();
+    }
+  }
+
+  Future<void> loadHotspots() async {
+    final router = selectedRouter.value;
+    if (router == null) return;
+
+    try {
+      final idRouter = int.tryParse(router.id) ?? 0;
+      final result = await _routerRepository.getHotspots(idRouter);
+      hotspots.value = result;
+      print('Loaded ${result.length} hotspots for router $idRouter');
+    } catch (e) {
+      print('Error loading hotspots: $e');
+      hotspots.clear();
     }
   }
 
@@ -192,7 +209,11 @@ class VoucherViewModel extends GetxController {
     if (router == null) return;
     selectedRouter.value = router;
     selectedPaketId.value = null; // Clear selected package when router changes
-    await Future.wait([loadVouchers(), loadVoucherPackages()]);
+    await Future.wait([
+      loadVouchers(),
+      loadVoucherPackages(),
+      loadHotspots(),
+    ]);
   }
 
   /// Print single voucher

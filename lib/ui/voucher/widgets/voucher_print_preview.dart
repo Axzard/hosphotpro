@@ -200,7 +200,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                         const SizedBox(height: 4),
                         Obx(() {
                           final deviceName =
-                              printerService.selectedDevice.value?.name ??
+                              printerService.selectedDevice.value?.platformName ??
                               'Pilih Printer';
                           return Text(
                             deviceName,
@@ -397,7 +397,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                     return ListTile(
                       onTap: () async {
                         Get.back(); // Close sheet
-                        await printerService.connect(device);
+                        await printerService.connectToDevice(device);
                       },
                       tileColor: const Color(0xFF0F172A),
                       shape: RoundedRectangleBorder(
@@ -405,12 +405,12 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                       ),
                       leading: const Icon(Icons.print, color: Colors.white),
                       title: Text(
-                        device.name ?? 'Unknown',
+                        device.platformName.isEmpty ? 'Unknown Device' : device.platformName,
                         style: GoogleFonts.plusJakartaSans(color: Colors.white),
                       ),
                       trailing:
-                          printerService.selectedDevice.value?.address ==
-                              device.address
+                          printerService.selectedDevice.value?.remoteId ==
+                              device.remoteId
                           ? const Icon(Icons.check, color: Color(0xFF4ADE80))
                           : null,
                     );

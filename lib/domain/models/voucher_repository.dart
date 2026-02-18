@@ -14,7 +14,10 @@ abstract class VoucherRepository {
 
   // Voucher Package methods
   Future<List<VoucherPackageModel>> getVoucherPackages(int idRouter);
+  Future<VoucherPackageModel?> getVoucherPackageDetail(int id);
   Future<VoucherPackageModel?> createVoucherPackage(
     VoucherPackageModel package,
   );
+  Future<void> updateVoucherPackage(int id, VoucherPackageModel package);
+  Future<void> deleteVoucherPackage(int id);
 }

@@ -1,5 +1,6 @@
 class ApiConfig {
-  static const String baseUrl = 'http://76.13.197.9:3000';
+  // static const String baseUrl = 'http://76.13.197.9:3000';
+  static const String baseUrl = 'https://api.siodev.sbs';
 
   // Auth endpoints
   static const String register = '$baseUrl/api/daftar-admin';
@@ -17,13 +18,23 @@ class ApiConfig {
 
   // Router endpoints
   static const String routers = '$baseUrl/api/router';
+  static String hotspots(int idRouter) => '$baseUrl/api/hotspot?id_router=$idRouter';
+  static String hotspotDetail(int id) => '$baseUrl/api/hotspot/$id';
+  static String updateHotspot(int id) => '$baseUrl/api/hotspot/$id';
+  static String deleteHotspot(int id) => '$baseUrl/api/hotspot/$id';
 
   // Voucher endpoints
   static const String createVoucher = '$baseUrl/api/voucher';
   static const String createVoucherBulk = '$baseUrl/api/voucher/bulk';
   static const String voucherPackages = '$baseUrl/api/paket-voucher';
   static String packagesByRouter(int idRouter) =>
-      '$baseUrl/api/paket-voucher/router/$idRouter';
+      '$baseUrl/api/paket-voucher?id_router=$idRouter';
+  static String voucherPackageDetail(int id) =>
+      '$baseUrl/api/paket-voucher/$id';
+  static String updateVoucherPackage(int id) =>
+      '$baseUrl/api/paket-voucher/$id';
+  static String deleteVoucherPackage(int id) =>
+      '$baseUrl/api/paket-voucher/$id';
   static String vouchersByRouter(int idRouter) =>
       '$baseUrl/api/voucher/router/$idRouter';
   static String voucherDetail(int id, int idRouter) =>

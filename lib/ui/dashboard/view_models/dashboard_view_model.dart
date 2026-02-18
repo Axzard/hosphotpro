@@ -11,14 +11,14 @@ class DashboardViewModel extends GetxController {
   // Repositories
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
   final VoucherRepository _voucherRepository = Get.find<VoucherRepository>();
-  final SubscriptionRepository _subscriptionRepository =
-      Get.find<SubscriptionRepository>();
+  final SubscriptionRepository _subscriptionRepository = Get.find<SubscriptionRepository>();
   final WebSocketService _webSocketService = Get.find<WebSocketService>();
   final AuthRepository _authRepository = Get.find<AuthRepository>();
 
   // Observables
   final subscriptionStatus = 'Active'.obs;
-  final routerCount = 0.obs;
+  final totalRouterCount = 0.obs;
+  final onlineRouterCount = 0.obs;
   final voucherCount = 0.obs;
   final activeUserCount = 0.obs; // Realtime active users
   final expiryDate = Rxn<DateTime>();
@@ -58,8 +58,11 @@ class DashboardViewModel extends GetxController {
       }
 
       // If backend sends total connected routers
-      if (status.containsKey('router_count')) {
-        routerCount.value = status['router_count'] as int;
+      if (status.containsKey('online_count')) {
+        onlineRouterCount.value = status['online_count'] as int;
+      } else if (status.containsKey('router_count')) {
+        // Fallback for different payload structures
+        onlineRouterCount.value = status['router_count'] as int;
       }
     });
   }
@@ -69,7 +72,9 @@ class DashboardViewModel extends GetxController {
     try {
       // Fetch Router Count (Initial)
       final routers = await _routerRepository.getRouters();
-      routerCount.value = routers.length;
+      totalRouterCount.value = routers.length;
+      // Assume all are offline initially or wait for WS
+      // onlineRouterCount.value = 0; 
 
       // Fetch Voucher Count (Initial)
       if (routers.isNotEmpty) {
@@ -113,6 +118,9 @@ class DashboardViewModel extends GetxController {
   void navigateToSubscriptionStatus() =>
       Get.toNamed(Routes.SUBSCRIPTION_STATUS);
   void navigateToPackageList() => Get.toNamed(Routes.PACKAGES);
+  void navigateToHotspots() => Get.toNamed(Routes.HOTSPOTS);
+
+  void navigateToVoucherPackages() => Get.toNamed(Routes.VOUCHER_PACKAGES);
 
   void navigateToTransactions() {
     SnackbarUtils.showInfo(

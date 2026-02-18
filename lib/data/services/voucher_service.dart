@@ -25,13 +25,24 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final List<dynamic> data = response.data['data'] ?? [];
-        final packages = data
+        final dynamic rawData = response.data;
+        List<dynamic> listData = [];
+        String? message;
+
+        if (rawData is Map<String, dynamic>) {
+          listData = rawData['data'] is List ? rawData['data'] : [];
+          message = rawData['pesan'];
+        } else if (rawData is List) {
+          listData = rawData;
+        }
+
+        final packages = listData
             .map((json) => VoucherPackageModel.fromJson(json))
             .toList();
+            
         return ApiResponse(
           success: true,
-          message: response.data['pesan'] ?? 'Packages fetched',
+          message: message ?? 'Packages fetched',
           data: packages,
         );
       } else {
@@ -99,6 +110,94 @@ class VoucherService extends GetxService {
         success: false,
         message: 'Network error: ${e.message} ${e.response?.data}',
       );
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  /// GET /api/paket-voucher/{id}
+  Future<ApiResponse<VoucherPackageModel?>> getVoucherPackageDetail(
+    int id,
+  ) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.voucherPackageDetail(id),
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 600,
+        ),
+      );
+
+      if (response.statusCode == 200 || response.data['sukses'] == true) {
+        final package = VoucherPackageModel.fromJson(response.data['data'] ?? response.data);
+        return ApiResponse(success: true, message: 'OK', data: package);
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data?['pesan'] ?? 'Package not found',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  /// PUT /api/paket-voucher/{id}
+  Future<ApiResponse<void>> updateVoucherPackage(
+    int id,
+    VoucherPackageModel package,
+  ) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.put(
+        ApiConfig.updateVoucherPackage(id),
+        data: package.toJson(),
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 600,
+        ),
+      );
+
+      if (response.statusCode == 200 || response.data?['sukses'] == true) {
+        return ApiResponse(
+          success: true,
+          message: response.data?['pesan'] ?? 'Package updated',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data?['pesan'] ?? 'Failed to update package',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  /// DELETE /api/paket-voucher/{id}
+  Future<ApiResponse<void>> deleteVoucherPackage(int id) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.delete(
+        ApiConfig.deleteVoucherPackage(id),
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 600,
+        ),
+      );
+
+      if (response.statusCode == 200 || response.data?['sukses'] == true) {
+        return ApiResponse(
+          success: true,
+          message: response.data?['pesan'] ?? 'Package deleted',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data?['pesan'] ?? 'Failed to delete package',
+        );
+      }
     } catch (e) {
       return ApiResponse(success: false, message: 'Error: $e');
     }

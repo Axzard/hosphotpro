@@ -15,6 +15,10 @@ import '../../ui/router/router_management_screen.dart';
 import '../../ui/router/view_models/router_view_model.dart';
 import '../../ui/subscription/package_detail_screen.dart';
 import '../../ui/subscription/midtrans_webview_screen.dart';
+import '../../ui/router/hotspot_management_screen.dart';
+import '../../ui/router/view_models/hotspot_view_model.dart';
+import '../../ui/voucher/voucher_package_management_screen.dart';
+import '../../ui/voucher/view_models/voucher_package_view_model.dart';
 import 'app_routes.dart';
 export 'app_routes.dart';
 
@@ -97,6 +101,20 @@ class AppPages {
     GetPage(
       name: Routes.MIDTRANS_WEBVIEW,
       page: () => const MidtransWebViewScreen(),
+    ),
+    GetPage(
+      name: Routes.HOTSPOTS,
+      page: () => const HotspotManagementScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => HotspotViewModel());
+      }),
+    ),
+    GetPage(
+      name: Routes.VOUCHER_PACKAGES,
+      page: () => const VoucherPackageManagementScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => VoucherPackageViewModel());
+      }),
     ),
   ];
 }

@@ -46,6 +46,7 @@ class UserSubscriptionModel {
   final String namaPaket;
   final double harga;
   final double totalBayar;
+  final String? paymentUrl;
 
   UserSubscriptionModel({
     required this.idLangganan,
@@ -59,6 +60,7 @@ class UserSubscriptionModel {
     required this.namaPaket,
     required this.harga,
     required this.totalBayar,
+    this.paymentUrl,
   });
 
   factory UserSubscriptionModel.fromJson(Map<String, dynamic> json) {
@@ -80,6 +82,7 @@ class UserSubscriptionModel {
       namaPaket: json['nama_paket'] ?? '',
       harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
       totalBayar: double.tryParse(json['total_bayar']?.toString() ?? '0') ?? 0,
+      paymentUrl: json['payment_url'] ?? json['redirect_url'],
     );
   }
 

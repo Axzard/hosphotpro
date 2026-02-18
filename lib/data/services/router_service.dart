@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import '../model/router_api_model.dart';
+import '../model/hotspot_api_model.dart';
 import '../model/api_response.dart';
 import '../../config/api_config.dart';
 import 'token_service.dart';
@@ -138,6 +139,125 @@ class RouterService extends GetxService {
         return ApiResponse(
           success: false,
           message: response.data['pesan'] ?? 'Failed to delete router',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  Future<ApiResponse<List<HotspotApiModel>>> getHotspots(int idRouter) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.hotspots(idRouter),
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> hotspotsData = response.data['data'] ?? [];
+        final hotspots = hotspotsData
+            .map((json) => HotspotApiModel.fromJson(json))
+            .toList();
+
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Hotspots fetched successfully',
+          data: hotspots,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Failed to fetch hotspots',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  Future<ApiResponse<HotspotApiModel>> getHotspotDetail(int idHotspot) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.hotspotDetail(idHotspot),
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Hotspot fetched successfully',
+          data: HotspotApiModel.fromJson(response.data['data']),
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Failed to fetch hotspot',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  Future<ApiResponse<void>> updateHotspot(
+    int idHotspot,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.put(
+        ApiConfig.updateHotspot(idHotspot),
+        data: data,
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 600,
+        ),
+      );
+
+      if (response.statusCode == 200 || response.data['sukses'] == true) {
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Hotspot updated successfully',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Failed to update hotspot',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  Future<ApiResponse<void>> deleteHotspot(int idHotspot) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.delete(
+        ApiConfig.deleteHotspot(idHotspot),
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200 || response.data['sukses'] == true) {
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Hotspot deleted successfully',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Failed to delete hotspot',
         );
       }
     } catch (e) {

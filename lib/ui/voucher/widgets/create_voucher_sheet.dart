@@ -21,7 +21,7 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
   final durasiController = TextEditingController();
   final hargaController = TextEditingController();
   final profileController = TextEditingController();
-  final hotspotIdController = TextEditingController(text: '2');
+  int? selectedHotspotId;
 
   @override
   void initState() {
@@ -38,7 +38,6 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
     durasiController.dispose();
     hargaController.dispose();
     profileController.dispose();
-    hotspotIdController.dispose();
     super.dispose();
   }
 
@@ -254,11 +253,20 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
               _buildTextField(profileController, 'Contoh: profile-1jam'),
               const SizedBox(height: 16),
 
-              _buildLabel('ID Hotspot'),
-              _buildTextField(
-                hotspotIdController,
-                '2',
-                keyboardType: TextInputType.number,
+              _buildLabel('Hotspot Mikrotik'),
+              const SizedBox(height: 8),
+              Obx(
+                () => _buildDropdown<int>(
+                  value: selectedHotspotId,
+                  hint: 'Pilih Hotspot',
+                  items: controller.hotspots.map((hs) {
+                    return DropdownMenuItem<int>(
+                      value: hs.idHotspot,
+                      child: Text(hs.namaServer),
+                    );
+                  }).toList(),
+                  onChanged: (val) => setState(() => selectedHotspotId = val),
+                ),
               ),
 
               const SizedBox(height: 32),
@@ -388,7 +396,7 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
     final newPackage = VoucherPackageModel(
       id: 0,
       idRouter: int.tryParse(router.id) ?? 0,
-      idHotspot: int.tryParse(hotspotIdController.text) ?? 2,
+      idHotspot: selectedHotspotId ?? 0,
       namaPaket: namaPaketController.text,
       durasi: durasiController.text,
       harga: double.tryParse(hargaController.text) ?? 0,
@@ -397,8 +405,9 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
 
     if (newPackage.namaPaket.isEmpty ||
         newPackage.durasi.isEmpty ||
-        newPackage.namaProfileMikrotik.isEmpty) {
-      Get.snackbar('Error', 'Lengkapi semua field');
+        newPackage.namaProfileMikrotik.isEmpty ||
+        newPackage.idHotspot == 0) {
+      Get.snackbar('Error', 'Lengkapi semua field (termasuk Hotspot)');
       return;
     }
 

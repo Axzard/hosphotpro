@@ -16,14 +16,19 @@ import '../../domain/models/voucher_repository.dart';
 import '../../data/repositories/voucher_repository_impl.dart';
 import '../../core/services/printer_service.dart';
 import '../../core/services/websocket_service.dart';
+import '../../data/services/payment_persistence_service.dart';
 
 class GlobalBinding extends Bindings {
   @override
   Future<void> dependencies() async {
-    // Initialize TokenService first (needs async init)
+    // Initialize services that need async init
     final tokenService = TokenService();
     await tokenService.init();
     Get.put<TokenService>(tokenService);
+
+    final paymentPersistenceService = PaymentPersistenceService();
+    await paymentPersistenceService.init();
+    Get.put<PaymentPersistenceService>(paymentPersistenceService);
 
     // Services
     Get.put<PrinterService>(PrinterService());

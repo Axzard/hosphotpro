@@ -7,9 +7,11 @@ import '../../../domain/models/user_subscription_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../config/routing/app_routes.dart';
 import '../midtrans_webview_screen.dart';
+import '../../../data/services/payment_persistence_service.dart';
 
 class SubscriptionViewModel extends GetxController {
   final SubscriptionRepository _subscriptionRepository;
+  final PaymentPersistenceService _paymentPersistenceService = Get.find<PaymentPersistenceService>();
 
   SubscriptionViewModel(this._subscriptionRepository);
 
@@ -221,6 +223,9 @@ class SubscriptionViewModel extends GetxController {
       // Step 3: Open Midtrans payment page
       if (transaction.redirectUrl != null &&
           transaction.redirectUrl!.isNotEmpty) {
+        // SAVE LOCALLY
+        await _paymentPersistenceService.savePendingPayment(idLangganan, transaction.redirectUrl!);
+        
         Get.to(
           () => const MidtransWebViewScreen(),
           arguments: transaction.redirectUrl,
@@ -236,6 +241,54 @@ class SubscriptionViewModel extends GetxController {
     } finally {
       processingSubscriptionId.value = null;
     }
+  }
+
+  /// Resume an existing pending payment using its saved payment URL
+  Future<void> resumePayment(UserSubscriptionModel subscription) async {
+    // Priority 1: Persistent Local Storage
+    String? url = _paymentPersistenceService.getPendingUrl(subscription.idLangganan);
+    
+    // Priority 2: API Model URL
+    url ??= subscription.paymentUrl;
+
+    if (url != null && url.isNotEmpty) {
+      Get.to(
+        () => const MidtransWebViewScreen(),
+        arguments: url,
+      );
+    } else {
+      // If payment URL is missing, we might need to "re-checkout" 
+      // but still using the SAME idLangganan (not creating a new subscription record)
+      try {
+        processingSubscriptionId.value = subscription.idLangganan;
+        
+        final transaction = await _subscriptionRepository.createTransaction(
+          idLangganan: subscription.idLangganan,
+          amount: subscription.totalBayar,
+        );
+
+        if (transaction.redirectUrl != null && transaction.redirectUrl!.isNotEmpty) {
+          // SAVE LOCALLY
+          await _paymentPersistenceService.savePendingPayment(subscription.idLangganan, transaction.redirectUrl!);
+          
+          Get.to(
+            () => const MidtransWebViewScreen(),
+            arguments: transaction.redirectUrl,
+          );
+        } else {
+          Get.snackbar('Error', 'Gagal mendapatkan tautan pembayaran');
+        }
+      } catch (e) {
+        Get.snackbar('Error', 'Gagal memproses pembayaran: $e');
+      } finally {
+        processingSubscriptionId.value = null;
+      }
+    }
+  }
+
+  /// Clear local pending payment
+  Future<void> clearPendingPayment(int idLangganan) async {
+    await _paymentPersistenceService.clearPendingPayment(idLangganan);
   }
 
   void navigateToPackages() {

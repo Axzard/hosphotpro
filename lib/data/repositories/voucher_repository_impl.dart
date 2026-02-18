@@ -76,4 +76,32 @@ class VoucherRepositoryImpl implements VoucherRepository {
     }
     throw Exception(response.message);
   }
+
+  @override
+  Future<VoucherPackageModel?> getVoucherPackageDetail(int id) async {
+    final response = await _voucherService.getVoucherPackageDetail(id);
+    if (response.success) {
+      return response.data;
+    }
+    throw Exception(response.message);
+  }
+
+  @override
+  Future<void> updateVoucherPackage(
+    int id,
+    VoucherPackageModel package,
+  ) async {
+    final response = await _voucherService.updateVoucherPackage(id, package);
+    if (!response.success) {
+      throw Exception(response.message);
+    }
+  }
+
+  @override
+  Future<void> deleteVoucherPackage(int id) async {
+    final response = await _voucherService.deleteVoucherPackage(id);
+    if (!response.success) {
+      throw Exception(response.message);
+    }
+  }
 }

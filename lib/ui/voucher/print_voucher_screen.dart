@@ -90,20 +90,29 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
   }
 
   Widget _buildHeader(Color accentColor) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(left: 24, top: 24, right: 24, bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              GestureDetector(
+                onTap: () => Get.back(),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -116,7 +125,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                     ),
                   ),
                   Text(
-                    'KELOLA & CETAK VOUCHER',
+                    'VOUCHER LIST & PRINTING',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -125,10 +134,6 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                     ),
                   ),
                 ],
-              ),
-              IconButton(
-                onPressed: () => Get.back(),
-                icon: const Icon(Icons.close, color: Colors.white70),
               ),
             ],
           ),
@@ -156,8 +161,6 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                   ),
                   style: GoogleFonts.plusJakartaSans(color: Colors.white),
                   items: controller.routers.map((router) {
-                    // Check RouterModel field name properly.
-                    // Assuming 'namaRouter' based on common patterns if 'nama' failed
                     return DropdownMenuItem<String>(
                       value: router.id,
                       child: Text(router.namaRouter),
