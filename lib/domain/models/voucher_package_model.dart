@@ -6,6 +6,10 @@ class VoucherPackageModel {
   final String durasi;
   final double harga;
   final String namaProfileMikrotik;
+  final String prefix;
+  final int panjangUsername;
+  final String formatKarakter;
+  final int dataLimitMb;
 
   VoucherPackageModel({
     required this.id,
@@ -15,6 +19,10 @@ class VoucherPackageModel {
     required this.durasi,
     required this.harga,
     required this.namaProfileMikrotik,
+    required this.prefix,
+    required this.panjangUsername,
+    required this.formatKarakter,
+    required this.dataLimitMb,
   });
 
   factory VoucherPackageModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +34,10 @@ class VoucherPackageModel {
       durasi: json['durasi'] ?? '',
       harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
       namaProfileMikrotik: json['nama_profile_mikrotik'] ?? '',
+      prefix: json['prefix'] ?? '',
+      panjangUsername: json['panjang_username'] ?? 4,
+      formatKarakter: json['format_karakter'] ?? 'mix',
+      dataLimitMb: json['data_limit_mb'] ?? 0,
     );
   }
 
@@ -34,7 +46,11 @@ class VoucherPackageModel {
       'id_router': idRouter,
       'id_hotspot': idHotspot,
       'nama_paket': namaPaket,
+      'prefix': prefix,
+      'panjang_username': panjangUsername,
+      'format_karakter': formatKarakter,
       'durasi': durasi,
+      'data_limit_mb': dataLimitMb,
       'harga': harga,
       'nama_profile_mikrotik': namaProfileMikrotik,
     };

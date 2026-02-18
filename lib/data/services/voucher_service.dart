@@ -89,6 +89,10 @@ class VoucherService extends GetxService {
             durasi: package.durasi,
             harga: package.harga,
             namaProfileMikrotik: package.namaProfileMikrotik,
+            prefix: package.prefix,
+            panjangUsername: package.panjangUsername,
+            formatKarakter: package.formatKarakter,
+            dataLimitMb: package.dataLimitMb,
           );
         } else if (response.data['data'] != null) {
           createdPackage = VoucherPackageModel.fromJson(response.data['data']);

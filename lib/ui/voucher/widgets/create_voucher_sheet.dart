@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../view_models/voucher_view_model.dart';
 import '../../../domain/models/router_model.dart';
 import '../../../domain/models/voucher_package_model.dart';
+import '../../../core/utils/currency_formatter.dart';
 
 class CreateVoucherSheet extends StatefulWidget {
   const CreateVoucherSheet({super.key});
@@ -16,12 +18,15 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
   final controller = Get.find<VoucherViewModel>();
   bool isAddingPackage = false;
 
-  // Package Form Controllers
   final namaPaketController = TextEditingController();
   final durasiController = TextEditingController();
   final hargaController = TextEditingController();
   final profileController = TextEditingController();
+  final prefixController = TextEditingController();
+  final panjangUsernameController = TextEditingController();
+  final dataLimitMbController = TextEditingController();
   int? selectedHotspotId;
+  String selectedFormatKarakter = 'mix';
 
   @override
   void initState() {
@@ -38,6 +43,9 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
     durasiController.dispose();
     hargaController.dispose();
     profileController.dispose();
+    prefixController.dispose();
+    panjangUsernameController.dispose();
+    dataLimitMbController.dispose();
     super.dispose();
   }
 
@@ -241,6 +249,7 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
                           hargaController,
                           '5000',
                           keyboardType: TextInputType.number,
+                          inputFormatters: [CurrencyFormatter()],
                         ),
                       ],
                     ),
@@ -251,6 +260,46 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
 
               _buildLabel('Profile MikroTik'),
               _buildTextField(profileController, 'Contoh: profile-1jam'),
+              const SizedBox(height: 16),
+
+              _buildLabel('Format Karakter'),
+              _buildTextField(prefixController, 'Contoh: WIFI'),
+              const SizedBox(height: 16),
+
+              _buildLabel('Panjang Username'),
+              _buildTextField(
+                panjangUsernameController,
+                'Min. 4 karakter',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
+              const SizedBox(height: 16),
+
+              _buildLabel('Tipe Karakter'),
+              const SizedBox(height: 8),
+              _buildDropdown<String>(
+                value: selectedFormatKarakter,
+                hint: 'Pilih Tipe',
+                items: ['huruf_kecil', 'huruf_besar', 'angka', 'mix'].map((opt) {
+                  final label = {
+                        'huruf_kecil': 'Random abcd',
+                        'huruf_besar': 'Random ABCD',
+                        'angka': 'Random 1234',
+                        'mix': 'Random aB2c',
+                      }[opt] ??
+                      opt;
+                  return DropdownMenuItem<String>(
+                    value: opt,
+                    child: Text(label),
+                  );
+                }).toList(),
+                onChanged: (val) =>
+                    setState(() => selectedFormatKarakter = val ?? 'mix'),
+              ),
+              const SizedBox(height: 16),
+
+              _buildLabel('Limit Data'),
+              _buildDataLimitField(),
               const SizedBox(height: 16),
 
               _buildLabel('Hotspot Mikrotik'),
@@ -299,12 +348,14 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
     TextEditingController controller,
     String hint, {
     TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       margin: const EdgeInsets.only(top: 8),
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
         style: GoogleFonts.plusJakartaSans(color: Colors.white),
         decoration: InputDecoration(
           hintText: hint,
@@ -401,6 +452,10 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
       durasi: durasiController.text,
       harga: double.tryParse(hargaController.text) ?? 0,
       namaProfileMikrotik: profileController.text,
+      prefix: prefixController.text,
+      panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
+      formatKarakter: selectedFormatKarakter,
+      dataLimitMb: (int.tryParse(dataLimitMbController.text) ?? 0) * (selectedDataUnit == 'GB' ? 1024 : 1),
     );
 
     if (newPackage.namaPaket.isEmpty ||
@@ -413,5 +468,56 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
 
     await controller.createVoucherPackage(newPackage);
     setState(() => isAddingPackage = false);
+  }
+
+  String selectedDataUnit = 'MB';
+
+  Widget _buildDataLimitField() {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            flex: 4,
+            child: TextField(
+              controller: dataLimitMbController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: GoogleFonts.plusJakartaSans(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: '0 (Unlimited)',
+                hintStyle: const TextStyle(color: Colors.white24),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: _buildDropdown<String>(
+              value: selectedDataUnit,
+              hint: 'MB',
+              items: ['MB', 'GB'].map((unit) {
+                return DropdownMenuItem<String>(
+                  value: unit,
+                  child: Text(unit),
+                );
+              }).toList(),
+              onChanged: (val) => setState(() => selectedDataUnit = val ?? 'MB'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

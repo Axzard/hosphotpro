@@ -69,13 +69,13 @@ class DashboardScreen extends GetView<DashboardViewModel> {
                       const SizedBox(height: 32),
                       _buildSubscriptionCard(),
                       const SizedBox(height: 32),
-                      _buildSectionTitle('Menu Utama'),
-                      const SizedBox(height: 16),
-                      _buildMenuGrid(),
-                      const SizedBox(height: 32),
                       _buildSectionTitle('Ringkasan'),
                       const SizedBox(height: 16),
                       _buildStatusCards(),
+                      const SizedBox(height: 32),
+                      _buildSectionTitle('Menu Utama'),
+                      const SizedBox(height: 16),
+                      _buildMenuGrid(),
                       const SizedBox(height: 32),
                     ],
                   ),
@@ -281,76 +281,87 @@ class DashboardScreen extends GetView<DashboardViewModel> {
   Widget _buildMenuGrid() {
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildMenuCard(
-                icon: Icons.router,
-                title: 'Router',
-                subtitle: '${controller.totalRouterCount.value} Unit',
-                color: const Color(0xFF4ADE80),
-                onTap: controller.navigateToRouters,
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildMenuCard(
+                  icon: Icons.shopping_bag_outlined,
+                  title: 'Paket Langganan',
+                  subtitle: controller.expiryDate.value != null
+                      ? 'Aktif s.d ${DateFormat('d MMM').format(controller.expiryDate.value!)}'
+                      : 'Beli / Perpanjang',
+                  color: const Color(0xFFF472B6),
+                  onTap: controller.navigateToPackageList,
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildMenuCard(
-                icon: Icons.confirmation_number_outlined,
-                title: 'Voucher',
-                subtitle: '${controller.voucherCount.value} Pcs',
-                color: const Color(0xFFFFB547),
-                onTap: controller.navigateToVouchers,
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildMenuCard(
+                  icon: Icons.router,
+                  title: 'Router',
+                  subtitle: '${controller.totalRouterCount.value} Unit',
+                  color: const Color(0xFF4ADE80),
+                  onTap: controller.navigateToRouters,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildMenuCard(
-                icon: Icons.wifi_tethering,
-                title: 'Hotspot',
-                subtitle: 'Manajemen Server',
-                color: const Color(0xFF00C2FF),
-                onTap: controller.navigateToHotspots,
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildMenuCard(
+                  icon: Icons.wifi_tethering,
+                  title: 'Hotspot',
+                  subtitle: 'Manajemen Server',
+                  color: const Color(0xFF00C2FF),
+                  onTap: controller.navigateToHotspots,
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildMenuCard(
-                icon: Icons.inventory_2_outlined,
-                title: 'Paket Voucher',
-                subtitle: 'Manajemen Paket',
-                color: const Color(0xFF94A3B8),
-                onTap: controller.navigateToVoucherPackages,
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildMenuCard(
+                  icon: Icons.inventory_2_outlined,
+                  title: 'Paket Voucher',
+                  subtitle: 'Manajemen Paket',
+                  color: const Color(0xFF94A3B8),
+                  onTap: controller.navigateToVoucherPackages,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildMenuCard(
-                icon: Icons.shopping_bag_outlined,
-                title: 'Paket',
-                subtitle: 'Beli / Perpanjang',
-                color: const Color(0xFFF472B6),
-                onTap: controller.navigateToPackageList,
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildMenuCard(
+                  icon: Icons.confirmation_number_outlined,
+                  title: 'Voucher',
+                  subtitle: '${controller.voucherCount.value} Pcs',
+                  color: const Color(0xFFFFB547),
+                  onTap: controller.navigateToVouchers,
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildMenuCard(
-                icon: Icons.receipt_long_outlined,
-                title: 'Transaksi',
-                subtitle: 'Riwayat Penjualan',
-                color: const Color(0xFFFF6B81),
-                onTap: controller.navigateToTransactions,
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildMenuCard(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Transaksi',
+                  subtitle: 'Riwayat Penjualan',
+                  color: const Color(0xFFFF6B81),
+                  onTap: controller.navigateToTransactions,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

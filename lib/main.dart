@@ -6,8 +6,6 @@ import 'ui/core/themes/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize global dependencies
   final binding = GlobalBinding();
   await binding.dependencies();
   

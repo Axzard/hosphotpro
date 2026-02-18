@@ -6,6 +6,7 @@ import '../../../../domain/models/hotspot_model.dart';
 import '../../../../domain/models/router_repository.dart';
 import '../../../../domain/models/voucher_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
+import '../../../../core/utils/currency_formatter.dart';
 
 class VoucherPackageViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
@@ -24,6 +25,22 @@ class VoucherPackageViewModel extends GetxController {
   final durasiController = TextEditingController();
   final hargaController = TextEditingController();
   final profileMikrotikController = TextEditingController();
+  final prefixController = TextEditingController();
+  final panjangUsernameController = TextEditingController();
+  final dataLimitMbController = TextEditingController();
+  
+  final RxString selectedFormatKarakter = 'mix'.obs;
+  final List<String> formatKarakterOptions = ['huruf_kecil', 'huruf_besar', 'angka', 'mix'];
+  
+  final RxString selectedDataUnit = 'MB'.obs;
+  final List<String> dataUnitOptions = ['MB', 'GB'];
+
+  final Map<String, String> formatKarakterLabels = {
+    'huruf_kecil': 'Random abcd',
+    'huruf_besar': 'Random ABCD',
+    'angka': 'Random 1234',
+    'mix': 'Random aB2c',
+  };
 
   @override
   void onInit() {
@@ -89,19 +106,41 @@ class VoucherPackageViewModel extends GetxController {
     selectedHotspot.value = hotspot;
   }
 
+  void onFormatKarakterChanged(String? value) {
+    if (value != null) {
+      selectedFormatKarakter.value = value;
+    }
+  }
+
+  void onDataUnitChanged(String? value) {
+    if (value != null) {
+      selectedDataUnit.value = value;
+    }
+  }
+
   Future<void> createPackage() async {
     if (!_validateForm()) return;
 
     try {
       isLoading.value = true;
+      
+      int dataLimit = int.tryParse(dataLimitMbController.text) ?? 0;
+      if (selectedDataUnit.value == 'GB') {
+        dataLimit *= 1024;
+      }
+
       final package = VoucherPackageModel(
         id: 0,
         idRouter: int.tryParse(selectedRouter.value!.id) ?? 0,
         idHotspot: selectedHotspot.value!.idHotspot,
         namaPaket: namaPaketController.text,
         durasi: durasiController.text,
-        harga: double.tryParse(hargaController.text) ?? 0.0,
+        harga: CurrencyFormatter.parse(hargaController.text),
         namaProfileMikrotik: profileMikrotikController.text,
+        prefix: prefixController.text,
+        panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
+        formatKarakter: selectedFormatKarakter.value,
+        dataLimitMb: dataLimit,
       );
 
       await _voucherRepository.createVoucherPackage(package);
@@ -121,14 +160,24 @@ class VoucherPackageViewModel extends GetxController {
 
     try {
       isLoading.value = true;
+      
+      int dataLimit = int.tryParse(dataLimitMbController.text) ?? 0;
+      if (selectedDataUnit.value == 'GB') {
+        dataLimit *= 1024;
+      }
+
       final package = VoucherPackageModel(
         id: id,
         idRouter: int.tryParse(selectedRouter.value!.id) ?? 0,
         idHotspot: selectedHotspot.value!.idHotspot,
         namaPaket: namaPaketController.text,
         durasi: durasiController.text,
-        harga: double.tryParse(hargaController.text) ?? 0.0,
+        harga: CurrencyFormatter.parse(hargaController.text),
         namaProfileMikrotik: profileMikrotikController.text,
+        prefix: prefixController.text,
+        panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
+        formatKarakter: selectedFormatKarakter.value,
+        dataLimitMb: dataLimit,
       );
 
       await _voucherRepository.updateVoucherPackage(id, package);
@@ -159,9 +208,21 @@ class VoucherPackageViewModel extends GetxController {
   void prepareEdit(VoucherPackageModel package) {
     namaPaketController.text = package.namaPaket;
     durasiController.text = package.durasi;
-    hargaController.text = package.harga.toString();
+    hargaController.text = CurrencyFormatter.format(package.harga);
     profileMikrotikController.text = package.namaProfileMikrotik;
+    prefixController.text = package.prefix;
+    panjangUsernameController.text = package.panjangUsername.toString();
     
+    // Convert MB to GB if it's perfectly divisible and >= 1024
+    if (package.dataLimitMb >= 1024 && package.dataLimitMb % 1024 == 0) {
+      dataLimitMbController.text = (package.dataLimitMb / 1024).toStringAsFixed(0);
+      selectedDataUnit.value = 'GB';
+    } else {
+      dataLimitMbController.text = package.dataLimitMb.toString();
+      selectedDataUnit.value = 'MB';
+    }
+    
+    selectedFormatKarakter.value = package.formatKarakter;
     selectedHotspot.value = hotspots.firstWhereOrNull((h) => h.idHotspot == package.idHotspot);
   }
 
@@ -170,6 +231,11 @@ class VoucherPackageViewModel extends GetxController {
     durasiController.clear();
     hargaController.clear();
     profileMikrotikController.clear();
+    prefixController.clear();
+    panjangUsernameController.clear();
+    dataLimitMbController.clear();
+    selectedFormatKarakter.value = 'mix';
+    selectedDataUnit.value = 'MB';
   }
 
   bool _validateForm() {
@@ -180,8 +246,9 @@ class VoucherPackageViewModel extends GetxController {
     if (namaPaketController.text.isEmpty || 
         durasiController.text.isEmpty || 
         hargaController.text.isEmpty || 
-        profileMikrotikController.text.isEmpty) {
-      SnackbarUtils.showError('Error', 'Semua field wajib diisi');
+        profileMikrotikController.text.isEmpty ||
+        panjangUsernameController.text.isEmpty) {
+      SnackbarUtils.showError('Error', 'Field wajib diisi harus lengkap');
       return false;
     }
     return true;
@@ -193,6 +260,9 @@ class VoucherPackageViewModel extends GetxController {
     durasiController.dispose();
     hargaController.dispose();
     profileMikrotikController.dispose();
+    prefixController.dispose();
+    panjangUsernameController.dispose();
+    dataLimitMbController.dispose();
     super.onClose();
   }
 }
