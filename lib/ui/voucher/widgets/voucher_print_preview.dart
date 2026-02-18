@@ -35,6 +35,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
 
   int selectedQuantity = 0; // 0 means all
   bool isPrinting = false;
+  int currentPrintIndex = 0;
 
   @override
   void initState() {
@@ -325,7 +326,9 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                       )
                     : const Icon(Icons.print),
                 label: Text(
-                  isPrinting ? 'Mencetak...' : 'Cetak ($selectedQuantity)',
+                  isPrinting
+                      ? 'Mencetak ($currentPrintIndex/$selectedQuantity)...'
+                      : 'Cetak ($selectedQuantity)',
                   style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -431,17 +434,35 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
       return;
     }
 
-    setState(() => isPrinting = true);
+    setState(() {
+      isPrinting = true;
+      currentPrintIndex = 0;
+    });
+
     try {
-      for (var voucher in _vouchersToPrint) {
-        await printerService.printVoucher(voucher);
-        await Future.delayed(const Duration(milliseconds: 500));
+      final toPrint = _vouchersToPrint;
+      for (int i = 0; i < toPrint.length; i++) {
+        setState(() {
+          currentPrintIndex = i + 1;
+        });
+        await printerService.printVoucher(toPrint[i]);
+        // Slight delay between print commands for buffer safety
+        await Future.delayed(const Duration(milliseconds: 600));
       }
-      SnackbarUtils.showSuccess('Berhasil', 'Voucher sedang dicetak');
+      SnackbarUtils.showSuccess(
+        'Berhasil',
+        'Semua voucher ($selectedQuantity) berhasil dicetak',
+      );
     } catch (e) {
-      SnackbarUtils.showError('Gagal', 'Terjadi kesalahan saat mencetak: $e');
+      SnackbarUtils.showError(
+        'Gagal',
+        'Terjadi kesalahan saat mencetak di item $currentPrintIndex: $e',
+      );
     } finally {
-      setState(() => isPrinting = false);
+      setState(() {
+        isPrinting = false;
+        currentPrintIndex = 0;
+      });
     }
   }
 
@@ -457,7 +478,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
       child: Column(
         children: [
           Text(
-            'KODE VOUCHER',
+            'USERNAME / KODE',
             style: GoogleFonts.courierPrime(
               fontSize: 10,
               color: Colors.black54,

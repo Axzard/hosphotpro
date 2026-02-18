@@ -156,7 +156,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
           const SizedBox(height: 20),
           // Kode
           Text(
-            'KODE VOUCHER',
+            'USERNAME / KODE',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 10,
               fontWeight: FontWeight.bold,

@@ -21,6 +21,9 @@ class ApiConfig {
   // Voucher endpoints
   static const String createVoucher = '$baseUrl/api/voucher';
   static const String createVoucherBulk = '$baseUrl/api/voucher/bulk';
+  static const String voucherPackages = '$baseUrl/api/paket-voucher';
+  static String packagesByRouter(int idRouter) =>
+      '$baseUrl/api/paket-voucher/router/$idRouter';
   static String vouchersByRouter(int idRouter) =>
       '$baseUrl/api/voucher/router/$idRouter';
   static String voucherDetail(int id, int idRouter) =>

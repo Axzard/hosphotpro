@@ -3,11 +3,106 @@ import 'package:dio/dio.dart';
 import '../model/api_response.dart';
 import '../../config/api_config.dart';
 import '../../domain/models/voucher_model.dart';
+import '../../domain/models/voucher_package_model.dart';
 import 'token_service.dart';
 
 class VoucherService extends GetxService {
   final Dio _dio = Dio();
   final TokenService _tokenService = Get.find<TokenService>();
+
+  /// GET /api/paket-voucher/router/{idRouter}
+  Future<ApiResponse<List<VoucherPackageModel>>> getVoucherPackages(
+    int idRouter,
+  ) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.packagesByRouter(idRouter),
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 600,
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final List<dynamic> data = response.data['data'] ?? [];
+        final packages = data
+            .map((json) => VoucherPackageModel.fromJson(json))
+            .toList();
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Packages fetched',
+          data: packages,
+        );
+      } else {
+        final errorMsg =
+            response.data?['pesan'] ??
+            response.data?['detail'] ??
+            'Server Error (${response.statusCode}): ${response.data}';
+        return ApiResponse(success: false, message: errorMsg, data: []);
+      }
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Network error: ${e.message} ${e.response?.data}',
+        data: [],
+      );
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e', data: []);
+    }
+  }
+
+  /// POST /api/paket-voucher
+  Future<ApiResponse<VoucherPackageModel?>> createVoucherPackage(
+    VoucherPackageModel package,
+  ) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.post(
+        ApiConfig.voucherPackages,
+        data: package.toJson(),
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 600,
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        VoucherPackageModel? createdPackage;
+        if (response.data['id_paket'] != null) {
+          createdPackage = VoucherPackageModel(
+            id: response.data['id_paket'],
+            idRouter: package.idRouter,
+            idHotspot: package.idHotspot,
+            namaPaket: package.namaPaket,
+            durasi: package.durasi,
+            harga: package.harga,
+            namaProfileMikrotik: package.namaProfileMikrotik,
+          );
+        } else if (response.data['data'] != null) {
+          createdPackage = VoucherPackageModel.fromJson(response.data['data']);
+        }
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Package created',
+          data: createdPackage,
+        );
+      } else {
+        final errorMsg =
+            response.data?['pesan'] ??
+            response.data?['detail'] ??
+            'Server Error (${response.statusCode})';
+        return ApiResponse(success: false, message: errorMsg);
+      }
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Network error: ${e.message} ${e.response?.data}',
+      );
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
 
   /// GET /api/voucher/router/{idRouter}
   Future<ApiResponse<List<VoucherModel>>> getVouchersByRouter(

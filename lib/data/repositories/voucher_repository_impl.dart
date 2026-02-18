@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../../domain/models/voucher_model.dart';
+import '../../domain/models/voucher_package_model.dart';
 import '../../domain/models/voucher_repository.dart';
 import '../services/voucher_service.dart';
 
@@ -54,5 +55,25 @@ class VoucherRepositoryImpl implements VoucherRepository {
   Future<bool> deleteVoucher(int id, int idRouter) async {
     final response = await _voucherService.deleteVoucher(id, idRouter);
     return response.success;
+  }
+
+  @override
+  Future<List<VoucherPackageModel>> getVoucherPackages(int idRouter) async {
+    final response = await _voucherService.getVoucherPackages(idRouter);
+    if (response.success && response.data != null) {
+      return response.data!;
+    }
+    throw Exception(response.message);
+  }
+
+  @override
+  Future<VoucherPackageModel?> createVoucherPackage(
+    VoucherPackageModel package,
+  ) async {
+    final response = await _voucherService.createVoucherPackage(package);
+    if (response.success) {
+      return response.data;
+    }
+    throw Exception(response.message);
   }
 }

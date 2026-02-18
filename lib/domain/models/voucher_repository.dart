@@ -1,4 +1,5 @@
 import 'voucher_model.dart';
+import 'voucher_package_model.dart';
 
 abstract class VoucherRepository {
   Future<List<VoucherModel>> getVouchersByRouter(int idRouter);
@@ -10,4 +11,10 @@ abstract class VoucherRepository {
     int jumlah,
   );
   Future<bool> deleteVoucher(int id, int idRouter);
+
+  // Voucher Package methods
+  Future<List<VoucherPackageModel>> getVoucherPackages(int idRouter);
+  Future<VoucherPackageModel?> createVoucherPackage(
+    VoucherPackageModel package,
+  );
 }

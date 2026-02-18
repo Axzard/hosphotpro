@@ -1,23 +1,22 @@
 import 'package:get/get.dart';
 import '../../../config/routing/app_routes.dart';
 import '../../../domain/models/voucher_model.dart';
+import '../../../domain/models/voucher_package_model.dart';
 import '../../../domain/models/voucher_repository.dart';
 import '../../../domain/models/router_repository.dart';
 import '../../../domain/models/router_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
-import '../../../domain/models/subscription_package_model.dart';
-import '../../../domain/models/subscription_repository.dart';
+// import '../../../domain/models/subscription_package_model.dart'; // No longer used for hotspot vouchers
+// import '../../../domain/models/subscription_repository.dart'; // No longer used for hotspot vouchers
 import '../widgets/voucher_print_preview.dart';
 
 class VoucherViewModel extends GetxController {
   final VoucherRepository _voucherRepository = Get.find<VoucherRepository>();
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
-  // Use Get.find directly if possible, or inject it. Assuming SubscriptionRepository is available.
-  late final SubscriptionRepository _subscriptionRepository;
 
   final vouchers = <VoucherModel>[].obs;
   final routers = <RouterModel>[].obs;
-  final packages = <SubscriptionPackageModel>[].obs;
+  final voucherPackages = <VoucherPackageModel>[].obs;
 
   final isLoading = false.obs;
   final isGenerating = false.obs;
@@ -30,41 +29,37 @@ class VoucherViewModel extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Initialize repository if not passed in constructor (lazy fix)
-    try {
-      _subscriptionRepository = Get.find<SubscriptionRepository>();
-    } catch (e) {
-      print('SubscriptionRepository not found in GlobalBinding');
-    }
-
     loadRouters();
-    loadPackages();
-  }
-
-  Future<void> loadPackages() async {
-    try {
-      final result = await _subscriptionRepository.getPackages();
-      packages.value = result;
-    } catch (e) {
-      print('Error loading packages for voucher: $e');
-    }
   }
 
   /// Load available routers for the dropdown
   Future<void> loadRouters() async {
     try {
       final result = await _routerRepository.getRouters();
-
-      // Filter routers that are owned by the user if needed, or just use all
       routers.value = result;
 
-      if (result.isNotEmpty) {
-        // Default select the first one
+      if (result.isNotEmpty && selectedRouter.value == null) {
         selectedRouter.value = result.first;
-        await loadVouchers();
+        await onRouterChanged(result.first);
       }
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal memuat daftar router');
+    }
+  }
+
+  Future<void> loadVoucherPackages() async {
+    final router = selectedRouter.value;
+    if (router == null) return;
+
+    try {
+      final idRouter = int.tryParse(router.id) ?? 0;
+      final result = await _voucherRepository.getVoucherPackages(idRouter);
+      voucherPackages.value = result;
+      print('Loaded ${result.length} voucher packages for router $idRouter');
+    } catch (e) {
+      print('Error loading voucher packages: $e');
+      SnackbarUtils.showError('Error', 'Gagal memuat daftar paket: $e');
+      voucherPackages.clear();
     }
   }
 
@@ -127,19 +122,39 @@ class VoucherViewModel extends GetxController {
     isGenerating.value = true;
     try {
       final idRouter = int.tryParse(router.id) ?? 0;
-      await _voucherRepository.createVoucherBulk(
+      final result = await _voucherRepository.createVoucherBulk(
         idPaket,
         idRouter,
         count.value,
       );
+
       SnackbarUtils.showSuccess(
         'Berhasil',
         '${count.value} voucher berhasil dibuat',
       );
+
       Get.back(); // Close bottom sheet
       await loadVouchers();
+
+      // Navigate to print preview if we got vouchers back
+      if (result.isNotEmpty) {
+        _openPrintPreview(result);
+      }
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal membuat voucher bulk: $e');
+    } finally {
+      isGenerating.value = false;
+    }
+  }
+
+  Future<void> createVoucherPackage(VoucherPackageModel package) async {
+    isGenerating.value = true;
+    try {
+      await _voucherRepository.createVoucherPackage(package);
+      SnackbarUtils.showSuccess('Berhasil', 'Paket voucher berhasil dibuat');
+      await loadVoucherPackages();
+    } catch (e) {
+      SnackbarUtils.showError('Error', 'Gagal membuat paket voucher: $e');
     } finally {
       isGenerating.value = false;
     }
@@ -173,11 +188,11 @@ class VoucherViewModel extends GetxController {
   }
 
   /// Switch selected router and reload vouchers
-  void onRouterChanged(RouterModel? router) {
+  Future<void> onRouterChanged(RouterModel? router) async {
     if (router == null) return;
     selectedRouter.value = router;
-    // Don't clear packet ID, might want to create voucher for same packet on diff router
-    loadVouchers();
+    selectedPaketId.value = null; // Clear selected package when router changes
+    await Future.wait([loadVouchers(), loadVoucherPackages()]);
   }
 
   /// Print single voucher

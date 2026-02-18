@@ -3,10 +3,20 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
+import '../../config/api_config.dart';
 
 class WebSocketService extends GetxService {
   late WebSocketChannel _channel;
-  final String _url = 'ws://192.168.88.249:3000';
+
+  String get _url {
+    // Convert http/https to ws/wss
+    final baseUrl = ApiConfig.baseUrl;
+    if (baseUrl.startsWith('https://')) {
+      return baseUrl.replaceFirst('https://', 'wss://');
+    } else {
+      return baseUrl.replaceFirst('http://', 'ws://');
+    }
+  }
 
   // Connection state
   final isConnected = false.obs;
