@@ -11,6 +11,11 @@ import '../../ui/auth/view_models/auth_view_model.dart';
 import '../../data/services/router_service.dart';
 import '../../domain/models/router_repository.dart';
 import '../../data/repositories/router_repository_impl.dart';
+import '../../data/services/voucher_service.dart';
+import '../../domain/models/voucher_repository.dart';
+import '../../data/repositories/voucher_repository_impl.dart';
+import '../../core/services/printer_service.dart';
+import '../../core/services/websocket_service.dart';
 
 class GlobalBinding extends Bindings {
   @override
@@ -19,18 +24,22 @@ class GlobalBinding extends Bindings {
     final tokenService = TokenService();
     await tokenService.init();
     Get.put<TokenService>(tokenService);
-    
+
     // Services
+    Get.put<PrinterService>(PrinterService());
+    Get.put<WebSocketService>(WebSocketService());
     Get.put<AuthService>(AuthService());
     Get.put<SubscriptionService>(SubscriptionService());
     Get.put<MidtransService>(MidtransService());
     Get.put<RouterService>(RouterService());
+    Get.put<VoucherService>(VoucherService());
 
     // Repositories
     Get.put<AuthRepository>(AuthRepositoryImpl());
     Get.put<SubscriptionRepository>(SubscriptionRepositoryImpl());
     Get.put<RouterRepository>(RouterRepositoryImpl(Get.find()));
-    
+    Get.put<VoucherRepository>(VoucherRepositoryImpl());
+
     // ViewModels
     Get.put<AuthViewModel>(AuthViewModel(Get.find()), permanent: true);
   }

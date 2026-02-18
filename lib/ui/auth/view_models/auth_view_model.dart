@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../domain/models/auth_model.dart';
 import '../../../domain/models/auth_repository.dart';
+import '../../../core/utils/snackbar_utils.dart';
 import '../../../config/routing/app_pages.dart';
 
 class AuthViewModel extends GetxController {
@@ -21,8 +22,12 @@ class AuthViewModel extends GetxController {
   // Login
   Future<void> login() async {
     if (usernameController.text.isEmpty || passwordController.text.isEmpty) {
-      Get.snackbar('Perhatian', 'Semua form harus diisi',
-          backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar(
+        'Perhatian',
+        'Semua form harus diisi',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return;
     }
 
@@ -40,16 +45,11 @@ class AuthViewModel extends GetxController {
         Get.offAllNamed(Routes.DASHBOARD);
       } else {
         errorMessage.value = _translateErrorMessage(response.message);
-        Get.snackbar(
-          'Gagal Masuk', 
-          errorMessage.value,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        SnackbarUtils.showError('Gagal Login', 'Email atau password salah');
       }
     } catch (e) {
       Get.snackbar(
-        'Error', 
+        'Error',
         'Terjadi kesalahan koneksi. Silakan coba lagi.',
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -64,22 +64,27 @@ class AuthViewModel extends GetxController {
     if (emailController.text.isEmpty ||
         passwordController.text.isEmpty ||
         usernameController.text.isEmpty) {
-      Get.snackbar('Perhatian', 'Semua form harus diisi',
-          backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar(
+        'Perhatian',
+        'Semua form harus diisi',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return;
     }
 
     isLoading.value = true;
     try {
       final response = await _authRepository.register(
-          usernameController.text, emailController.text, passwordController.text);
+        usernameController.text,
+        emailController.text,
+        passwordController.text,
+      );
 
       if (response.success) {
-        Get.snackbar(
+        SnackbarUtils.showSuccess(
           'Berhasil',
-          'Akun berhasil dibuat. Silakan login.',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+          'Registrasi berhasil, silakan login',
         );
         Get.offNamed(Routes.LOGIN);
       } else {
@@ -91,12 +96,7 @@ class AuthViewModel extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Terjadi kesalahan koneksi. Silakan coba lagi.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      SnackbarUtils.showError('Error', 'Terjadi kesalahan: $e');
     } finally {
       isLoading.value = false;
     }
@@ -111,13 +111,13 @@ class AuthViewModel extends GetxController {
 
   String _translateErrorMessage(String message) {
     final lowerMessage = message.toLowerCase();
-    if (lowerMessage.contains('invalid credentials') || 
+    if (lowerMessage.contains('invalid credentials') ||
         lowerMessage.contains('wrong password')) {
       return 'Username atau kata sandi salah.';
     } else if (lowerMessage.contains('user not found')) {
       return 'Akun tidak ditemukan.';
-    } else if (lowerMessage.contains('already exists') || 
-               lowerMessage.contains('email taken')) {
+    } else if (lowerMessage.contains('already exists') ||
+        lowerMessage.contains('email taken')) {
       return 'Username atau email sudah terdaftar.';
     } else if (lowerMessage.contains('connection timeout')) {
       return 'Koneksi terputus. Periksa internet Anda.';

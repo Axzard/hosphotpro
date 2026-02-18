@@ -1,212 +1,198 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'view_models/subscription_view_model.dart';
-import '../../domain/models/transaction_model.dart';
+import '../../domain/models/user_subscription_model.dart';
 
 class SubscriptionStatusScreen extends GetView<SubscriptionViewModel> {
   const SubscriptionStatusScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Load history when screen opens
-    controller.loadTransactionHistory();
-    controller.loadCurrentSubscription();
+    controller.loadMySubscriptions();
+
+    const bgColor = Color(0xFF0A1118);
+    const cardColor = Color(0xFF131E29);
+    const accentColor = Color(0xFF00C2FF);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: bgColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
+        child: Column(
+          children: [
+            _buildHeader(accentColor),
+            Expanded(
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: accentColor),
+                  );
+                }
+
+                if (controller.mySubscriptions.isEmpty) {
+                  return _buildEmptyState(accentColor);
+                }
+
+                return RefreshIndicator(
+                  onRefresh: controller.loadMySubscriptions,
+                  color: accentColor,
+                  backgroundColor: cardColor,
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    children: [
+                      const SizedBox(height: 8),
+                      // Show active subscription card prominently if exists
+                      ...controller.mySubscriptions
+                          .where((s) => s.isActive)
+                          .map(
+                            (s) => Padding(
+                              padding: const EdgeInsets.only(bottom: 20),
+                              child: _buildActiveSubscriptionCard(
+                                s,
+                                cardColor,
+                                accentColor,
+                              ),
+                            ),
+                          ),
+                      // Show pending subscriptions
+                      if (controller.mySubscriptions.any(
+                        (s) => s.isPending,
+                      )) ...[
+                        const SizedBox(height: 12),
+                        _buildSectionTitle(
+                          'Menunggu Pembayaran',
+                          Colors.orange,
+                        ),
+                        const SizedBox(height: 16),
+                        ...controller.mySubscriptions
+                            .where((s) => s.isPending)
+                            .map(
+                              (s) => Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _buildSubscriptionCard(s, cardColor),
+                              ),
+                            ),
+                      ],
+                      // Show expired subscriptions
+                      if (controller.mySubscriptions.any(
+                        (s) => s.isExpired,
+                      )) ...[
+                        const SizedBox(height: 12),
+                        _buildSectionTitle('Kadaluarsa', Colors.redAccent),
+                        const SizedBox(height: 16),
+                        ...controller.mySubscriptions
+                            .where((s) => s.isExpired)
+                            .map(
+                              (s) => Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _buildSubscriptionCard(s, cardColor),
+                              ),
+                            ),
+                      ],
+                      const SizedBox(height: 100), // Space for bottom button
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _buildBottomButton(accentColor),
+    );
+  }
+
+  Widget _buildHeader(Color accentColor) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Get.back(),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildAppBar(),
-              const SizedBox(height: 32),
-              _buildMainStatusCard(),
-              const SizedBox(height: 48),
-              _buildHistoryHeader(),
-              const SizedBox(height: 20),
-              _buildHistoryList(),
+              Text(
+                'Status Langganan',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                'KELOLA LANGGANAN ANDA',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: accentColor.withValues(alpha: 0.6),
+                  letterSpacing: 1.2,
+                ),
+              ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildAppBar() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: () => Get.back(),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white10),
-            ),
-            child: const Icon(
-              Icons.arrow_back_ios_new,
-              color: Colors.cyan,
-              size: 20,
+  Widget _buildEmptyState(Color accentColor) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.subscriptions_outlined,
+            size: 64,
+            color: Colors.white.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Belum Ada Langganan',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white.withValues(alpha: 0.6),
             ),
           ),
-        ),
-        const SizedBox(width: 20),
-        const Text(
-          'Status Langganan',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+          const SizedBox(height: 8),
+          Text(
+            'Pilih paket langganan untuk mulai menggunakan layanan',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: Colors.white.withValues(alpha: 0.4),
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMainStatusCard() {
-    return Obx(() {
-      final subscription = controller.currentSubscription.value;
-      if (subscription == null) {
-        return const Center(child: Text('Tidak ada langganan aktif', style: TextStyle(color: Colors.white70)));
-      }
-
-      final endDate = subscription.endDate ?? DateTime.now();
-      final remainingDays = endDate.difference(DateTime.now()).inDays;
-      final remainingHours = endDate.difference(DateTime.now()).inHours % 24;
-
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E293B).withOpacity(0.5),
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.cyan.withOpacity(0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.cyan.withOpacity(0.05),
-              blurRadius: 20,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.cyan.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(Icons.wifi_tethering, color: Colors.cyan, size: 28),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${subscription.packageName} Hotspot',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Text(
-                        'ID: HSP-2024-0892',
-                        style: TextStyle(color: Colors.white38, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'AKTIF',
-                    style: TextStyle(
-                      color: Colors.greenAccent,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            _buildStatusItem(Icons.access_time, 'Sisa Waktu', '$remainingDays Hari, $remainingHours Jam'),
-            const Divider(color: Colors.white10),
-            _buildStatusItem(Icons.speed, 'Kecepatan', 'Up to 20 Mbps', valueColor: Colors.cyan),
-            const Divider(color: Colors.white10),
-            _buildStatusItem(Icons.calendar_today, 'Masa Berlaku', subscription.endDate != null ? DateFormat('dd MMM yyyy').format(subscription.endDate!) : '-'),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () => controller.navigateToPackages(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  padding: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: Ink(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF06B6D4), Color(0xFF22D3EE)]),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Container(
-                    alignment: Alignment.center,
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.refresh, color: Colors.white, size: 20),
-                        SizedBox(width: 12),
-                        Text(
-                          'Perbarui Langganan',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => controller.navigateToPackages(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: accentColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
-          ],
-        ),
-      );
-    });
-  }
-
-  Widget _buildStatusItem(IconData icon, String label, String value, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.white38, size: 20),
-          const SizedBox(width: 12),
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              color: valueColor ?? Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+            child: Text(
+              'Lihat Paket',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -214,102 +200,440 @@ class SubscriptionStatusScreen extends GetView<SubscriptionViewModel> {
     );
   }
 
-  Widget _buildHistoryHeader() {
+  Widget _buildSectionTitle(String title, Color color) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'Riwayat Langganan',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+        Container(
+          width: 4,
+          height: 20,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
           ),
         ),
-        TextButton(
-          onPressed: () => controller.navigateToTransactions(),
-          child: const Text(
-            'Lihat Semua',
-            style: TextStyle(color: Colors.cyan, fontSize: 13),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildHistoryList() {
-    return Obx(() {
-      if (controller.transactions.isEmpty) {
-        return const Center(child: Text('Belum ada riwayat', style: TextStyle(color: Colors.white38)));
-      }
+  Widget _buildActiveSubscriptionCard(
+    UserSubscriptionModel subscription,
+    Color cardColor,
+    Color accentColor,
+  ) {
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+    final dateFormat = DateFormat('dd MMM yyyy');
 
-      // Show top 4 items like the design
-      final displayItems = controller.transactions.take(4).toList();
-
-      return Column(
-        children: displayItems.map((transaction) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E293B).withOpacity(0.5),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white12,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.history, color: Colors.white70, size: 20),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [accentColor.withValues(alpha: 0.15), cardColor],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.08),
+            blurRadius: 20,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header row
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Paket ${transaction.packageName}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormat('dd MMM').format(transaction.createdAt) + ' - ' + 
-                        DateFormat('dd MMM yyyy').format(transaction.createdAt.add(const Duration(days: 30))),
-                        style: const TextStyle(color: Colors.white38, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                child: Icon(Icons.wifi_tethering, color: accentColor, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(transaction.amount),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
+                      subscription.namaPaket,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'ID: #${subscription.idLangganan}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _buildStatusBadge(subscription.status),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // Info rows
+          _buildInfoRow(
+            Icons.access_time_rounded,
+            'Sisa Waktu',
+            '${subscription.daysRemaining} Hari, ${subscription.hoursRemaining} Jam',
+            accentColor,
+          ),
+          Divider(color: Colors.white.withValues(alpha: 0.06), height: 24),
+          _buildInfoRow(
+            Icons.calendar_today_rounded,
+            'Mulai',
+            dateFormat.format(subscription.tanggalMulai),
+            accentColor,
+          ),
+          Divider(color: Colors.white.withValues(alpha: 0.06), height: 24),
+          _buildInfoRow(
+            Icons.event_rounded,
+            'Berakhir',
+            dateFormat.format(subscription.tanggalBerakhir),
+            accentColor,
+          ),
+          Divider(color: Colors.white.withValues(alpha: 0.06), height: 24),
+          _buildInfoRow(
+            Icons.payments_rounded,
+            'Total Bayar',
+            currencyFormat.format(subscription.totalBayar),
+            accentColor,
+          ),
+          const SizedBox(height: 20),
+          // Perpanjang button
+          Obx(
+            () => SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed:
+                    controller.processingSubscriptionId.value ==
+                        subscription.idLangganan
+                    ? null
+                    : () => controller.renewSubscription(subscription),
+                icon:
+                    controller.processingSubscriptionId.value ==
+                        subscription.idLangganan
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.refresh_rounded, size: 20),
+                label: Text(
+                  controller.processingSubscriptionId.value ==
+                          subscription.idLangganan
+                      ? 'Memproses...'
+                      : 'Perpanjang Langganan',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: accentColor.withValues(alpha: 0.4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionCard(
+    UserSubscriptionModel subscription,
+    Color cardColor,
+  ) {
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+    final dateFormat = DateFormat('dd MMM yyyy');
+
+    return Container(
+      // margin handled by parent listview
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  subscription.isPending
+                      ? Icons.pending_actions
+                      : Icons.history,
+                  color: subscription.isPending
+                      ? Colors.orange
+                      : Colors.white54,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      subscription.namaPaket,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      transaction.status == TransactionStatus.success ? 'SELESAI' : 'GAGAL',
-                      style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold),
+                      '${dateFormat.format(subscription.tanggalMulai)} - ${dateFormat.format(subscription.tanggalBerakhir)}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.4),
+                      ),
                     ),
                   ],
                 ),
-              ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    currencyFormat.format(subscription.totalBayar),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  _buildStatusBadge(subscription.status),
+                ],
+              ),
+            ],
+          ),
+          // Show perpanjang button for expired subscriptions
+          if (subscription.isExpired) ...[
+            const SizedBox(height: 14),
+            Obx(
+              () => SizedBox(
+                width: double.infinity,
+                height: 42,
+                child: OutlinedButton.icon(
+                  onPressed:
+                      controller.processingSubscriptionId.value ==
+                          subscription.idLangganan
+                      ? null
+                      : () => controller.renewSubscription(subscription),
+                  icon:
+                      controller.processingSubscriptionId.value ==
+                          subscription.idLangganan
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF00C2FF),
+                          ),
+                        )
+                      : const Icon(Icons.refresh_rounded, size: 18),
+                  label: Text(
+                    'Perpanjang',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF00C2FF),
+                    side: const BorderSide(color: Color(0xFF00C2FF)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          );
-        }).toList(),
-      );
-    });
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(SubscriptionStatus status) {
+    Color bgColor;
+    Color textColor;
+    String label;
+
+    switch (status) {
+      case SubscriptionStatus.active:
+        bgColor = const Color(0xFF4ADE80).withValues(alpha: 0.15);
+        textColor = const Color(0xFF4ADE80);
+        label = 'AKTIF';
+        break;
+      case SubscriptionStatus.pending:
+        bgColor = Colors.orange.withValues(alpha: 0.15);
+        textColor = Colors.orange;
+        label = 'PENDING';
+        break;
+      case SubscriptionStatus.expired:
+        bgColor = Colors.redAccent.withValues(alpha: 0.15);
+        textColor = Colors.redAccent;
+        label = 'EXPIRED';
+        break;
+      case SubscriptionStatus.none:
+        bgColor = Colors.grey.withValues(alpha: 0.15);
+        textColor = Colors.grey;
+        label = 'NONE';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value,
+    Color accentColor,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white.withValues(alpha: 0.4), size: 20),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: Colors.white.withValues(alpha: 0.6),
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomButton(Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A1118),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+        ),
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
+          onPressed: () => controller.navigateToPackages(),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            padding: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [accentColor, accentColor.withValues(alpha: 0.7)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Container(
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.add_circle_outline,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Beli Paket Baru',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

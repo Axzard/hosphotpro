@@ -4,10 +4,12 @@ import 'user_subscription_model.dart';
 
 abstract class SubscriptionRepository {
   Future<List<SubscriptionPackageModel>> getPackages();
-  Future<TransactionModel> createTransaction({required int idLangganan, required double amount});
+  Future<SubscriptionPackageModel?> getPackageDetail(int id);
   Future<Map<String, dynamic>?> createSubscription(int packageId);
-  Future<TransactionModel?> getTransactionById(String transactionId);
-  Future<List<TransactionModel>> getTransactionHistory();
-  Future<UserSubscriptionModel?> getCurrentSubscription();
-  Future<bool> activateSubscription(String transactionId);
+  Future<TransactionModel> createTransaction({
+    required int idLangganan,
+    required double amount,
+  });
+  Future<List<UserSubscriptionModel>> getMySubscriptions();
+  Future<bool> updateSubscriptionStatus(int id, String status);
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../domain/models/transaction_model.dart';
+import '../../domain/models/user_subscription_model.dart';
 import 'view_models/subscription_view_model.dart';
 
 class TransactionHistoryScreen extends GetView<SubscriptionViewModel> {
@@ -9,142 +10,225 @@ class TransactionHistoryScreen extends GetView<SubscriptionViewModel> {
 
   @override
   Widget build(BuildContext context) {
-    // Load transactions when screen opens
-    controller.loadTransactionHistory();
+    controller.loadMySubscriptions();
+
+    const bgColor = Color(0xFF0A1118);
+    const cardColor = Color(0xFF131E29);
+    const accentColor = Color(0xFF00C2FF);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Riwayat Transaksi'),
-      ),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (controller.transactions.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.receipt_long, size: 64, color: Colors.grey),
-                SizedBox(height: 16),
-                Text('Belum ada transaksi'),
-              ],
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: controller.loadTransactionHistory,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: controller.transactions.length,
-            itemBuilder: (context, index) {
-              final transaction = controller.transactions[index];
-              return _buildTransactionCard(context, transaction);
-            },
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildTransactionCard(BuildContext context, TransactionModel transaction) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: _buildStatusIcon(transaction.status),
-        title: Text(
-          transaction.packageName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Column(
           children: [
-            const SizedBox(height: 4),
-            Text(
-              NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)
-                  .format(transaction.amount),
-              style: TextStyle(
-                color: Theme.of(context).primaryColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              DateFormat('dd MMM yyyy, HH:mm').format(transaction.createdAt),
-              style: const TextStyle(fontSize: 12),
+            _buildHeader(accentColor),
+            Expanded(
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: accentColor),
+                  );
+                }
+
+                if (controller.mySubscriptions.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.receipt_long,
+                          size: 64,
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Belum ada riwayat langganan',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            color: Colors.white.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: controller.loadMySubscriptions,
+                  color: accentColor,
+                  backgroundColor: cardColor,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
+                    ),
+                    itemCount: controller.mySubscriptions.length,
+                    itemBuilder: (context, index) {
+                      final subscription = controller.mySubscriptions[index];
+                      return _buildSubscriptionHistoryCard(
+                        subscription,
+                        cardColor,
+                        accentColor,
+                      );
+                    },
+                  ),
+                );
+              }),
             ),
           ],
         ),
-        trailing: _buildStatusChip(transaction.status),
       ),
     );
   }
 
-  Widget _buildStatusIcon(TransactionStatus status) {
-    IconData icon;
-    Color color;
-
-    switch (status) {
-      case TransactionStatus.success:
-        icon = Icons.check_circle;
-        color = Colors.green;
-        break;
-      case TransactionStatus.pending:
-        icon = Icons.pending;
-        color = Colors.orange;
-        break;
-      case TransactionStatus.failed:
-      case TransactionStatus.cancelled:
-      case TransactionStatus.expired:
-        icon = Icons.cancel;
-        color = Colors.red;
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        shape: BoxShape.circle,
+  Widget _buildHeader(Color accentColor) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Get.back(),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            'Riwayat Langganan',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
-      child: Icon(icon, color: color),
     );
   }
 
-  Widget _buildStatusChip(TransactionStatus status) {
-    Color color;
+  Widget _buildSubscriptionHistoryCard(
+    UserSubscriptionModel subscription,
+    Color cardColor,
+    Color accentColor,
+  ) {
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+    final dateFormat = DateFormat('dd MMM yyyy');
 
-    switch (status) {
-      case TransactionStatus.success:
-        color = Colors.green;
+    Color statusColor;
+    String statusLabel;
+    IconData statusIcon;
+
+    switch (subscription.status) {
+      case SubscriptionStatus.active:
+        statusColor = const Color(0xFF4ADE80);
+        statusLabel = 'AKTIF';
+        statusIcon = Icons.check_circle_outline;
         break;
-      case TransactionStatus.pending:
-        color = Colors.orange;
+      case SubscriptionStatus.pending:
+        statusColor = Colors.orange;
+        statusLabel = 'PENDING';
+        statusIcon = Icons.pending_actions;
         break;
-      case TransactionStatus.failed:
-      case TransactionStatus.cancelled:
-      case TransactionStatus.expired:
-        color = Colors.red;
+      case SubscriptionStatus.expired:
+        statusColor = Colors.redAccent;
+        statusLabel = 'EXPIRED';
+        statusIcon = Icons.cancel_outlined;
+        break;
+      case SubscriptionStatus.none:
+        statusColor = Colors.grey;
+        statusLabel = 'NONE';
+        statusIcon = Icons.help_outline;
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
-      child: Text(
-        status.displayName,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(statusIcon, color: statusColor, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  subscription.namaPaket,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${dateFormat.format(subscription.tanggalMulai)} - ${dateFormat.format(subscription.tanggalBerakhir)}',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                currencyFormat.format(subscription.totalBayar),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

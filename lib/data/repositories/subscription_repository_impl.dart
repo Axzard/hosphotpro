@@ -6,7 +6,8 @@ import '../../domain/models/user_subscription_model.dart';
 import '../services/subscription_service.dart';
 
 class SubscriptionRepositoryImpl implements SubscriptionRepository {
-  final SubscriptionService _subscriptionService = Get.find<SubscriptionService>();
+  final SubscriptionService _subscriptionService =
+      Get.find<SubscriptionService>();
 
   @override
   Future<List<SubscriptionPackageModel>> getPackages() async {
@@ -22,6 +23,19 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
   }
 
   @override
+  Future<SubscriptionPackageModel?> getPackageDetail(int id) async {
+    try {
+      final response = await _subscriptionService.getPackageDetail(id);
+      if (response.success && response.data != null) {
+        return response.data!.toDomain();
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
   Future<Map<String, dynamic>?> createSubscription(int packageId) async {
     final response = await _subscriptionService.createSubscription(packageId);
     if (response.success) {
@@ -31,17 +45,20 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
   }
 
   @override
-  Future<TransactionModel> createTransaction({required int idLangganan, required double amount}) async {
+  Future<TransactionModel> createTransaction({
+    required int idLangganan,
+    required double amount,
+  }) async {
     try {
       final response = await _subscriptionService.createTransaction(
         idLangganan: idLangganan,
         amount: amount,
       );
-      
+
       if (response.success && response.data != null) {
         return response.data!.toDomain();
       }
-      
+
       throw Exception('Failed to create transaction: ${response.message}');
     } catch (e) {
       rethrow;
@@ -49,23 +66,11 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
   }
 
   @override
-  Future<TransactionModel?> getTransactionById(String transactionId) async {
+  Future<List<UserSubscriptionModel>> getMySubscriptions() async {
     try {
-      final response = await _subscriptionService.getTransactionById(transactionId);
-      return response.data?.toDomain();
-    } catch (e) {
-      return null;
-    }
-  }
-
-  @override
-  Future<List<TransactionModel>> getTransactionHistory() async {
-    try {
-      const userId = '1';
-      final response = await _subscriptionService.getTransactionHistory(userId);
-      
+      final response = await _subscriptionService.getMySubscriptions();
       if (response.success && response.data != null) {
-        return response.data!.map((trx) => trx.toDomain()).toList();
+        return response.data!;
       }
       return [];
     } catch (e) {
@@ -74,25 +79,15 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
   }
 
   @override
-  Future<UserSubscriptionModel?> getCurrentSubscription() async {
-    // Mock current subscription
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    return UserSubscriptionModel(
-      id: 'sub_001',
-      userId: '1',
-      packageId: 'pkg_basic',
-      packageName: 'Basic',
-      status: SubscriptionStatus.active,
-      startDate: DateTime.now().subtract(const Duration(days: 5)),
-      endDate: DateTime.now().add(const Duration(days: 25)),
-    );
-  }
-
-  @override
-  Future<bool> activateSubscription(String transactionId) async {
-    // Mock activation
-    await Future.delayed(const Duration(seconds: 1));
-    return true;
+  Future<bool> updateSubscriptionStatus(int id, String status) async {
+    try {
+      final response = await _subscriptionService.updateSubscriptionStatus(
+        id,
+        status,
+      );
+      return response.success;
+    } catch (e) {
+      return false;
+    }
   }
 }

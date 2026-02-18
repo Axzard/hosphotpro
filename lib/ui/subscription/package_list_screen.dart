@@ -10,7 +10,11 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
@@ -22,7 +26,9 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
             Expanded(
               child: Obx(() {
                 if (controller.isLoading.value) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.cyan));
+                  return const Center(
+                    child: CircularProgressIndicator(color: Colors.cyan),
+                  );
                 }
 
                 if (controller.packages.isEmpty) {
@@ -39,12 +45,17 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
                   color: Colors.cyan,
                   backgroundColor: const Color(0xFF1E293B),
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 10,
+                    ),
                     itemCount: controller.packages.length,
                     itemBuilder: (context, index) {
                       final package = controller.packages[index];
                       final isCurrentPackage =
-                          controller.currentSubscription.value?.packageId == package.id;
+                          controller.currentSubscription.value?.idPaketLangganan
+                              .toString() ==
+                          package.id;
 
                       // Mapping features from model
                       final features = [
@@ -54,7 +65,8 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
                         ),
                         PackageFeature(
                           icon: Icons.confirmation_number_outlined,
-                          text: 'Batas Voucher: ${NumberFormat('#,###').format(package.maxVouchers)}',
+                          text:
+                              'Batas Voucher: ${NumberFormat('#,###').format(package.maxVouchers)}',
                         ),
                         PackageFeature(
                           icon: Icons.calendar_today_outlined,
@@ -63,15 +75,28 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
                       ];
 
                       // Add extra features based on name for visual parity with design
-                      if (package.name.toLowerCase().contains('pro') || package.name.toLowerCase().contains('bisnis')) {
-                         features.add(PackageFeature(icon: Icons.speed, text: 'Kecepatan: 100 Mbps'));
-                         features.add(PackageFeature(icon: Icons.support_agent, text: 'Dukungan Prioritas 24/7'));
+                      if (package.name.toLowerCase().contains('pro') ||
+                          package.name.toLowerCase().contains('bisnis')) {
+                        features.add(
+                          PackageFeature(
+                            icon: Icons.speed,
+                            text: 'Kecepatan: 100 Mbps',
+                          ),
+                        );
+                        features.add(
+                          PackageFeature(
+                            icon: Icons.support_agent,
+                            text: 'Dukungan Prioritas 24/7',
+                          ),
+                        );
                       }
 
                       return SubscriptionPackageCard(
                         name: 'Paket ${package.name}',
                         price: currencyFormat.format(package.price),
-                        duration: package.durationDays == 30 ? 'Bulan' : '${package.durationDays} Hari',
+                        duration: package.durationDays == 30
+                            ? 'Bulan'
+                            : '${package.durationDays} Hari',
                         features: features,
                         isPopuler: package.name.toLowerCase().contains('pro'),
                         isSelected: isCurrentPackage,
@@ -81,7 +106,10 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
                           if (!Get.isRegistered<SubscriptionViewModel>()) {
                             Get.put(SubscriptionViewModel(Get.find()));
                           }
-                          Get.to(() => const PackageDetailScreen(), arguments: package);
+                          Get.to(
+                            () => const PackageDetailScreen(),
+                            arguments: package,
+                          );
                         },
                       );
                     },

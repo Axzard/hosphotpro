@@ -2,32 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../domain/models/subscription_package_model.dart';
 import '../../../domain/models/subscription_repository.dart';
-import '../../../domain/models/transaction_model.dart';
+import '../../../core/utils/snackbar_utils.dart';
 import '../../../domain/models/user_subscription_model.dart';
-import '../../../data/services/midtrans_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../config/routing/app_routes.dart';
 import '../midtrans_webview_screen.dart';
 
 class SubscriptionViewModel extends GetxController {
   final SubscriptionRepository _subscriptionRepository;
-  final MidtransService _midtransService = Get.find<MidtransService>();
 
   SubscriptionViewModel(this._subscriptionRepository);
 
   final packages = <SubscriptionPackageModel>[].obs;
-  final transactions = <TransactionModel>[].obs;
+  final mySubscriptions = <UserSubscriptionModel>[].obs;
   final currentSubscription = Rx<UserSubscriptionModel?>(null);
   final isLoading = false.obs;
+
+  // For new package purchases (Package List -> Detail -> Payment)
   final isProcessingPayment = false.obs;
-  final selectedDuration = 1.obs; // Duration in months
+
+  // For renewals (Subscription Status Screen) - tracks specific subscription ID
+  final processingSubscriptionId = RxnInt(null);
+
+  final selectedDuration = 1.obs;
   final selectedPaymentMethod = ''.obs;
 
   @override
   void onInit() {
     super.onInit();
     loadPackages();
-    loadCurrentSubscription();
+    loadMySubscriptions();
   }
 
   Future<void> loadPackages() async {
@@ -36,28 +40,29 @@ class SubscriptionViewModel extends GetxController {
       final result = await _subscriptionRepository.getPackages();
       packages.value = result;
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load packages');
+      SnackbarUtils.showError('Error', 'Gagal memuat daftar paket');
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> loadCurrentSubscription() async {
-    try {
-      final result = await _subscriptionRepository.getCurrentSubscription();
-      currentSubscription.value = result;
-    } catch (e) {
-      // Silent fail
-    }
-  }
-
-  Future<void> loadTransactionHistory() async {
+  Future<void> loadMySubscriptions() async {
     isLoading.value = true;
     try {
-      final result = await _subscriptionRepository.getTransactionHistory();
-      transactions.value = result;
+      final result = await _subscriptionRepository.getMySubscriptions();
+      mySubscriptions.value = result;
+
+      // Set current subscription to the active one, or the most recent one
+      final activeSubscription = result.where((s) => s.isActive).toList();
+      if (activeSubscription.isNotEmpty) {
+        currentSubscription.value = activeSubscription.first;
+      } else if (result.isNotEmpty) {
+        currentSubscription.value = result.first;
+      } else {
+        currentSubscription.value = null;
+      }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load transactions');
+      SnackbarUtils.showError('Error', 'Gagal memuat data langganan');
     } finally {
       isLoading.value = false;
     }
@@ -69,9 +74,12 @@ class SubscriptionViewModel extends GetxController {
 
       // Step 1: Create Subscription to get id_langganan
       final int packageId = int.tryParse(package.id) ?? 0;
-      final subscriptionData = await _subscriptionRepository.createSubscription(packageId);
-      
-      if (subscriptionData == null || subscriptionData['id_langganan'] == null) {
+      final subscriptionData = await _subscriptionRepository.createSubscription(
+        packageId,
+      );
+
+      if (subscriptionData == null ||
+          subscriptionData['id_langganan'] == null) {
         throw Exception('Gagal mendapatkan ID Langganan');
       }
 
@@ -83,17 +91,18 @@ class SubscriptionViewModel extends GetxController {
         amount: package.price,
       );
 
-      if (transaction.redirectUrl != null && transaction.redirectUrl!.isNotEmpty) {
-        // Step 3: Redirect to web for payment
+      if (transaction.redirectUrl != null &&
+          transaction.redirectUrl!.isNotEmpty) {
         final Uri url = Uri.parse(transaction.redirectUrl!);
         try {
-          // Attempt to launch in external browser first
-          bool launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+          bool launched = await launchUrl(
+            url,
+            mode: LaunchMode.externalApplication,
+          );
           if (!launched) {
-            // Fallback to platform default
             launched = await launchUrl(url, mode: LaunchMode.platformDefault);
           }
-          
+
           if (launched) {
             Get.snackbar(
               'Lanjutkan Pembayaran',
@@ -105,16 +114,22 @@ class SubscriptionViewModel extends GetxController {
             throw Exception('Gagal membuka browser');
           }
         } catch (e) {
-          Get.snackbar('Error', 'Gagal membuka halaman pembayaran: $e');
+          SnackbarUtils.showError(
+            'Error',
+            'Gagal membuka halaman pembayaran: $e',
+          );
         }
-      } else if (transaction.snapToken != null && transaction.snapToken!.isNotEmpty) {
-        // Fallback or specific logic if only snap token is present
-        Get.snackbar('Informasi', 'Token pembayaran: ${transaction.snapToken}');
+      } else if (transaction.snapToken != null &&
+          transaction.snapToken!.isNotEmpty) {
+        SnackbarUtils.showInfo(
+          'Informasi',
+          'Token pembayaran: ${transaction.snapToken}',
+        );
       } else {
-        Get.snackbar('Error', 'Gagal mendapatkan tautan pembayaran');
+        SnackbarUtils.showError('Error', 'Gagal mendapatkan tautan pembayaran');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memproses pembelian: $e');
+      SnackbarUtils.showError('Error', 'Gagal memproses pembelian: $e');
     } finally {
       isProcessingPayment.value = false;
     }
@@ -123,17 +138,16 @@ class SubscriptionViewModel extends GetxController {
   double calculateTotalPrice(SubscriptionPackageModel package) {
     final basePrice = package.price;
     final duration = selectedDuration.value;
-    
-    // Apply discount for longer durations
+
     double discount = 0;
     if (duration == 3) {
-      discount = 0.10; // 10% off for 3 months
+      discount = 0.10;
     } else if (duration == 6) {
-      discount = 0.15; // 15% off for 6 months
+      discount = 0.15;
     } else if (duration == 12) {
-      discount = 0.20; // 20% off for 12 months
+      discount = 0.20;
     }
-    
+
     final totalPrice = basePrice * duration * (1 - discount);
     return totalPrice;
   }
@@ -145,9 +159,12 @@ class SubscriptionViewModel extends GetxController {
 
       // Step 1: Create Subscription to get id_langganan
       final int packageId = int.tryParse(package.id) ?? 0;
-      final subscriptionData = await _subscriptionRepository.createSubscription(packageId);
-      
-      if (subscriptionData == null || subscriptionData['id_langganan'] == null) {
+      final subscriptionData = await _subscriptionRepository.createSubscription(
+        packageId,
+      );
+
+      if (subscriptionData == null ||
+          subscriptionData['id_langganan'] == null) {
         throw Exception('Gagal mendapatkan ID Langganan');
       }
 
@@ -159,14 +176,14 @@ class SubscriptionViewModel extends GetxController {
         amount: totalPrice,
       );
 
-      if (transaction.redirectUrl != null && transaction.redirectUrl!.isNotEmpty) {
-        // Step 3: Navigate to WebView screen
-        // Use MidtransWebViewScreen for both Mobile and Windows (with fallback in screen)
+      if (transaction.redirectUrl != null &&
+          transaction.redirectUrl!.isNotEmpty) {
         Get.to(
-          () => const MidtransWebViewScreen(), 
-          arguments: transaction.redirectUrl
+          () => const MidtransWebViewScreen(),
+          arguments: transaction.redirectUrl,
         );
-      } else if (transaction.snapToken != null && transaction.snapToken!.isNotEmpty) {
+      } else if (transaction.snapToken != null &&
+          transaction.snapToken!.isNotEmpty) {
         Get.snackbar('Informasi', 'Token pembayaran: ${transaction.snapToken}');
       } else {
         Get.snackbar('Error', 'Gagal mendapatkan tautan pembayaran');
@@ -178,42 +195,46 @@ class SubscriptionViewModel extends GetxController {
     }
   }
 
-
-  Future<void> processPaymentOld(TransactionModel transaction) async {
-    if (transaction.snapToken == null) {
-      Get.snackbar('Error', 'Invalid transaction token');
-      return;
-    }
-
+  /// Perpanjang langganan — create new subscription for the same package, then checkout via Midtrans
+  Future<void> renewSubscription(UserSubscriptionModel subscription) async {
     try {
-      isProcessingPayment.value = true;
+      processingSubscriptionId.value = subscription.idLangganan;
 
-      // Use mock payment for development
-      final result = await _midtransService.mockPayment(transaction.snapToken!);
+      // Step 1: Create new subscription record for the same package
+      final subscriptionData = await _subscriptionRepository.createSubscription(
+        subscription.idPaketLangganan,
+      );
 
-      if (result['status'] == 'success') {
-        // Activate subscription
-        await _subscriptionRepository.activateSubscription(transaction.id);
-        
-        // Reload subscription
-        await loadCurrentSubscription();
+      if (subscriptionData == null ||
+          subscriptionData['id_langganan'] == null) {
+        throw Exception('Gagal membuat langganan baru');
+      }
 
-        Get.snackbar(
-          'Success',
-          'Payment successful! Your subscription is now active.',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+      final int idLangganan = subscriptionData['id_langganan'];
+
+      // Step 2: Checkout — use the same totalBayar as the previous subscription
+      final transaction = await _subscriptionRepository.createTransaction(
+        idLangganan: idLangganan,
+        amount: subscription.totalBayar,
+      );
+
+      // Step 3: Open Midtrans payment page
+      if (transaction.redirectUrl != null &&
+          transaction.redirectUrl!.isNotEmpty) {
+        Get.to(
+          () => const MidtransWebViewScreen(),
+          arguments: transaction.redirectUrl,
         );
-
-        // Navigate to dashboard
-        Get.offAllNamed(Routes.DASHBOARD);
+      } else if (transaction.snapToken != null &&
+          transaction.snapToken!.isNotEmpty) {
+        Get.snackbar('Informasi', 'Token pembayaran: ${transaction.snapToken}');
       } else {
-        Get.snackbar('Error', 'Payment failed');
+        Get.snackbar('Error', 'Gagal mendapatkan tautan pembayaran');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Payment error: $e');
+      Get.snackbar('Error', 'Gagal memperpanjang langganan: $e');
     } finally {
-      isProcessingPayment.value = false;
+      processingSubscriptionId.value = null;
     }
   }
 

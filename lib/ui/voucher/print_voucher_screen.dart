@@ -1,283 +1,327 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'view_models/voucher_view_model.dart';
 import '../../domain/models/voucher_model.dart';
+import '../../ui/voucher/widgets/create_voucher_sheet.dart';
 
 class PrintVoucherScreen extends GetView<VoucherViewModel> {
   const PrintVoucherScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
-    
+    const bgColor = Color(0xFF0A1118);
+    const cardColor = Color(0xFF131E29);
+    const accentColor = Color(0xFF00C2FF);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1416), 
+      backgroundColor: bgColor,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Get.bottomSheet(
+            const CreateVoucherSheet(),
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+          );
+        },
+        backgroundColor: accentColor,
+        icon: const Icon(Icons.add_rounded),
+        label: Text(
+          'Buat Voucher',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(context),
+            _buildHeader(accentColor),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    _buildInputCard(context),
-                    const SizedBox(height: 32),
-                    _buildListHeader(context),
-                    const SizedBox(height: 16),
-                    _buildVoucherList(),
-                    const SizedBox(height: 100), 
-                  ],
-                ),
-              ),
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: accentColor),
+                  );
+                }
+
+                if (controller.vouchers.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.confirmation_number_outlined,
+                          size: 64,
+                          color: Colors.white.withValues(alpha: 0.2),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Belum ada voucher',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white54,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 10,
+                  ),
+                  itemCount: controller.vouchers.length,
+                  itemBuilder: (context, index) {
+                    final voucher = controller.vouchers[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildVoucherCard(voucher, cardColor, accentColor),
+                    );
+                  },
+                );
+              }),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomButton(context),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Get.back(),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF162529),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.cyan.withValues(alpha: 0.3)),
-              ),
-              child: const Icon(Icons.arrow_back_ios_new, color: Colors.cyan, size: 20),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Cetak Voucher',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                'MANAJEMEN VOUCHER',
-                style: TextStyle(
-                  color: Colors.cyan.withValues(alpha: 0.6),
-                  fontSize: 12,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInputCard(BuildContext context) {
+  Widget _buildHeader(Color accentColor) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF162529),
-        borderRadius: BorderRadius.circular(24),
+        color: const Color(0xFF0F172A),
+        border: Border(
+          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Jumlah Voucher',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0D1416),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white24, width: 1.5), 
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      hintText: '1 - 500',
-                      hintStyle: TextStyle(color: Colors.white24),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      filled: false,
-                      contentPadding: EdgeInsets.zero,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Manajemen Voucher',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                    onChanged: (val) => controller.count.value = int.tryParse(val) ?? 0,
                   ),
-                ),
-                const Text(
-                  'PCS',
-                  style: TextStyle(color: Colors.cyan, fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Maksimum pencetakan sekaligus adalah 500 voucher.',
-            style: TextStyle(color: Colors.white24, fontSize: 11),
+                  Text(
+                    'KELOLA & CETAK VOUCHER',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: accentColor.withValues(alpha: 0.6),
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+              IconButton(
+                onPressed: () => Get.back(),
+                icon: const Icon(Icons.close, color: Colors.white70),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
-          Obx(() => SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: controller.isGenerating.value ? null : () => controller.generateVoucher(),
-              icon: controller.isGenerating.value 
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.add_circle),
-              label: Text(controller.isGenerating.value ? 'Memproses...' : 'Buat Voucher'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00B4D8),
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          // Router Selector
+          Obx(() {
+            if (controller.routers.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
-            ),
-          )),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: controller.selectedRouter.value?.id,
+                  dropdownColor: const Color(0xFF131E29),
+                  icon: const Icon(
+                    Icons.arrow_drop_down,
+                    color: Colors.white70,
+                  ),
+                  style: GoogleFonts.plusJakartaSans(color: Colors.white),
+                  items: controller.routers.map((router) {
+                    // Check RouterModel field name properly.
+                    // Assuming 'namaRouter' based on common patterns if 'nama' failed
+                    return DropdownMenuItem<String>(
+                      value: router.id,
+                      child: Text(router.namaRouter),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    final router = controller.routers.firstWhereOrNull(
+                      (r) => r.id == val,
+                    );
+                    controller.onRouterChanged(router);
+                  },
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildListHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'DAFTAR VOUCHER TERBARU',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.cyan.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.cyan.withValues(alpha: 0.3)),
-          ),
-          child: Obx(() => Text(
-            '${controller.vouchers.length} Items',
-            style: const TextStyle(color: Colors.cyan, fontSize: 10, fontWeight: FontWeight.bold),
-          )),
-        ),
-      ],
+  Widget _buildVoucherCard(
+    VoucherModel voucher,
+    Color cardColor,
+    Color accentColor,
+  ) {
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
     );
-  }
 
-  Widget _buildVoucherList() {
-    return Obx(() => ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: controller.vouchers.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final voucher = controller.vouchers[index];
-        return _buildVoucherItem(voucher);
-      },
-    ));
-  }
+    Color statusColor;
+    String statusLabel;
 
-  Widget _buildVoucherItem(VoucherModel voucher) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF162529),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0D1416),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.confirmation_num, color: Colors.cyan, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    switch (voucher.statusVoucher) {
+      case VoucherStatus.stok:
+        statusColor = const Color(0xFF4ADE80);
+        statusLabel = 'STOK';
+        break;
+      case VoucherStatus.aktif:
+        statusColor = accentColor;
+        statusLabel = 'AKTIF';
+        break;
+      case VoucherStatus.terjual:
+        statusColor = Colors.orange;
+        statusLabel = 'TERJUAL';
+        break;
+      case VoucherStatus.expired:
+        statusColor = Colors.redAccent;
+        statusLabel = 'EXPIRED';
+        break;
+    }
+
+    return GestureDetector(
+      onTap: () => controller.navigateToDetail(voucher),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        ),
+        child: Column(
+          children: [
+            Row(
               children: [
-                const Text(
-                  'KODE VOUCHER',
-                  style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.wifi_tethering,
+                    color: accentColor,
+                    size: 20,
+                  ),
                 ),
-                Text(
-                  voucher.code,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        voucher.kodeVoucher,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        voucher.namaPaket,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: Colors.white54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-          _buildActionIcon(Icons.visibility, () => controller.navigateToDetail(voucher)),
-          const SizedBox(width: 8),
-          _buildActionIcon(Icons.print, () => controller.printVoucher(voucher)),
-          const SizedBox(width: 8),
-          _buildActionIcon(Icons.delete, () => controller.deleteVoucher(voucher.id), color: Colors.redAccent),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionIcon(IconData icon, VoidCallback onTap, {Color color = Colors.white54}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color == Colors.redAccent ? color.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: color, size: 18),
-      ),
-    );
-  }
-
-  Widget _buildBottomButton(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      color: Colors.transparent,
-      child: OutlinedButton.icon(
-        onPressed: () => controller.printAllVouchers(),
-        icon: const Icon(Icons.print),
-        label: const Text('CETAK SEMUA VOUCHER'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.cyan,
-          side: const BorderSide(color: Colors.cyan),
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          textStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+            const SizedBox(height: 12),
+            Divider(color: Colors.white.withValues(alpha: 0.05)),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  currencyFormat.format(voucher.harga),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: Colors.redAccent,
+                      ),
+                      onPressed: () =>
+                          controller.deleteVoucher(voucher.idVoucher),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.print_outlined,
+                        size: 20,
+                        color: Colors.white70,
+                      ),
+                      onPressed: () => controller.printVoucher(voucher),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

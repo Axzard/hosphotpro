@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../domain/models/router_model.dart';
 import '../../../../domain/models/router_repository.dart';
+import '../../../../core/utils/snackbar_utils.dart';
 
 class RouterViewModel extends GetxController {
   final RouterRepository _routerRepository;
@@ -33,7 +34,7 @@ class RouterViewModel extends GetxController {
       isLoading.value = true;
       routers.value = await _routerRepository.getRouters();
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memuat router: $e');
+      SnackbarUtils.showError('Error', 'Gagal memuat router: $e');
     } finally {
       isLoading.value = false;
     }
@@ -57,16 +58,16 @@ class RouterViewModel extends GetxController {
 
       if (isEditing.value) {
         await _routerRepository.updateRouter(routerData);
-        Get.snackbar('Berhasil', 'Router berhasil diperbarui');
+        SnackbarUtils.showSuccess('Berhasil', 'Router berhasil diperbarui');
       } else {
         await _routerRepository.createRouter(routerData);
-        Get.snackbar('Berhasil', 'Router berhasil ditambahkan');
+        SnackbarUtils.showSuccess('Berhasil', 'Router berhasil ditambahkan');
       }
 
       clearForm();
       loadRouters();
     } catch (e) {
-      Get.snackbar('Error', 'Gagal menyimpan router: $e');
+      SnackbarUtils.showError('Error', 'Gagal menyimpan router: $e');
     } finally {
       isLoading.value = false;
     }
@@ -76,16 +77,16 @@ class RouterViewModel extends GetxController {
     try {
       isLoading.value = true;
       await _routerRepository.deleteRouter(id);
-      Get.snackbar('Berhasil', 'Router berhasil dihapus');
+      SnackbarUtils.showSuccess('Berhasil', 'Router berhasil dihapus');
       loadRouters();
     } catch (e) {
-      Get.snackbar('Error', 'Gagal menghapus router: $e');
+      SnackbarUtils.showError('Error', 'Gagal menghapus router: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
-  void editRouter(RouterModel router) {
+  void prepareEdit(RouterModel router) {
     isEditing.value = true;
     editingId.value = router.id;
     namaController.text = router.namaRouter;
@@ -94,8 +95,10 @@ class RouterViewModel extends GetxController {
     usernameController.text = router.usernameApi;
     passwordController.text = router.passwordApi;
     keteranganController.text = router.keterangan;
-    
-    // Scroll to top or switch tab if needed, but the form is usually visible
+  }
+
+  void prepareCreate() {
+    clearForm();
   }
 
   void clearForm() {
@@ -115,7 +118,7 @@ class RouterViewModel extends GetxController {
         portController.text.isEmpty ||
         usernameController.text.isEmpty ||
         passwordController.text.isEmpty) {
-      Get.snackbar('Peringatan', 'Harap isi semua kolom wajib');
+      SnackbarUtils.showError('Peringatan', 'Harap isi semua kolom wajib');
       return false;
     }
     return true;
