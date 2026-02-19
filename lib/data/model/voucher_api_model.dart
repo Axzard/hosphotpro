@@ -15,6 +15,10 @@ class VoucherApiModel {
   final String namaProfileMikrotik;
   final int idHotspot;
   final String namaServer;
+  final String durasi;
+  final String namaRouter;
+  final String? alamatIp;
+  final int? portApi;
 
   VoucherApiModel({
     required this.idVoucher,
@@ -31,30 +35,39 @@ class VoucherApiModel {
     required this.namaProfileMikrotik,
     required this.idHotspot,
     required this.namaServer,
+    required this.durasi,
+    required this.namaRouter,
+    this.alamatIp,
+    this.portApi,
   });
 
   factory VoucherApiModel.fromJson(Map<String, dynamic> json) {
     return VoucherApiModel(
-      idVoucher: json['id_voucher'] ?? 0,
-      kodeVoucher: json['kode_voucher'] ?? '',
-      passwordVoucher: json['password_voucher'] ?? '',
-      idPaket: json['id_paket'] ?? 0,
-      idRouter: json['id_router'] ?? 0,
-      statusVoucher: json['status_voucher'] ?? 'stok',
-      tanggalAktif: json['tanggal_aktif'] != null
-          ? DateTime.parse(json['tanggal_aktif'])
+      idVoucher: int.tryParse(json['id_voucher']?.toString() ?? '') ?? 0,
+      kodeVoucher: json['kode_voucher']?.toString() ?? '',
+      passwordVoucher: json['password_voucher']?.toString() ?? '',
+      idPaket: int.tryParse(json['id_paket']?.toString() ?? '') ?? 0,
+      idRouter: int.tryParse(json['id_router']?.toString() ?? '') ?? 0,
+      statusVoucher: json['status_voucher']?.toString() ?? 'stok',
+      tanggalAktif: (json['tanggal_aktif'] != null &&
+              json['tanggal_aktif'].toString().isNotEmpty)
+          ? DateTime.tryParse(json['tanggal_aktif'].toString())
           : null,
-      tanggalExpired: json['tanggal_expired'] != null
-          ? DateTime.parse(json['tanggal_expired'])
+      tanggalExpired: (json['tanggal_expired'] != null &&
+              json['tanggal_expired'].toString().isNotEmpty)
+          ? DateTime.tryParse(json['tanggal_expired'].toString())
           : null,
-      dibuatPada: DateTime.parse(
-        json['dibuat_pada'] ?? DateTime.now().toIso8601String(),
-      ),
-      namaPaket: json['nama_paket'] ?? '',
+      dibuatPada: DateTime.tryParse(json['dibuat_pada']?.toString() ?? '') ??
+          DateTime.now(),
+      namaPaket: json['nama_paket']?.toString() ?? '',
       harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
-      namaProfileMikrotik: json['nama_profile_mikrotik'] ?? '',
-      idHotspot: json['id_hotspot'] ?? 0,
-      namaServer: json['nama_server'] ?? '',
+      namaProfileMikrotik: json['nama_profile_mikrotik']?.toString() ?? '',
+      idHotspot: int.tryParse(json['id_hotspot']?.toString() ?? '') ?? 0,
+      namaServer: json['nama_server']?.toString() ?? '',
+      durasi: json['durasi']?.toString() ?? '',
+      namaRouter: json['nama_router']?.toString() ?? '',
+      alamatIp: json['alamat_ip']?.toString(),
+      portApi: int.tryParse(json['port_api']?.toString() ?? ''),
     );
   }
 
@@ -74,6 +87,10 @@ class VoucherApiModel {
       namaProfileMikrotik: namaProfileMikrotik,
       idHotspot: idHotspot,
       namaServer: namaServer,
+      durasi: durasi,
+      namaRouter: namaRouter,
+      alamatIp: alamatIp,
+      portApi: portApi,
     );
   }
 }

@@ -1,33 +1,24 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:get/get.dart';
-import 'package:hosphotpro/data/services/token_service.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:socket_io_client/socket_io_client.dart' as socket_io;
 import '../../config/api_config.dart';
-
+import '../../data/services/token_service.dart';
 
 class WebSocketService extends GetxService {
   final TokenService _tokenService = Get.find<TokenService>();
-  WebSocketChannel? _channel;
+  socket_io.Socket? _socket;
+  final _instanceId = DateTime.now().millisecondsSinceEpoch % 10000;
 
-  String get _url {
-    // Convert http/https to ws/wss
-    final baseUrl = ApiConfig.baseUrl;
-    String wsBase;
-    if (baseUrl.startsWith('https://')) {
-      wsBase = baseUrl.replaceFirst('https://', 'wss://');
-    } else {
-      wsBase = baseUrl.replaceFirst('http://', 'ws://');
-    }
-
-    final token = _tokenService.getToken();
-    // Reverting to root path but keeping token
-    return '$wsBase?token=$token';
-  }
+  // Event Bus for robust listeners
+  final _eventBus = GetStream<Map<String, dynamic>>();
+  Stream<Map<String, dynamic>> get eventStream => _eventBus.stream;
 
   // Connection state
   final isConnected = false.obs;
-  Timer? _reconnectTimer;
+
+  // Real-time events
+  final lastEvent = ''.obs;
+  final lastData = Rxn<dynamic>();
+  final eventTrigger = 0.obs; // Incremented on every event to force 'ever' triggers
 
   // Global Streams
   final routerStatus = <String, dynamic>{}.obs;
@@ -42,98 +33,131 @@ class WebSocketService extends GetxService {
 
   @override
   void onClose() {
-    _channel?.sink.close();
-    _reconnectTimer?.cancel();
+    _socket?.disconnect();
+    _socket?.dispose();
     super.onClose();
   }
 
   void connect() {
     if (!_tokenService.hasToken()) {
-      print('⚠️ WebSocket: No token available, skipping connection.');
+      print('⚠️ [WS-$_instanceId] No token, skipping connection.');
       return;
     }
 
+    // Ensure we don't leak sockets on multiple calls
+    if (_socket != null) {
+      print('🔌 [WS-$_instanceId] Disconnecting existing socket...');
+      _socket?.disconnect();
+      _socket?.dispose();
+    }
+
+    final token = _tokenService.getToken();
+    final url = ApiConfig.baseUrl;
+
+    print('🌐 [WS-$_instanceId] Connecting to Socket.io: $url');
+
     try {
-      print('🌐 Connecting to WebSocket: $_url');
-      
-      // Use a more robust connection with headers if needed
-      // and explicit ping interval to keep connection alive
-      _channel = WebSocketChannel.connect(
-        Uri.parse(_url),
-        // protocols: ['json'], // Optional, some backends expect this
+      _socket = socket_io.io(url, 
+        socket_io.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect()
+          .setAuth({'token': token})
+          .build()
       );
 
-      // Ping interval to keep connection alive (optional but recommended for stability)
-      // IOWebSocketChannel supports pingInterval but standard WebSocketChannel might not directly.
-      // However, we can use the stream listen normally.
+      _socket!.onAny((event, data) {
+        _onAnyHandler(event, data);
+      });
 
-      _channel!.stream.listen(
-        (message) {
-          isConnected.value = true;
-          _handleMessage(message);
-        },
-        onDone: () {
-          print('❌ WebSocket closed');
-          isConnected.value = false;
-          _scheduleReconnect();
-        },
-        onError: (error) {
-          print('🛑 WebSocket error: $error');
-          isConnected.value = false;
-          _scheduleReconnect();
-        },
-        cancelOnError: true,
-      );
+      _socket!.onConnect((_) {
+        print('✅ [WS-$_instanceId] Connected: ${_socket!.id}');
+        isConnected.value = true;
+      });
+
+      _socket!.onDisconnect((_) {
+        print('🔌 [WS-$_instanceId] Disconnected');
+        isConnected.value = false;
+      });
+
+      _socket!.onConnectError((err) {
+        print('❌ [WS-$_instanceId] Connect error: $err');
+        isConnected.value = false;
+      });
+
+      _socket!.onError((err) {
+        print('🛑 [WS-$_instanceId] General error: $err');
+      });
+
+      // Specific business logic listeners
+      _socket!.on('router_stats', (payload) => _onAnyHandler('router_stats', payload));
+      _socket!.on('active_users', (payload) => _onAnyHandler('active_users', payload));
+      _socket!.on('logs', (payload) => _onAnyHandler('logs', payload));
+
+      _socket!.connect();
+
     } catch (e) {
-      print('WebSocket connection failed: $e');
+      print('❌ [WS-$_instanceId] Initialization failed: $e');
       isConnected.value = false;
-      _scheduleReconnect();
     }
   }
 
-  void _scheduleReconnect() {
-    if (_reconnectTimer?.isActive ?? false) return;
+  void _onAnyHandler(dynamic event, dynamic data) {
+    if (event == null) return;
+    final eventName = event.toString();
+    
+    // Technical events filtering for logging
+    if (eventName == 'ping' || eventName == 'pong') return;
 
-    print('Scheduling reconnect in 5 seconds...');
-    _reconnectTimer = Timer(const Duration(seconds: 5), () {
-      connect();
-    });
-  }
+    print('📡 [WS-$_instanceId] Event: $eventName');
+    
+    // Update reactive variables
+    lastEvent.value = eventName;
+    lastData.value = data;
+    eventTrigger.value++;
 
-  void _handleMessage(dynamic message) {
-    try {
-      final data = jsonDecode(message);
-
-      // Expected format: { "type": "...", "data": ... }
-      if (data is Map<String, dynamic>) {
-        final type = data['type'];
-        final payload = data['data'];
-
-        switch (type) {
-          case 'router_stats':
-            routerStatus.value = payload;
-            break;
-          case 'active_users':
-            activeUserStats.value = payload;
-            break;
-          case 'logs':
-            if (payload is List) {
-              latestLogs.assignAll(payload.map((e) => e.toString()).toList());
-            }
-            break;
-          default:
-            print('Unknown message type: $type');
-        }
-      }
-    } catch (e) {
-      print('Error parsing WebSocket message: $e');
+    // Broadcast to Event Bus if it's a business event
+    if (isBusinessEvent(eventName)) {
+      _eventBus.add({'event': eventName, 'data': data});
+    }
+    
+    // Immediate specific updates
+    if (eventName == 'router_stats') routerStatus.value = data;
+    if (eventName == 'active_users') activeUserStats.value = data;
+    if (eventName == 'logs' && data is List) {
+      latestLogs.assignAll(data.map((e) => e.toString()).toList());
     }
   }
 
-  void sendMessage(String type, dynamic data) {
-    if (isConnected.value && _channel != null) {
-      final message = jsonEncode({'type': type, 'data': data});
-      _channel!.sink.add(message);
+  void sendMessage(String event, dynamic data) {
+    if (isConnected.value && _socket != null) {
+      _socket!.emit(event, data);
     }
+  }
+
+  void _notifyDataUpdate(String event, dynamic data) {
+    _onAnyHandler(event, data);
+  }
+
+  /// Returns true if the event is a data/business event, not a technical socket event.
+  bool isBusinessEvent(String event) {
+    if (event.isEmpty) return false;
+    
+    const technicalEvents = [
+      'connect', 
+      'connect_error', 
+      'connect_timeout', 
+      'connecting',
+      'disconnect', 
+      'error', 
+      'reconnect', 
+      'reconnect_attempt',
+      'reconnect_failed', 
+      'reconnect_error', 
+      'reconnecting', 
+      'ping', 
+      'pong'
+    ];
+    
+    return !technicalEvents.contains(event.toLowerCase());
   }
 }

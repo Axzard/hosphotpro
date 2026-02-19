@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../../domain/models/subscription_package_model.dart';
 import '../../../domain/models/subscription_repository.dart';
@@ -8,10 +9,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../config/routing/app_routes.dart';
 import '../midtrans_webview_screen.dart';
 import '../../../data/services/payment_persistence_service.dart';
+import '../../../core/services/websocket_service.dart';
 
 class SubscriptionViewModel extends GetxController {
   final SubscriptionRepository _subscriptionRepository;
   final PaymentPersistenceService _paymentPersistenceService = Get.find<PaymentPersistenceService>();
+  final _webSocketService = Get.find<WebSocketService>();
 
   SubscriptionViewModel(this._subscriptionRepository);
 
@@ -29,11 +32,23 @@ class SubscriptionViewModel extends GetxController {
   final selectedDuration = 1.obs;
   final selectedPaymentMethod = ''.obs;
 
+  StreamSubscription? _refreshSub;
+
   @override
   void onInit() {
     super.onInit();
     loadPackages();
     loadMySubscriptions();
+    _initRealtimeListeners();
+  }
+
+  void _initRealtimeListeners() {
+    print('🚀 [SubscriptionVM] Realtime listeners initialized');
+    _refreshSub = _webSocketService.eventStream.listen((eventData) {
+      final event = eventData['event'] ?? '';
+      print('💳 [SubscriptionVM] Refreshing due to Event: $event');
+      loadMySubscriptions();
+    });
   }
 
   Future<void> loadPackages() async {
@@ -295,7 +310,9 @@ class SubscriptionViewModel extends GetxController {
     Get.toNamed(Routes.PACKAGES);
   }
 
-  void navigateToTransactions() {
-    Get.snackbar('Informasi', 'Fitur riwayat transaksi akan segera hadir');
+  @override
+  void onClose() {
+    _refreshSub?.cancel();
+    super.onClose();
   }
 }

@@ -1,6 +1,6 @@
 class VoucherPackageModel {
   final int id;
-  final int idRouter;
+  final int? idRouter;
   final int idHotspot;
   final String namaPaket;
   final String durasi;
@@ -13,7 +13,7 @@ class VoucherPackageModel {
 
   VoucherPackageModel({
     required this.id,
-    required this.idRouter,
+    this.idRouter,
     required this.idHotspot,
     required this.namaPaket,
     required this.durasi,

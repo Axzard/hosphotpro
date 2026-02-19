@@ -25,9 +25,10 @@ class HotspotApiModel {
     );
   }
 
-  HotspotModel toDomain() {
+  HotspotModel toDomain({int? idRouterOverride}) {
     return HotspotModel(
       idHotspot: idHotspot,
+      idRouter: idRouterOverride ?? 0,
       namaServer: namaServer,
       interface: interface,
       statusHotspot: statusHotspot,

@@ -9,17 +9,33 @@ class VoucherRepositoryImpl implements VoucherRepository {
   final VoucherService _voucherService = Get.find<VoucherService>();
 
   @override
-  Future<List<VoucherModel>> getVouchersByRouter(int idRouter) async {
-    final response = await _voucherService.getVouchersByRouter(idRouter);
-    if (response.success && response.data != null) {
-      return response.data!.map((apiModel) => apiModel.toDomain()).toList();
+  Future<List<VoucherModel>> getVouchersByHotspot(int idHotspot) async {
+    // Since there's no direct/working getVouchersByHotspot endpoint (404),
+    // we fetch vouchers for all packages in this hotspot and combine them.
+    final packagesResponse = await _voucherService.getVoucherPackages(idHotspot);
+    if (!packagesResponse.success || packagesResponse.data == null) {
+      throw Exception(packagesResponse.message);
     }
-    throw Exception(response.message);
+
+    final packages = packagesResponse.data!;
+    final List<VoucherModel> allVouchers = [];
+
+    // Fetch vouchers for all packages in parallel for better performance
+    final voucherFutures = packages.map((pkg) => _voucherService.getVouchersByPackage(pkg.id));
+    final voucherResponses = await Future.wait(voucherFutures);
+
+    for (var response in voucherResponses) {
+      if (response.success && response.data != null) {
+        allVouchers.addAll(response.data!.map((apiModel) => apiModel.toDomain()));
+      }
+    }
+
+    return allVouchers;
   }
 
   @override
-  Future<VoucherModel?> getVoucherDetail(int id, int idRouter) async {
-    final response = await _voucherService.getVoucherDetail(id, idRouter);
+  Future<VoucherModel?> getVoucherDetail(int id) async {
+    final response = await _voucherService.getVoucherDetail(id);
     if (response.success) {
       return response.data?.toDomain();
     }
@@ -27,8 +43,8 @@ class VoucherRepositoryImpl implements VoucherRepository {
   }
 
   @override
-  Future<VoucherModel?> createVoucher(int idPaket, int idRouter) async {
-    final response = await _voucherService.createVoucher(idPaket, idRouter);
+  Future<VoucherModel?> createVoucher(int idPaket) async {
+    final response = await _voucherService.createVoucher(idPaket);
     if (response.success) {
       return response.data?.toDomain();
     }
@@ -38,12 +54,10 @@ class VoucherRepositoryImpl implements VoucherRepository {
   @override
   Future<List<VoucherModel>> createVoucherBulk(
     int idPaket,
-    int idRouter,
     int jumlah,
   ) async {
     final response = await _voucherService.createVoucherBulk(
       idPaket,
-      idRouter,
       jumlah,
     );
     if (response.success && response.data != null) {
@@ -53,14 +67,14 @@ class VoucherRepositoryImpl implements VoucherRepository {
   }
 
   @override
-  Future<bool> deleteVoucher(int id, int idRouter) async {
-    final response = await _voucherService.deleteVoucher(id, idRouter);
+  Future<bool> deleteVoucher(int id) async {
+    final response = await _voucherService.deleteVoucher(id);
     return response.success;
   }
 
   @override
-  Future<List<VoucherPackageModel>> getVoucherPackages(int idRouter) async {
-    final response = await _voucherService.getVoucherPackages(idRouter);
+  Future<List<VoucherPackageModel>> getVoucherPackages(int idHotspot) async {
+    final response = await _voucherService.getVoucherPackages(idHotspot);
     if (response.success && response.data != null) {
       return response.data!.map((apiModel) => apiModel.toDomain()).toList();
     }

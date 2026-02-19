@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../../config/routing/app_routes.dart';
 import '../../../core/utils/snackbar_utils.dart';
@@ -28,6 +29,8 @@ class DashboardViewModel extends GetxController {
   final cpuLoad = 0.0.obs;
   final memoryUsage = 0.0.obs;
 
+  StreamSubscription? _refreshSub;
+
   @override
   void onInit() {
     super.onInit();
@@ -36,6 +39,16 @@ class DashboardViewModel extends GetxController {
   }
 
   void _initRealtimeListeners() {
+    print('🚀 [DashboardVM] Realtime listeners initialized');
+    // Global data refresh via Event Bus
+    _refreshSub = _webSocketService.eventStream.listen((eventData) {
+      final event = eventData['event'] ?? '';
+      print('🏠 [DashboardVM] Refreshing due to Event: $event');
+      fetchDashboardData();
+    });
+
+    // Keep reactive specific listeners for HUD stats
+
     // Listen to WebSocket active user stats
     ever(_webSocketService.activeUserStats, (stats) {
       if (stats.containsKey('count')) {
@@ -76,11 +89,18 @@ class DashboardViewModel extends GetxController {
       // Assume all are offline initially or wait for WS
       // onlineRouterCount.value = 0; 
 
-      // Fetch Voucher Count (Initial)
+      // Fetch Voucher Count (Initial - from first hotspot of first router)
       if (routers.isNotEmpty) {
         final idRouter = int.tryParse(routers.first.id) ?? 0;
-        final vouchers = await _voucherRepository.getVouchersByRouter(idRouter);
-        voucherCount.value = vouchers.length;
+        final hotspots = await _routerRepository.getHotspots(idRouter);
+        if (hotspots.isNotEmpty) {
+          final vouchers = await _voucherRepository.getVouchersByHotspot(
+            hotspots.first.idHotspot,
+          );
+          voucherCount.value = vouchers.length;
+        } else {
+          voucherCount.value = 0;
+        }
       } else {
         voucherCount.value = 0;
       }
@@ -136,5 +156,11 @@ class DashboardViewModel extends GetxController {
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal logout: $e');
     }
+  }
+
+  @override
+  void onClose() {
+    _refreshSub?.cancel();
+    super.onClose();
   }
 }

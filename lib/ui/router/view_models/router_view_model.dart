@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../../../domain/models/router_model.dart';
 import '../../../../domain/models/router_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
+import '../../../../core/services/websocket_service.dart';
 
 class RouterViewModel extends GetxController {
   final RouterRepository _routerRepository;
+  final _webSocketService = Get.find<WebSocketService>();
 
   RouterViewModel(this._routerRepository);
 
@@ -23,10 +26,22 @@ class RouterViewModel extends GetxController {
   final RxBool isEditing = false.obs;
   final RxString editingId = ''.obs;
 
+  StreamSubscription? _refreshSub;
+
   @override
   void onInit() {
     super.onInit();
     loadRouters();
+    _initRealtimeListeners();
+  }
+
+  void _initRealtimeListeners() {
+    print('🚀 [RouterVM] Realtime listeners initialized');
+    _refreshSub = _webSocketService.eventStream.listen((eventData) {
+      final event = eventData['event'] ?? '';
+      print('📟 [RouterVM] Refreshing due to Event: $event');
+      loadRouters();
+    });
   }
 
   Future<void> loadRouters() async {
@@ -126,6 +141,7 @@ class RouterViewModel extends GetxController {
 
   @override
   void onClose() {
+    _refreshSub?.cancel();
     namaController.dispose();
     ipController.dispose();
     portController.dispose();

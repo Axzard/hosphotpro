@@ -27,20 +27,22 @@ class ApiConfig {
   static const String createVoucher = '$baseUrl/api/voucher';
   static const String createVoucherBulk = '$baseUrl/api/voucher/bulk';
   static const String voucherPackages = '$baseUrl/api/paket-voucher';
-  static String packagesByRouter(int idRouter) =>
-      '$baseUrl/api/paket-voucher?id_router=$idRouter';
+  static String packagesByHotspot(int idHotspot) =>
+      '$baseUrl/api/paket-voucher?id_hotspot=$idHotspot';
   static String voucherPackageDetail(int id) =>
       '$baseUrl/api/paket-voucher/$id';
   static String updateVoucherPackage(int id) =>
       '$baseUrl/api/paket-voucher/$id';
   static String deleteVoucherPackage(int id) =>
       '$baseUrl/api/paket-voucher/$id';
-  static String vouchersByRouter(int idRouter) =>
-      '$baseUrl/api/voucher/router/$idRouter';
-  static String voucherDetail(int id, int idRouter) =>
-      '$baseUrl/api/voucher/$id?id_router=$idRouter';
-  static String deleteVoucher(int id, int idRouter) =>
-      '$baseUrl/api/voucher/$id?id_router=$idRouter';
+  static String vouchersByPackage(int idPaket) =>
+      '$baseUrl/api/voucher/paket/$idPaket';
+  static String vouchersByHotspot(int idHotspot) =>
+      '$baseUrl/api/voucher/hotspot/$idHotspot'; // Keeping as a guess if package-based is too slow
+  static String voucherDetail(int id) =>
+      '$baseUrl/api/voucher/$id';
+  static String deleteVoucher(int id) =>
+      '$baseUrl/api/voucher/$id';
 
   // Headers
   static Map<String, String> headers({String? token}) {

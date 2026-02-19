@@ -138,9 +138,9 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
             ],
           ),
           const SizedBox(height: 24),
-          // Router Selector
+          // Hotspot Selector
           Obx(() {
-            if (controller.routers.isEmpty) {
+            if (controller.hotspots.isEmpty) {
               return const SizedBox.shrink();
             }
             return Container(
@@ -152,25 +152,29 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: controller.selectedRouter.value?.id,
+                child: DropdownButton<int>(
+                  value: controller.selectedHotspot.value?.idHotspot,
                   dropdownColor: const Color(0xFF131E29),
                   icon: const Icon(
                     Icons.arrow_drop_down,
                     color: Colors.white70,
                   ),
+                  hint: Text(
+                    'Pilih Hotspot',
+                    style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                  ),
                   style: GoogleFonts.plusJakartaSans(color: Colors.white),
-                  items: controller.routers.map((router) {
-                    return DropdownMenuItem<String>(
-                      value: router.id,
-                      child: Text(router.namaRouter),
+                  items: controller.hotspots.map((hotspot) {
+                    return DropdownMenuItem<int>(
+                      value: hotspot.idHotspot,
+                      child: Text('Hotspot: ${hotspot.namaServer}'),
                     );
                   }).toList(),
                   onChanged: (val) {
-                    final router = controller.routers.firstWhereOrNull(
-                      (r) => r.id == val,
+                    final hotspot = controller.hotspots.firstWhereOrNull(
+                      (h) => h.idHotspot == val,
                     );
-                    controller.onRouterChanged(router);
+                    controller.onHotspotChanged(hotspot);
                   },
                 ),
               ),

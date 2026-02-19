@@ -2,7 +2,7 @@ import '../../domain/models/voucher_package_model.dart';
 
 class VoucherPackageApiModel {
   final int id;
-  final int idRouter;
+  final int? idRouter;
   final int idHotspot;
   final String namaPaket;
   final String durasi;
@@ -15,7 +15,7 @@ class VoucherPackageApiModel {
 
   VoucherPackageApiModel({
     required this.id,
-    required this.idRouter,
+    this.idRouter,
     required this.idHotspot,
     required this.namaPaket,
     required this.durasi,
@@ -29,23 +29,22 @@ class VoucherPackageApiModel {
 
   factory VoucherPackageApiModel.fromJson(Map<String, dynamic> json) {
     return VoucherPackageApiModel(
-      id: json['id_paket'] ?? json['id'] ?? 0,
-      idRouter: json['id_router'] ?? 0,
-      idHotspot: json['id_hotspot'] ?? 0,
-      namaPaket: json['nama_paket'] ?? '',
-      durasi: json['durasi'] ?? '',
+      id: int.tryParse(json['id_paket']?.toString() ?? json['id']?.toString() ?? '') ?? 0,
+      idRouter: int.tryParse(json['id_router']?.toString() ?? ''),
+      idHotspot: int.tryParse(json['id_hotspot']?.toString() ?? '') ?? 0,
+      namaPaket: json['nama_paket']?.toString() ?? '',
+      durasi: json['durasi']?.toString() ?? '',
       harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
-      namaProfileMikrotik: json['nama_profile_mikrotik'] ?? '',
-      prefix: json['prefix'] ?? '',
-      panjangUsername: json['panjang_username'] ?? 4,
-      formatKarakter: json['format_karakter'] ?? 'mix',
-      dataLimitMb: json['data_limit_mb'] ?? 0,
+      namaProfileMikrotik: json['nama_profile_mikrotik']?.toString() ?? '',
+      prefix: json['prefix']?.toString() ?? '',
+      panjangUsername: int.tryParse(json['panjang_username']?.toString() ?? '') ?? 4,
+      formatKarakter: json['format_karakter']?.toString() ?? 'mix',
+      dataLimitMb: int.tryParse(json['data_limit_mb']?.toString() ?? '') ?? 0,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id_router': idRouter,
       'id_hotspot': idHotspot,
       'nama_paket': namaPaket,
       'prefix': prefix,
@@ -53,7 +52,7 @@ class VoucherPackageApiModel {
       'format_karakter': formatKarakter,
       'durasi': durasi,
       'data_limit_mb': dataLimitMb,
-      'harga': harga,
+      'harga': harga.toInt() == harga ? harga.toInt() : harga,
       'nama_profile_mikrotik': namaProfileMikrotik,
     };
   }

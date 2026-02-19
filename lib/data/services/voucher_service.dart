@@ -7,17 +7,21 @@ import '../model/voucher_package_api_model.dart';
 import 'token_service.dart';
 
 class VoucherService extends GetxService {
-  final Dio _dio = Dio();
+  final Dio _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
+    sendTimeout: const Duration(seconds: 30),
+  ));
   final TokenService _tokenService = Get.find<TokenService>();
 
   /// GET /api/paket-voucher/router/{idRouter}
   Future<ApiResponse<List<VoucherPackageApiModel>>> getVoucherPackages(
-    int idRouter,
+    int idHotspot,
   ) async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.get(
-        ApiConfig.packagesByRouter(idRouter),
+        ApiConfig.packagesByHotspot(idHotspot),
         options: Options(
           headers: ApiConfig.headers(token: token),
           validateStatus: (status) => status! < 600,
@@ -103,10 +107,12 @@ class VoucherService extends GetxService {
           data: createdPackage,
         );
       } else {
-        final errorMsg =
-            response.data?['pesan'] ??
-            response.data?['detail'] ??
-            'Server Error (${response.statusCode})';
+        String errorMsg = 'Server Error (${response.statusCode})';
+        if (response.data is Map<String, dynamic>) {
+          errorMsg = response.data['pesan'] ?? response.data['detail'] ?? errorMsg;
+        } else if (response.data is String && response.data.toString().isNotEmpty) {
+          errorMsg = response.data.toString();
+        }
         return ApiResponse(success: false, message: errorMsg);
       }
     } on DioException catch (e) {
@@ -207,20 +213,17 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// GET /api/voucher/router/{idRouter}
-  Future<ApiResponse<List<VoucherApiModel>>> getVouchersByRouter(
-    int idRouter,
+  /// GET /api/voucher/paket/{idPaket}
+  Future<ApiResponse<List<VoucherApiModel>>> getVouchersByPackage(
+    int idPaket,
   ) async {
     try {
       final token = _tokenService.getToken();
-      print('ItemsByRouter Token: $token');
-      if (token == null) print('WARNING: Token is null');
-
       final response = await _dio.get(
-        ApiConfig.vouchersByRouter(idRouter),
+        ApiConfig.vouchersByPackage(idPaket),
         options: Options(
           headers: ApiConfig.headers(token: token),
-          validateStatus: (status) => status! < 500,
+          validateStatus: (status) => status! < 600,
         ),
       );
 
@@ -235,35 +238,71 @@ class VoucherService extends GetxService {
           data: vouchers,
         );
       } else {
+        final errorMsg = response.data?['pesan'] ??
+            response.data?['detail'] ??
+            'Status code: ${response.statusCode}';
         return ApiResponse(
           success: false,
-          message: response.data['pesan'] ?? 'Failed to fetch vouchers',
+          message: errorMsg,
           data: [],
         );
       }
-    } on DioException catch (e) {
-      return ApiResponse(
-        success: false,
-        message: 'Network error: ${e.message}',
-        data: [],
-      );
     } catch (e) {
-      return ApiResponse(success: false, message: 'Error: $e', data: []);
+      return ApiResponse(success: false, message: e.toString(), data: []);
     }
   }
 
-  /// GET /api/voucher/{id}?id_router={idRouter}
-  Future<ApiResponse<VoucherApiModel?>> getVoucherDetail(
-    int id,
-    int idRouter,
+  /// GET /api/voucher?id_hotspot={idHotspot}
+  // This might be deprecated/non-existent based on 404, we'll keep it for now but prioritize byPackage
+  Future<ApiResponse<List<VoucherApiModel>>> getVouchersByHotspot(
+    int idHotspot,
   ) async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.get(
-        ApiConfig.voucherDetail(id, idRouter),
+        ApiConfig.vouchersByHotspot(idHotspot),
         options: Options(
           headers: ApiConfig.headers(token: token),
-          validateStatus: (status) => status! < 500,
+          validateStatus: (status) => status! < 600,
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final List<dynamic> data = response.data['data'] ?? [];
+        final vouchers = data
+            .map((json) => VoucherApiModel.fromJson(json))
+            .toList();
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Vouchers fetched',
+          data: vouchers,
+        );
+      } else {
+        final errorMsg = response.data?['pesan'] ??
+            response.data?['detail'] ??
+            'Status code: ${response.statusCode}';
+        return ApiResponse(
+          success: false,
+          message: errorMsg,
+          data: [],
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString(), data: []);
+    }
+  }
+
+  /// GET /api/voucher/{id}
+  Future<ApiResponse<VoucherApiModel?>> getVoucherDetail(
+    int id,
+  ) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.voucherDetail(id),
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 600,
         ),
       );
 
@@ -276,11 +315,6 @@ class VoucherService extends GetxService {
           message: response.data['pesan'] ?? 'Voucher not found',
         );
       }
-    } on DioException catch (e) {
-      return ApiResponse(
-        success: false,
-        message: 'Network error: ${e.message}',
-      );
     } catch (e) {
       return ApiResponse(success: false, message: 'Error: $e');
     }
@@ -289,18 +323,15 @@ class VoucherService extends GetxService {
   /// POST /api/voucher  (single)
   Future<ApiResponse<VoucherApiModel?>> createVoucher(
     int idPaket,
-    int idRouter,
   ) async {
     try {
       final token = _tokenService.getToken();
-      print('CreateVoucher Token: $token');
-
       final response = await _dio.post(
         ApiConfig.createVoucher,
-        data: {'id_paket': idPaket, 'id_router': idRouter},
+        data: {'id_paket': idPaket},
         options: Options(
           headers: ApiConfig.headers(token: token),
-          validateStatus: (status) => status! < 500,
+          validateStatus: (status) => status! < 600,
         ),
       );
 
@@ -321,11 +352,6 @@ class VoucherService extends GetxService {
               response.data['pesan'] ?? response.data['detail'] ?? 'Failed',
         );
       }
-    } on DioException catch (e) {
-      return ApiResponse(
-        success: false,
-        message: 'Network error: ${e.message}',
-      );
     } catch (e) {
       return ApiResponse(success: false, message: 'Error: $e');
     }
@@ -334,17 +360,16 @@ class VoucherService extends GetxService {
   /// POST /api/voucher/bulk
   Future<ApiResponse<List<VoucherApiModel>>> createVoucherBulk(
     int idPaket,
-    int idRouter,
     int jumlah,
   ) async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.post(
         ApiConfig.createVoucherBulk,
-        data: {'id_paket': idPaket, 'id_router': idRouter, 'jumlah': jumlah},
+        data: {'id_paket': idPaket, 'jumlah': jumlah},
         options: Options(
           headers: ApiConfig.headers(token: token),
-          validateStatus: (status) => status! < 500,
+          validateStatus: (status) => status! < 600,
         ),
       );
 
@@ -368,26 +393,20 @@ class VoucherService extends GetxService {
           data: [],
         );
       }
-    } on DioException catch (e) {
-      return ApiResponse(
-        success: false,
-        message: 'Network error: ${e.message}',
-        data: [],
-      );
     } catch (e) {
       return ApiResponse(success: false, message: 'Error: $e', data: []);
     }
   }
 
-  /// DELETE /api/voucher/{id}?id_router={idRouter}
-  Future<ApiResponse<void>> deleteVoucher(int id, int idRouter) async {
+  /// DELETE /api/voucher/{id}
+  Future<ApiResponse<void>> deleteVoucher(int id) async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.delete(
-        ApiConfig.deleteVoucher(id, idRouter),
+        ApiConfig.deleteVoucher(id),
         options: Options(
           headers: ApiConfig.headers(token: token),
-          validateStatus: (status) => status! < 500,
+          validateStatus: (status) => status! < 600,
         ),
       );
 
@@ -402,11 +421,6 @@ class VoucherService extends GetxService {
           message: response.data['pesan'] ?? 'Failed to delete voucher',
         );
       }
-    } on DioException catch (e) {
-      return ApiResponse(
-        success: false,
-        message: 'Network error: ${e.message}',
-      );
     } catch (e) {
       return ApiResponse(success: false, message: 'Error: $e');
     }

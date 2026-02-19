@@ -35,6 +35,10 @@ class VoucherModel {
   final String namaProfileMikrotik;
   final int idHotspot;
   final String namaServer;
+  final String durasi;
+  final String namaRouter;
+  final String? alamatIp;
+  final int? portApi;
 
   VoucherModel({
     required this.idVoucher,
@@ -51,6 +55,10 @@ class VoucherModel {
     required this.namaProfileMikrotik,
     required this.idHotspot,
     required this.namaServer,
+    required this.durasi,
+    required this.namaRouter,
+    this.alamatIp,
+    this.portApi,
   });
 
   bool get isStok => statusVoucher == VoucherStatus.stok;

@@ -8,7 +8,11 @@ import '../model/user_subscription_api_model.dart';
 import 'token_service.dart';
 
 class SubscriptionService extends GetxService {
-  final Dio _dio = Dio();
+  final Dio _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
+    sendTimeout: const Duration(seconds: 30),
+  ));
   final TokenService _tokenService = Get.find<TokenService>();
 
   // Get packages from backend API

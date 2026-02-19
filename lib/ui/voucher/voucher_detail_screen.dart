@@ -318,6 +318,30 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ],
           ),
           const SizedBox(height: 28),
+          if (voucher.alamatIp != null) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: _buildInfoItem(
+                    'ALAMAT IP',
+                    voucher.alamatIp!,
+                    Icons.language_outlined,
+                    accentColor,
+                  ),
+                ),
+                if (voucher.portApi != null)
+                  Expanded(
+                    child: _buildInfoItem(
+                      'PORT API',
+                      voucher.portApi!.toString(),
+                      Icons.settings_input_component_outlined,
+                      accentColor,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 28),
+          ],
           Divider(color: Colors.white.withValues(alpha: 0.06)),
           const SizedBox(height: 20),
           // Date info

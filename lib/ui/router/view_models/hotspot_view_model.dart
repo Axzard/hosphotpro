@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../../../domain/models/hotspot_model.dart';
 import '../../../../domain/models/router_model.dart';
 import '../../../../domain/models/router_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
+import '../../../../core/services/websocket_service.dart';
 
 class HotspotViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
+  final _webSocketService = Get.find<WebSocketService>();
 
   final RxList<HotspotModel> hotspots = <HotspotModel>[].obs;
   final RxList<RouterModel> routers = <RouterModel>[].obs;
@@ -17,10 +20,22 @@ class HotspotViewModel extends GetxController {
   final namaServerController = TextEditingController();
   final interfaceController = TextEditingController();
 
+  StreamSubscription? _refreshSub;
+
   @override
   void onInit() {
     super.onInit();
     loadRouters();
+    _initRealtimeListeners();
+  }
+
+  void _initRealtimeListeners() {
+    print('🚀 [HotspotVM] Realtime listeners initialized');
+    _refreshSub = _webSocketService.eventStream.listen((eventData) {
+      final event = eventData['event'] ?? '';
+      print('📡 [HotspotVM] Refreshing due to Event: $event');
+      loadHotspots();
+    });
   }
 
   Future<void> loadRouters() async {
@@ -104,6 +119,7 @@ class HotspotViewModel extends GetxController {
 
   @override
   void onClose() {
+    _refreshSub?.cancel();
     namaServerController.dispose();
     interfaceController.dispose();
     super.onClose();

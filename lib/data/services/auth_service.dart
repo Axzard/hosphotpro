@@ -5,7 +5,11 @@ import '../model/api_response.dart';
 import '../../config/api_config.dart';
 
 class AuthService extends GetxService {
-  final Dio _dio = Dio();
+  final Dio _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
+    sendTimeout: const Duration(seconds: 30),
+  ));
 
   // Login - Real API Integration
   Future<ApiResponse<AuthApiModel>> login(String username, String password) async {

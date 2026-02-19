@@ -7,7 +7,11 @@ import '../../config/api_config.dart';
 import 'token_service.dart';
 
 class RouterService extends GetxService {
-  final Dio _dio = Dio();
+  final Dio _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
+    sendTimeout: const Duration(seconds: 30),
+  ));
   final TokenService _tokenService = Get.find<TokenService>();
 
   Future<ApiResponse<List<RouterApiModel>>> getRouters() async {

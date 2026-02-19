@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../view_models/voucher_view_model.dart';
-import '../../../domain/models/router_model.dart';
+import '../../../domain/models/hotspot_model.dart';
 import '../../../domain/models/voucher_package_model.dart';
 import '../../../core/utils/currency_formatter.dart';
 
@@ -107,20 +107,20 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
             const SizedBox(height: 24),
 
             if (!isAddingPackage) ...[
-              // Router Selection
-              _buildLabel('Router'),
+              // Hotspot Selection
+              _buildLabel('Hotspot'),
               const SizedBox(height: 8),
               Obx(
-                () => _buildDropdown<RouterModel>(
-                  value: controller.selectedRouter.value,
-                  hint: 'Pilih Router',
-                  items: controller.routers.map((router) {
-                    return DropdownMenuItem<RouterModel>(
-                      value: router,
-                      child: Text(router.namaRouter),
+                () => _buildDropdown<HotspotModel>(
+                  value: controller.selectedHotspot.value,
+                  hint: 'Pilih Hotspot',
+                  items: controller.hotspots.map((hotspot) {
+                    return DropdownMenuItem<HotspotModel>(
+                      value: hotspot,
+                      child: Text('Hotspot: ${hotspot.namaServer}'),
                     );
                   }).toList(),
-                  onChanged: controller.onRouterChanged,
+                  onChanged: controller.onHotspotChanged,
                 ),
               ),
 
@@ -438,16 +438,16 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
   }
 
   Future<void> _handleCreatePackage() async {
-    final router = controller.selectedRouter.value;
-    if (router == null) {
-      Get.snackbar('Error', 'Pilih router terlebih dahulu');
+    final hotspot = controller.selectedHotspot.value;
+    if (hotspot == null) {
+      Get.snackbar('Error', 'Pilih hotspot terlebih dahulu');
       return;
     }
 
     final newPackage = VoucherPackageModel(
       id: 0,
-      idRouter: int.tryParse(router.id) ?? 0,
-      idHotspot: selectedHotspotId ?? 0,
+      idRouter: hotspot.idRouter,
+      idHotspot: hotspot.idHotspot,
       namaPaket: namaPaketController.text,
       durasi: durasiController.text,
       harga: double.tryParse(hargaController.text) ?? 0,
@@ -460,9 +460,8 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
 
     if (newPackage.namaPaket.isEmpty ||
         newPackage.durasi.isEmpty ||
-        newPackage.namaProfileMikrotik.isEmpty ||
-        newPackage.idHotspot == 0) {
-      Get.snackbar('Error', 'Lengkapi semua field (termasuk Hotspot)');
+        newPackage.namaProfileMikrotik.isEmpty) {
+      Get.snackbar('Error', 'Lengkapi semua field');
       return;
     }
 

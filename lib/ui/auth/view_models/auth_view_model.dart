@@ -4,6 +4,7 @@ import '../../../domain/models/auth_model.dart';
 import '../../../domain/models/auth_repository.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../config/routing/app_pages.dart';
+import '../../../core/services/websocket_service.dart';
 
 class AuthViewModel extends GetxController {
   final AuthRepository _authRepository;
@@ -42,6 +43,8 @@ class AuthViewModel extends GetxController {
 
       if (response.success && response.data != null) {
         user.value = response.data;
+        // Trigger WebSocket connection after login
+        Get.find<WebSocketService>().connect();
         Get.offAllNamed(Routes.DASHBOARD);
       } else {
         errorMessage.value = _translateErrorMessage(response.message);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../../config/routing/app_routes.dart';
 import '../../../domain/models/voucher_model.dart';
@@ -10,10 +11,12 @@ import '../../../core/utils/snackbar_utils.dart';
 // import '../../../domain/models/subscription_package_model.dart'; // No longer used for hotspot vouchers
 // import '../../../domain/models/subscription_repository.dart'; // No longer used for hotspot vouchers
 import '../widgets/voucher_print_preview.dart';
+import '../../../core/services/websocket_service.dart';
 
 class VoucherViewModel extends GetxController {
   final VoucherRepository _voucherRepository = Get.find<VoucherRepository>();
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
+  final WebSocketService _webSocketService = Get.find<WebSocketService>();
 
   final vouchers = <VoucherModel>[].obs;
   final routers = <RouterModel>[].obs;
@@ -25,39 +28,69 @@ class VoucherViewModel extends GetxController {
   final count = 1.obs;
 
   // Selected values for dropdowns
-  final selectedRouter = Rxn<RouterModel>();
+  final selectedHotspot = Rxn<HotspotModel>();
   final selectedPaketId = Rxn<int>();
+
+  StreamSubscription? _refreshSub;
 
   @override
   void onInit() {
     super.onInit();
     loadRouters();
+    _initRealtimeListeners();
   }
 
-  /// Load available routers for the dropdown
+  void _initRealtimeListeners() {
+    print('🚀 [VoucherVM] Realtime listeners initialized');
+    _refreshSub = _webSocketService.eventStream.listen((eventData) {
+      final event = eventData['event'] ?? '';
+      print('🎟️ [VoucherVM] Refreshing due to Event: $event');
+      loadVouchers();
+      loadVoucherPackages();
+    });
+  }
+
+  @override
+  void onClose() {
+    _refreshSub?.cancel();
+    super.onClose();
+  }
+
+  /// Load available hotspots aggregated from all routers
   Future<void> loadRouters() async {
     try {
+      isLoading.value = true;
       final result = await _routerRepository.getRouters();
       routers.value = result;
 
-      if (result.isNotEmpty && selectedRouter.value == null) {
-        selectedRouter.value = result.first;
-        await onRouterChanged(result.first);
+      List<HotspotModel> allHotspots = [];
+      for (var router in result) {
+        final idRouter = int.tryParse(router.id) ?? 0;
+        final hotspotResult = await _routerRepository.getHotspots(idRouter);
+        allHotspots.addAll(hotspotResult);
+      }
+      hotspots.assignAll(allHotspots);
+
+      if (hotspots.isNotEmpty && selectedHotspot.value == null) {
+        selectedHotspot.value = hotspots.first;
+        await onHotspotChanged(hotspots.first);
       }
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat daftar router');
+      SnackbarUtils.showError('Error', 'Gagal memuat daftar hotspot');
+    } finally {
+      isLoading.value = false;
     }
   }
 
   Future<void> loadVoucherPackages() async {
-    final router = selectedRouter.value;
-    if (router == null) return;
+    final hotspot = selectedHotspot.value;
+    if (hotspot == null) return;
 
     try {
-      final idRouter = int.tryParse(router.id) ?? 0;
-      final result = await _voucherRepository.getVoucherPackages(idRouter);
+      final idHotspot = hotspot.idHotspot;
+      final result = await _voucherRepository.getVoucherPackages(idHotspot);
       voucherPackages.value = result;
-      print('Loaded ${result.length} voucher packages for router $idRouter');
+      print('Loaded ${result.length} voucher packages for hotspot $idHotspot');
     } catch (e) {
       print('Error loading voucher packages: $e');
       SnackbarUtils.showError('Error', 'Gagal memuat daftar paket: $e');
@@ -65,30 +98,17 @@ class VoucherViewModel extends GetxController {
     }
   }
 
-  Future<void> loadHotspots() async {
-    final router = selectedRouter.value;
-    if (router == null) return;
+  // Hotspots are now loaded during loadRouters (aggregation)
 
-    try {
-      final idRouter = int.tryParse(router.id) ?? 0;
-      final result = await _routerRepository.getHotspots(idRouter);
-      hotspots.value = result;
-      print('Loaded ${result.length} hotspots for router $idRouter');
-    } catch (e) {
-      print('Error loading hotspots: $e');
-      hotspots.clear();
-    }
-  }
-
-  /// Load vouchers for the selected router
+  /// Load vouchers for the selected hotspot
   Future<void> loadVouchers() async {
-    final router = selectedRouter.value;
-    if (router == null) return;
+    final hotspot = selectedHotspot.value;
+    if (hotspot == null) return;
 
     isLoading.value = true;
     try {
-      final idRouter = int.tryParse(router.id) ?? 0;
-      final result = await _voucherRepository.getVouchersByRouter(idRouter);
+      final idHotspot = hotspot.idHotspot;
+      final result = await _voucherRepository.getVouchersByHotspot(idHotspot);
       vouchers.value = result;
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal memuat daftar voucher: $e');
@@ -99,20 +119,18 @@ class VoucherViewModel extends GetxController {
 
   /// Create a single voucher
   Future<void> createVoucher() async {
-    final router = selectedRouter.value;
     final idPaket = selectedPaketId.value;
 
-    if (router == null || idPaket == null) {
-      Get.snackbar('Error', 'Pilih router dan paket terlebih dahulu');
+    if (idPaket == null) {
+      Get.snackbar('Error', 'Pilih paket terlebih dahulu');
       return;
     }
 
     isGenerating.value = true;
     try {
-      final idRouter = int.tryParse(router.id) ?? 0;
-      await _voucherRepository.createVoucher(idPaket, idRouter);
-      SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dibuat');
+      await _voucherRepository.createVoucher(idPaket);
       Get.back(); // Close bottom sheet if open
+      SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dibuat');
       await loadVouchers();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal membuat voucher: $e');
@@ -123,11 +141,10 @@ class VoucherViewModel extends GetxController {
 
   /// Create bulk vouchers
   Future<void> createBulkVoucher() async {
-    final router = selectedRouter.value;
     final idPaket = selectedPaketId.value;
 
-    if (router == null || idPaket == null) {
-      Get.snackbar('Error', 'Pilih router dan paket terlebih dahulu');
+    if (idPaket == null) {
+      Get.snackbar('Error', 'Pilih paket terlebih dahulu');
       return;
     }
 
@@ -138,19 +155,17 @@ class VoucherViewModel extends GetxController {
 
     isGenerating.value = true;
     try {
-      final idRouter = int.tryParse(router.id) ?? 0;
       final result = await _voucherRepository.createVoucherBulk(
         idPaket,
-        idRouter,
         count.value,
       );
 
+      Get.back(); // Close bottom sheet
       SnackbarUtils.showSuccess(
         'Berhasil',
         '${count.value} voucher berhasil dibuat',
       );
 
-      Get.back(); // Close bottom sheet
       await loadVouchers();
 
       // Navigate to print preview if we got vouchers back
@@ -179,15 +194,8 @@ class VoucherViewModel extends GetxController {
 
   /// Delete a voucher
   Future<void> deleteVoucher(int idVoucher) async {
-    final router = selectedRouter.value;
-    if (router == null) return;
-
     try {
-      final idRouter = int.tryParse(router.id) ?? 0;
-      final success = await _voucherRepository.deleteVoucher(
-        idVoucher,
-        idRouter,
-      );
+      final success = await _voucherRepository.deleteVoucher(idVoucher);
       if (success) {
         vouchers.removeWhere((v) => v.idVoucher == idVoucher);
         SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dihapus');
@@ -204,15 +212,14 @@ class VoucherViewModel extends GetxController {
     Get.toNamed(Routes.VOUCHER_DETAIL, arguments: voucher);
   }
 
-  /// Switch selected router and reload vouchers
-  Future<void> onRouterChanged(RouterModel? router) async {
-    if (router == null) return;
-    selectedRouter.value = router;
-    selectedPaketId.value = null; // Clear selected package when router changes
+  /// Switch selected hotspot and reload vouchers
+  Future<void> onHotspotChanged(HotspotModel? hotspot) async {
+    if (hotspot == null) return;
+    selectedHotspot.value = hotspot;
+    selectedPaketId.value = null; // Clear selected package when hotspot changes
     await Future.wait([
       loadVouchers(),
       loadVoucherPackages(),
-      loadHotspots(),
     ]);
   }
 
@@ -231,15 +238,15 @@ class VoucherViewModel extends GetxController {
   }
 
   void _openPrintPreview(List<VoucherModel> vouchersToPrint) {
-    if (selectedRouter.value == null) {
-      SnackbarUtils.showError('Error', 'Router belum dipilih');
+    if (selectedHotspot.value == null) {
+      SnackbarUtils.showError('Error', 'Hotspot belum dipilih');
       return;
     }
 
     Get.to(
       () => VoucherPrintPreview(
         vouchers: vouchersToPrint,
-        routerName: selectedRouter.value!.namaRouter,
+        routerName: selectedHotspot.value!.namaServer,
       ),
     );
   }

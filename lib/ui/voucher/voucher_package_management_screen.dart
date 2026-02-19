@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'view_models/voucher_package_view_model.dart';
 import '../../../domain/models/voucher_package_model.dart';
-import '../../../domain/models/router_model.dart';
 import '../../../domain/models/hotspot_model.dart';
 import 'widgets/voucher_package_header.dart';
 import 'widgets/voucher_package_item_card.dart';
@@ -25,7 +24,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
         child: Column(
           children: [
             const VoucherPackageHeader(accentColor: accentColor),
-            // Router Selector
+            // Hotspot Selector
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
               child: Obx(() => Container(
@@ -36,20 +35,20 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                       border: Border.all(color: Colors.white.withOpacity(0.1)),
                     ),
                     child: DropdownButtonHideUnderline(
-                      child: DropdownButton<RouterModel>(
-                        value: controller.selectedRouter.value,
-                        hint: const Text('Pilih Router', style: TextStyle(color: Colors.white54)),
+                      child: DropdownButton<HotspotModel>(
+                        value: controller.selectedHotspot.value,
+                        hint: const Text('Pilih Hotspot', style: TextStyle(color: Colors.white54)),
                         dropdownColor: cardColor,
                         isExpanded: true,
-                        icon: const Icon(Icons.router, color: accentColor),
+                        icon: const Icon(Icons.wifi_tethering, color: accentColor),
                         style: GoogleFonts.plusJakartaSans(color: Colors.white),
-                        items: controller.routers.map((router) {
-                          return DropdownMenuItem<RouterModel>(
-                            value: router,
-                            child: Text(router.namaRouter),
+                        items: controller.hotspots.map((hotspot) {
+                          return DropdownMenuItem<HotspotModel>(
+                            value: hotspot,
+                            child: Text(hotspot.namaServer),
                           );
                         }).toList(),
-                        onChanged: controller.onRouterChanged,
+                        onChanged: controller.onHotspotFilterChanged,
                       ),
                     ),
                   )),
@@ -161,7 +160,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
               const SizedBox(height: 16),
               _buildTextField(
                 controller.prefixController, 
-                'Format Karakter', 
+                'Karakter Pertama Voucher', 
                 hint: 'WIFI',
               ),
               const SizedBox(height: 16),
@@ -253,31 +252,45 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
   }
 
   Widget _buildFormatKarakterSelector() {
-    return Obx(() => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Format Karakter',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.white70,
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: controller.selectedFormatKarakter.value,
-              hint: const Text('Tipe Karakter', style: TextStyle(color: Colors.white54)),
-              dropdownColor: const Color(0xFF1E293B),
-              isExpanded: true,
-              icon: const Icon(Icons.password, color: Color(0xFF00C2FF)),
-              style: GoogleFonts.plusJakartaSans(color: Colors.white),
-              items: controller.formatKarakterOptions.map((option) {
-                return DropdownMenuItem<String>(
-                  value: option,
-                  child: Text(controller.formatKarakterLabels[option] ?? option),
-                );
-              }).toList(),
-              onChanged: controller.onFormatKarakterChanged,
-            ),
-          ),
-        ));
+        ),
+        const SizedBox(height: 8),
+        Obx(() => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: controller.selectedFormatKarakter.value,
+                  hint: const Text('Pilih Format', style: TextStyle(color: Colors.white54)),
+                  dropdownColor: const Color(0xFF1E293B),
+                  isExpanded: true,
+                  icon: const Icon(Icons.password, color: Color(0xFF00C2FF)),
+                  style: GoogleFonts.plusJakartaSans(color: Colors.white),
+                  items: controller.formatKarakterOptions.map((option) {
+                    return DropdownMenuItem<String>(
+                      value: option,
+                      child: Text(controller.formatKarakterLabels[option] ?? option),
+                    );
+                  }).toList(),
+                  onChanged: controller.onFormatKarakterChanged,
+                ),
+              ),
+            )),
+      ],
+    );
   }
 
   Widget _buildDataLimitField() {
