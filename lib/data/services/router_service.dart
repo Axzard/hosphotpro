@@ -1,4 +1,4 @@
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide FormData;
 import 'package:dio/dio.dart';
 import '../model/router_api_model.dart';
 import '../model/hotspot_api_model.dart';
@@ -272,9 +272,16 @@ class RouterService extends GetxService {
   Future<ApiResponse<void>> syncHotspots(int idRouter) async {
     try {
       final token = _tokenService.getToken();
+      
+      // Using FormData as it's often more compatible with PHP/Laravel backends
+      // that expect specific fields in a multipart or form-encoded way.
+      final formData = FormData.fromMap({
+        'id_router': idRouter,
+      });
+
       final response = await _dio.post(
         ApiConfig.syncHotspots,
-        data: {'id_router': idRouter},
+        data: formData,
         options: Options(
           headers: ApiConfig.headers(token: token),
           validateStatus: (status) => status! < 500,

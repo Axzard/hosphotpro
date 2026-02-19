@@ -9,18 +9,20 @@ import '../../../../domain/models/voucher_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/services/websocket_service.dart';
+import '../../../../core/services/selection_service.dart';
 
 class VoucherPackageViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
   final VoucherRepository _voucherRepository = Get.find<VoucherRepository>();
   final WebSocketService _webSocketService = Get.find<WebSocketService>();
+  final _selectionService = Get.find<SelectionService>();
 
   final RxList<VoucherPackageModel> packages = <VoucherPackageModel>[].obs;
   final RxList<RouterModel> routers = <RouterModel>[].obs;
   final RxList<HotspotModel> hotspots = <HotspotModel>[].obs;
   
-  final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
-  final Rxn<HotspotModel> selectedHotspot = Rxn<HotspotModel>();
+  Rxn<RouterModel> get selectedRouter => _selectionService.selectedRouter;
+  Rxn<HotspotModel> get selectedHotspot => _selectionService.selectedHotspot;
   final RxBool isLoading = false.obs;
   final RxSet<int> deletingPackageIds = <int>{}.obs; // Track IDs being deleted
 
@@ -53,6 +55,36 @@ class VoucherPackageViewModel extends GetxController {
     super.onInit();
     loadRouters();
     _initRealtimeListeners();
+    
+    // Listen to global router changes
+    ever(selectedRouter, (router) {
+      if (router != null) {
+        print('📡 [VoucherPackageVM] Global Router changed: ${router.namaRouter}');
+        final idRouter = int.tryParse(router.id) ?? 0;
+        loadHotspots(idRouter).then((_) {
+          // Double check if we still need to auto-select
+          if (hotspots.isNotEmpty) {
+            final currentHotspot = selectedHotspot.value;
+            // Only reset if current hotspot is null OR belongs to a different router
+            if (currentHotspot == null || currentHotspot.idRouter != idRouter) {
+              print('🔄 [VoucherPackageVM] Resetting hotspot to first in router');
+              selectedHotspot.value = hotspots.first;
+              loadPackages();
+            } else {
+              print('✅ [VoucherPackageVM] Keeping current hotspot selection: ${currentHotspot.namaServer}');
+              loadPackages();
+            }
+          }
+        });
+      }
+    });
+
+    // Listen to global hotspot changes to reload packages
+    ever(selectedHotspot, (hotspot) {
+      if (hotspot != null) {
+        loadPackages();
+      }
+    });
   }
 
   void _initRealtimeListeners() {
@@ -82,18 +114,20 @@ class VoucherPackageViewModel extends GetxController {
       isLoading.value = true;
       final result = await _routerRepository.getRouters();
       routers.assignAll(result);
-      
-      List<HotspotModel> allHotspots = [];
-      for (var router in result) {
-        final idRouter = int.tryParse(router.id) ?? 0;
-        final hotspotResult = await _routerRepository.getHotspots(idRouter);
-        allHotspots.addAll(hotspotResult);
-      }
-      hotspots.assignAll(allHotspots);
 
-      if (hotspots.isNotEmpty && selectedHotspot.value == null) {
-        selectedHotspot.value = hotspots.first;
-        await loadPackages();
+      // We no longer aggregate all hotspots.
+      // Instead, we load hotspots ONLY for the selected router.
+      if (selectedRouter.value != null) {
+        final idRouter = int.tryParse(selectedRouter.value!.id) ?? 0;
+        await loadHotspots(idRouter);
+        
+        // RE-ENTRY FIX: Explicitly load packages if we have a valid selection
+        if (selectedHotspot.value != null) {
+          await loadPackages();
+        }
+      } else if (result.isNotEmpty) {
+        // Fallback: select first router if none selected
+        _selectionService.updateRouter(result.first);
       }
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal memuat data: $e');
@@ -106,13 +140,24 @@ class VoucherPackageViewModel extends GetxController {
     try {
       final result = await _routerRepository.getHotspots(idRouter);
       hotspots.assignAll(result);
+      
+      final currentHotspot = selectedHotspot.value;
+      print('🔍 [VoucherPackageVM] loadHotspots - Current: ${currentHotspot?.namaServer}, Results: ${result.length}');
+
       if (result.isNotEmpty) {
-        selectedHotspot.value = result.first;
+        bool currentStillValid = hotspots.any((h) => h.idHotspot == currentHotspot?.idHotspot);
+        if (currentHotspot == null || !currentStillValid) {
+          print('🔄 [VoucherPackageVM] Selection invalid or null, auto-selecting: ${result.first.namaServer}');
+          selectedHotspot.value = result.first;
+        } else {
+          print('✅ [VoucherPackageVM] Selection still valid: ${currentHotspot.namaServer}');
+        }
       } else {
+        print('⚠️ [VoucherPackageVM] No hotspots found for router $idRouter');
         selectedHotspot.value = null;
       }
     } catch (e) {
-      print('Error loading hotspots: $e');
+      print('❌ [VoucherPackageVM] Error loading hotspots: $e');
     }
   }
 
@@ -131,20 +176,8 @@ class VoucherPackageViewModel extends GetxController {
     }
   }
 
-  Future<void> onRouterChanged(RouterModel? router) async {
-    if (router == null) return;
-    selectedRouter.value = router;
-    final idRouter = int.tryParse(router.id) ?? 0;
-    await loadHotspots(idRouter);
-    
-    // Auto load packages for the first hotspot if available
-    if (hotspots.isNotEmpty) {
-      selectedHotspot.value = hotspots.first;
-      await loadPackages();
-    } else {
-      selectedHotspot.value = null;
-      packages.clear();
-    }
+  void onRouterChanged(RouterModel? router) {
+    _selectionService.updateRouter(router);
   }
 
   Future<void> onHotspotFilterChanged(HotspotModel? hotspot) async {
@@ -154,7 +187,7 @@ class VoucherPackageViewModel extends GetxController {
   }
 
   void onHotspotChanged(HotspotModel? hotspot) {
-    selectedHotspot.value = hotspot;
+    _selectionService.updateHotspot(hotspot);
   }
 
   void onFormatKarakterChanged(String? value) {

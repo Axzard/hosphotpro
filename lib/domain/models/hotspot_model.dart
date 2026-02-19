@@ -14,4 +14,14 @@ class HotspotModel {
     required this.statusHotspot,
     required this.dibuatPada,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HotspotModel &&
+          runtimeType == other.runtimeType &&
+          idHotspot == other.idHotspot;
+
+  @override
+  int get hashCode => idHotspot.hashCode;
 }

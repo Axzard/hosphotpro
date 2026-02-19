@@ -32,7 +32,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                     decoration: BoxDecoration(
                       color: cardColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<HotspotModel>(
@@ -65,7 +65,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.inventory_2_outlined, size: 64, color: Colors.white.withOpacity(0.2)),
+                        Icon(Icons.inventory_2_outlined, size: 64, color: Colors.white.withValues(alpha: 0.2)),
                         const SizedBox(height: 16),
                         Text(
                           'Tidak ada paket voucher',
@@ -140,7 +140,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -228,9 +228,9 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
     return Obx(() => Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<HotspotModel>(
@@ -268,9 +268,9 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
         Obx(() => Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -315,9 +315,9 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
             height: 56,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: Obx(() => DropdownButtonHideUnderline(
               child: DropdownButton<String>(
@@ -412,7 +412,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

@@ -7,6 +7,7 @@ import '../../../domain/models/voucher_repository.dart';
 import '../../../domain/models/subscription_repository.dart';
 import '../../../domain/models/auth_repository.dart';
 import '../../../core/services/websocket_service.dart';
+import '../../../core/services/selection_service.dart';
 import '../../../domain/models/router_model.dart';
 import '../../../domain/models/user_subscription_model.dart';
 
@@ -17,8 +18,10 @@ class DashboardViewModel extends GetxController {
   final SubscriptionRepository _subscriptionRepository = Get.find<SubscriptionRepository>();
   final WebSocketService _webSocketService = Get.find<WebSocketService>();
   final AuthRepository _authRepository = Get.find<AuthRepository>();
+  final _selectionService = Get.find<SelectionService>();
 
   // Observables
+  Rxn<RouterModel> get selectedRouter => _selectionService.selectedRouter;
   final subscriptionStatus = 'Active'.obs;
   final totalRouterCount = 0.obs;
   final onlineRouterCount = 0.obs;
@@ -38,6 +41,11 @@ class DashboardViewModel extends GetxController {
     super.onInit();
     fetchDashboardData();
     _initRealtimeListeners();
+
+    // Listen to global router selection changes
+    ever(selectedRouter, (_) {
+      fetchDashboardData();
+    });
   }
 
   void _initRealtimeListeners() {
@@ -101,15 +109,28 @@ class DashboardViewModel extends GetxController {
       
       totalRouterCount.value = routers.length;
 
-      // Fetch Voucher Count (Initial - from first hotspot of first router)
-      if (routers.isNotEmpty) {
-        final idRouter = int.tryParse(routers.first.id) ?? 0;
+      // Fetch total Voucher Count for SELECTED router (aggregated from all its hotspots)
+      final activeRouter = selectedRouter.value ?? (routers.isNotEmpty ? routers.first : null);
+      if (activeRouter != null) {
+        if (selectedRouter.value == null) {
+          _selectionService.updateRouter(activeRouter);
+        }
+        
+        final idRouter = int.tryParse(activeRouter.id) ?? 0;
         final hotspotsList = await _routerRepository.getHotspots(idRouter);
+        
         if (hotspotsList.isNotEmpty) {
-          final vouchersList = await _voucherRepository.getVouchersByHotspot(
-            hotspotsList.first.idHotspot,
-          );
-          voucherCount.value = vouchersList.length;
+          // Parallel fetch vouchers for all hotspots in this router
+          final voucherFutures = hotspotsList.map((h) => 
+            _voucherRepository.getVouchersByHotspot(h.idHotspot)
+          ).toList();
+          
+          final voucherGroups = await Future.wait(voucherFutures);
+          int totalVouchers = 0;
+          for (var group in voucherGroups) {
+            totalVouchers += group.length;
+          }
+          voucherCount.value = totalVouchers;
         } else {
           voucherCount.value = 0;
         }

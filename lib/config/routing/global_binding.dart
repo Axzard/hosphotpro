@@ -16,6 +16,7 @@ import '../../domain/models/voucher_repository.dart';
 import '../../data/repositories/voucher_repository_impl.dart';
 import '../../core/services/printer_service.dart';
 import '../../core/services/websocket_service.dart';
+import '../../core/services/selection_service.dart';
 import '../../data/services/payment_persistence_service.dart';
 
 class GlobalBinding extends Bindings {
@@ -38,6 +39,7 @@ class GlobalBinding extends Bindings {
     Get.put<MidtransService>(MidtransService());
     Get.put<RouterService>(RouterService());
     Get.put<VoucherService>(VoucherService());
+    Get.put<SelectionService>(SelectionService());
 
     // Repositories
     Get.put<AuthRepository>(AuthRepositoryImpl());

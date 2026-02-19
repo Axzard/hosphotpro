@@ -6,14 +6,17 @@ import '../../../../domain/models/router_model.dart';
 import '../../../../domain/models/router_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/services/websocket_service.dart';
+import '../../../../core/services/selection_service.dart';
 
 class HotspotViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
   final _webSocketService = Get.find<WebSocketService>();
+  final _selectionService = Get.find<SelectionService>();
 
   final RxList<HotspotModel> hotspots = <HotspotModel>[].obs;
   final RxList<RouterModel> routers = <RouterModel>[].obs;
-  final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
+  
+  Rxn<RouterModel> get selectedRouter => _selectionService.selectedRouter;
   final RxBool isLoading = false.obs;
 
   // Form Controllers for Editing
@@ -27,6 +30,13 @@ class HotspotViewModel extends GetxController {
     super.onInit();
     loadRouters();
     _initRealtimeListeners();
+
+    // Listen to global changes
+    ever(selectedRouter, (router) {
+      if (router != null) {
+        loadHotspots(); // Reverted to just loading, no auto-sync
+      }
+    });
   }
 
   void _initRealtimeListeners() {
@@ -50,8 +60,10 @@ class HotspotViewModel extends GetxController {
       routers.assignAll(result);
       
       if (result.isNotEmpty && selectedRouter.value == null) {
-        selectedRouter.value = result.first;
-        loadHotspots();
+        _selectionService.updateRouter(result.first);
+        loadHotspots(); // Reverted to just loading
+      } else if (selectedRouter.value != null) {
+        loadHotspots(); // Reverted to just loading
       }
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal memuat router: $e');
@@ -77,8 +89,8 @@ class HotspotViewModel extends GetxController {
 
   void onRouterChanged(RouterModel? router) {
     if (router == null) return;
-    selectedRouter.value = router;
-    loadHotspots();
+    _selectionService.updateRouter(router);
+    // syncHotspots will be triggered by the 'ever' listener on selectedRouter
   }
 
   Future<void> updateHotspot(int idHotspot) async {
@@ -118,18 +130,26 @@ class HotspotViewModel extends GetxController {
   }
 
   Future<void> syncHotspots() async {
-    if (selectedRouter.value == null) {
+    final router = selectedRouter.value;
+    if (router == null) {
       SnackbarUtils.showError('Error', 'Pilih router terlebih dahulu');
       return;
     }
-
+ 
     try {
       isLoading.value = true;
-      final idRouter = int.tryParse(selectedRouter.value!.id) ?? 0;
+      final idRouter = int.tryParse(router.id) ?? 0;
+      if (idRouter == 0) {
+        SnackbarUtils.showError('Error', 'ID Router tidak valid: ${router.id}');
+        return;
+      }
+      
+      print('🔄 [HotspotVM] Syncing hotspots for Router ID: $idRouter');
       await _routerRepository.syncHotspots(idRouter);
       SnackbarUtils.showSuccess('Berhasil', 'Sinkronisasi hotspot selesai');
-      loadHotspots();
+      await loadHotspots();
     } catch (e) {
+      print('❌ [HotspotVM] Sync Error: $e');
       SnackbarUtils.showError('Error', 'Gagal sinkronisasi: $e');
     } finally {
       isLoading.value = false;

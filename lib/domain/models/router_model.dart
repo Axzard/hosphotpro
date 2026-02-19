@@ -18,4 +18,14 @@ class RouterModel {
     required this.keterangan,
     this.statusRouter = 'aktif',
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RouterModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

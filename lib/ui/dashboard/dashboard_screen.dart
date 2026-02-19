@@ -334,7 +334,9 @@ class DashboardScreen extends GetView<DashboardViewModel> {
                 child: _buildMenuCard(
                   icon: Icons.inventory_2_outlined,
                   title: 'Paket Voucher',
-                  subtitle: 'Manajemen Paket',
+                  subtitle: controller.selectedRouter.value != null 
+                      ? 'Kelola Paket' 
+                      : 'Pilih Router Dahulu',
                   color: const Color(0xFF94A3B8),
                   onTap: controller.navigateToVoucherPackages,
                 ),
@@ -351,7 +353,9 @@ class DashboardScreen extends GetView<DashboardViewModel> {
                 child: _buildMenuCard(
                   icon: Icons.confirmation_number_outlined,
                   title: 'Voucher',
-                  subtitle: '${controller.voucherCount.value} Pcs',
+                  subtitle: controller.selectedRouter.value != null
+                      ? '${controller.voucherCount.value} Pcs'
+                      : 'Pilih Router Dahulu',
                   color: const Color(0xFFFFB547),
                   onTap: controller.navigateToVouchers,
                 ),

@@ -157,8 +157,9 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
                   children: [
                     IconButton(
                       onPressed: () {
-                        if (controller.count.value > 1)
+                        if (controller.count.value > 1) {
                           controller.count.value--;
+                        }
                       },
                       icon: const Icon(
                         Icons.remove_circle_outline,
@@ -185,8 +186,9 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
                     ),
                     IconButton(
                       onPressed: () {
-                        if (controller.count.value < 500)
+                        if (controller.count.value < 500) {
                           controller.count.value++;
+                        }
                       },
                       icon: const Icon(
                         Icons.add_circle_outline,

@@ -10,13 +10,15 @@ import '../../../domain/models/hotspot_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
 // import '../../../domain/models/subscription_package_model.dart'; // No longer used for hotspot vouchers
 // import '../../../domain/models/subscription_repository.dart'; // No longer used for hotspot vouchers
-import '../widgets/voucher_print_preview.dart';
+import '../../../ui/voucher/widgets/voucher_print_preview.dart';
 import '../../../core/services/websocket_service.dart';
+import '../../../core/services/selection_service.dart';
 
 class VoucherViewModel extends GetxController {
   final VoucherRepository _voucherRepository = Get.find<VoucherRepository>();
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
   final WebSocketService _webSocketService = Get.find<WebSocketService>();
+  final _selectionService = Get.find<SelectionService>();
 
   final vouchers = <VoucherModel>[].obs;
   final routers = <RouterModel>[].obs;
@@ -28,8 +30,9 @@ class VoucherViewModel extends GetxController {
   final deletingVoucherIds = <int>{}.obs; // Track IDs being deleted
   final count = 1.obs;
 
-  // Selected values for dropdowns
-  final selectedHotspot = Rxn<HotspotModel>();
+  // Link selection to SelectionService
+  Rxn<RouterModel> get selectedRouter => _selectionService.selectedRouter;
+  Rxn<HotspotModel> get selectedHotspot => _selectionService.selectedHotspot;
   final selectedPaketId = Rxn<int>();
 
   StreamSubscription? _refreshSub;
@@ -39,6 +42,19 @@ class VoucherViewModel extends GetxController {
     super.onInit();
     loadRouters();
     _initRealtimeListeners();
+
+    // Listen to global changes to reload data
+    ever(selectedRouter, (router) {
+      if (router != null) {
+        loadRouters(); // This will refresh hotspots for the new router
+      }
+    });
+
+    ever(selectedHotspot, (hotspot) {
+      if (hotspot != null) {
+        onHotspotChanged(hotspot);
+      }
+    });
   }
 
   void _initRealtimeListeners() {
@@ -62,30 +78,38 @@ class VoucherViewModel extends GetxController {
     super.onClose();
   }
 
-  /// Load available hotspots aggregated from all routers
   Future<void> loadRouters() async {
     try {
       isLoading.value = true;
       final result = await _routerRepository.getRouters();
-      routers.value = result;
+      routers.assignAll(result);
 
-      // Parallel fetch for hotspots from all routers
-      final hotspotFutures = result.map((router) {
-        final idRouter = int.tryParse(router.id) ?? 0;
-        return _routerRepository.getHotspots(idRouter);
-      }).toList();
+      // We no longer aggregate all hotspots.
+      // Instead, we load hotspots ONLY for the selected router.
+      if (selectedRouter.value != null) {
+        final idRouter = int.tryParse(selectedRouter.value!.id) ?? 0;
+        final hotspotResult = await _routerRepository.getHotspots(idRouter);
+        hotspots.assignAll(hotspotResult);
 
-      final hotspotGroups = await Future.wait(hotspotFutures);
-      
-      List<HotspotModel> allHotspots = [];
-      for (var group in hotspotGroups) {
-        allHotspots.addAll(group);
+        // PERSISTENCE FIX: Only auto-select first hotspot if none is currently selected
+        // OR if the current selected hotspot doesn't belong to the results
+        if (hotspots.isNotEmpty) {
+          final currentHotspot = selectedHotspot.value;
+          bool currentStillValid = hotspots.any((h) => h.idHotspot == currentHotspot?.idHotspot);
+          print('🔍 [VoucherVM] loadRouters - Current: ${currentHotspot?.namaServer}, Valid: $currentStillValid');
+          
+          if (currentHotspot == null || !currentStillValid) {
+            print('🔄 [VoucherVM] Selection invalid or null, auto-selecting: ${hotspots.first.namaServer}');
+            selectedHotspot.value = hotspots.first;
+          }
+        }
+      } else if (result.isNotEmpty) {
+        // Fallback: select first router if none selected
+        _selectionService.updateRouter(result.first);
       }
-      hotspots.assignAll(allHotspots);
 
-      if (hotspots.isNotEmpty && selectedHotspot.value == null) {
-        selectedHotspot.value = hotspots.first;
-        await onHotspotChanged(hotspots.first);
+      if (selectedHotspot.value != null) {
+        await onHotspotChanged(selectedHotspot.value);
       }
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal memuat daftar hotspot');
@@ -263,7 +287,7 @@ class VoucherViewModel extends GetxController {
   /// Switch selected hotspot and reload vouchers
   Future<void> onHotspotChanged(HotspotModel? hotspot) async {
     if (hotspot == null) return;
-    selectedHotspot.value = hotspot;
+    _selectionService.updateHotspot(hotspot);
     selectedPaketId.value = null; // Clear selected package when hotspot changes
     await Future.wait([
       loadVouchers(),
