@@ -25,6 +25,7 @@ class VoucherViewModel extends GetxController {
 
   final isLoading = false.obs;
   final isGenerating = false.obs;
+  final deletingVoucherIds = <int>{}.obs; // Track IDs being deleted
   final count = 1.obs;
 
   // Selected values for dropdowns
@@ -170,7 +171,38 @@ class VoucherViewModel extends GetxController {
 
       // Navigate to print preview if we got vouchers back
       if (result.isNotEmpty) {
-        _openPrintPreview(result);
+        // Fix: Ensure price is populated from the selected package if missing in response
+        final selectedPackage = voucherPackages.firstWhereOrNull((p) => p.id == idPaket);
+        if (selectedPackage != null) {
+          final fixedVouchers = result.map((v) {
+            if (v.harga == 0) {
+              return VoucherModel(
+                idVoucher: v.idVoucher,
+                kodeVoucher: v.kodeVoucher,
+                passwordVoucher: v.passwordVoucher,
+                idPaket: v.idPaket,
+                idRouter: v.idRouter,
+                statusVoucher: v.statusVoucher,
+                tanggalAktif: v.tanggalAktif,
+                tanggalExpired: v.tanggalExpired,
+                dibuatPada: v.dibuatPada,
+                namaPaket: v.namaPaket,
+                harga: selectedPackage.harga, // Use package price
+                namaProfileMikrotik: v.namaProfileMikrotik,
+                idHotspot: v.idHotspot,
+                namaServer: v.namaServer,
+                durasi: v.durasi,
+                namaRouter: v.namaRouter,
+                alamatIp: v.alamatIp,
+                portApi: v.portApi,
+              );
+            }
+            return v;
+          }).toList();
+          _openPrintPreview(fixedVouchers);
+        } else {
+          _openPrintPreview(result);
+        }
       }
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal membuat voucher bulk: $e');
@@ -194,7 +226,10 @@ class VoucherViewModel extends GetxController {
 
   /// Delete a voucher
   Future<void> deleteVoucher(int idVoucher) async {
+    if (deletingVoucherIds.contains(idVoucher)) return;
+
     try {
+      deletingVoucherIds.add(idVoucher);
       final success = await _voucherRepository.deleteVoucher(idVoucher);
       if (success) {
         vouchers.removeWhere((v) => v.idVoucher == idVoucher);
@@ -204,6 +239,8 @@ class VoucherViewModel extends GetxController {
       }
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal menghapus voucher: $e');
+    } finally {
+      deletingVoucherIds.remove(idVoucher);
     }
   }
 

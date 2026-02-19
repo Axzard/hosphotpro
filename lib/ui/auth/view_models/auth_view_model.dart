@@ -5,15 +5,56 @@ import '../../../domain/models/auth_repository.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../config/routing/app_pages.dart';
 import '../../../core/services/websocket_service.dart';
+import '../../../data/services/token_service.dart';
 
 class AuthViewModel extends GetxController {
   final AuthRepository _authRepository;
+  final _tokenService = Get.find<TokenService>();
 
   AuthViewModel(this._authRepository);
 
   final Rx<AuthModel?> user = Rx<AuthModel?>(null);
   final isLoading = false.obs;
+  final isCheckingLogin = true.obs;
   final errorMessage = ''.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    checkLoginStatus();
+  }
+
+  Future<void> checkLoginStatus() async {
+    isCheckingLogin.value = true;
+    try {
+      final token = _tokenService.getToken();
+      if (token == null || _tokenService.isTokenExpired()) {
+        if (token != null) {
+          await _authRepository.logout();
+        }
+        isCheckingLogin.value = false;
+        return;
+      }
+
+      // Try to fetch profile to verify token
+      final profile = await _authRepository.getProfile();
+      if (profile != null) {
+        user.value = profile;
+        Get.find<WebSocketService>().connect();
+        
+        // Use a small delay to ensure navigation happens after the first frame
+        Future.delayed(Duration.zero, () {
+          Get.offAllNamed(Routes.DASHBOARD);
+        });
+      } else {
+        await _authRepository.logout();
+      }
+    } catch (e) {
+      print('Auto-login error: $e');
+    } finally {
+      isCheckingLogin.value = false;
+    }
+  }
 
   // Text Controllers
   final emailController = TextEditingController();

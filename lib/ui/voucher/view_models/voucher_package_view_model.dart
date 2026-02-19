@@ -22,6 +22,7 @@ class VoucherPackageViewModel extends GetxController {
   final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
   final Rxn<HotspotModel> selectedHotspot = Rxn<HotspotModel>();
   final RxBool isLoading = false.obs;
+  final RxSet<int> deletingPackageIds = <int>{}.obs; // Track IDs being deleted
 
   // Form Controllers
   final namaPaketController = TextEditingController();
@@ -243,7 +244,10 @@ class VoucherPackageViewModel extends GetxController {
   }
 
   Future<void> deletePackage(int id) async {
+    if (deletingPackageIds.contains(id)) return;
+
     try {
+      deletingPackageIds.add(id);
       isLoading.value = true;
       await _voucherRepository.deleteVoucherPackage(id);
       SnackbarUtils.showSuccess('Berhasil', 'Paket voucher berhasil dihapus');
@@ -252,6 +256,7 @@ class VoucherPackageViewModel extends GetxController {
       SnackbarUtils.showError('Error', 'Gagal menghapus paket: $e');
     } finally {
       isLoading.value = false;
+      deletingPackageIds.remove(id);
     }
   }
 

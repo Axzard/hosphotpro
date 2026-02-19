@@ -90,6 +90,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                         accentColor: accentColor,
                         onEdit: (p) => _showFormSheet(context, package: p),
                         onDelete: (p) => _showDeleteConfirm(context, p),
+                        isDeleting: controller.deletingPackageIds.contains(package.id),
                       );
                     },
                   ),

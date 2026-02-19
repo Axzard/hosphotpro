@@ -8,6 +8,7 @@ class VoucherPackageItemCard extends StatelessWidget {
   final Color accentColor;
   final Function(VoucherPackageModel) onEdit;
   final Function(VoucherPackageModel) onDelete;
+  final bool isDeleting;
 
   const VoucherPackageItemCard({
     super.key,
@@ -16,6 +17,7 @@ class VoucherPackageItemCard extends StatelessWidget {
     required this.accentColor,
     required this.onEdit,
     required this.onDelete,
+    this.isDeleting = false,
   });
 
   @override
@@ -67,16 +69,22 @@ class VoucherPackageItemCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               TextButton.icon(
-                onPressed: () => onEdit(package),
+                onPressed: isDeleting ? null : () => onEdit(package),
                 icon: const Icon(Icons.edit_outlined, size: 18),
                 label: const Text('Edit'),
                 style: TextButton.styleFrom(foregroundColor: Colors.white70),
               ),
               const SizedBox(width: 8),
               TextButton.icon(
-                onPressed: () => onDelete(package),
-                icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('Hapus'),
+                onPressed: isDeleting ? null : () => onDelete(package),
+                icon: isDeleting
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueGrey),
+                      )
+                    : const Icon(Icons.delete_outline, size: 18),
+                label: Text(isDeleting ? '...' : 'Hapus'),
                 style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
               ),
             ],

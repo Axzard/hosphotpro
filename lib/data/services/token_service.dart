@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class TokenService extends GetxService {
   static const String _tokenKey = 'auth_token';
+  static const String _loginTimeKey = 'login_time';
   
   SharedPreferences? _prefs;
 
@@ -14,7 +15,20 @@ class TokenService extends GetxService {
   // Save token
   Future<void> saveToken(String token) async {
     await _prefs?.setString(_tokenKey, token);
+    await saveLoginTime();
     print('✅ Token saved: ${token.substring(0, 20)}...');
+  }
+
+  // Save login time
+  Future<void> saveLoginTime() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await _prefs?.setInt(_loginTimeKey, now);
+    print('✅ Login time saved: $now');
+  }
+
+  // Get login time
+  int? getLoginTime() {
+    return _prefs?.getInt(_loginTimeKey);
   }
 
   // Get token
@@ -31,11 +45,24 @@ class TokenService extends GetxService {
   // Clear token
   Future<void> clearToken() async {
     await _prefs?.remove(_tokenKey);
-    print('🗑️ Token cleared');
+    await _prefs?.remove(_loginTimeKey);
+    print('🗑️ Token and login time cleared');
   }
 
   // Check if token exists
   bool hasToken() {
     return _prefs?.getString(_tokenKey) != null;
+  }
+
+  // Check if token is expired (1 day = 24 hours)
+  bool isTokenExpired() {
+    final loginTime = getLoginTime();
+    if (loginTime == null) return true;
+
+    final lastLogin = DateTime.fromMillisecondsSinceEpoch(loginTime);
+    final now = DateTime.now();
+    final difference = now.difference(lastLogin);
+
+    return difference.inDays >= 1;
   }
 }

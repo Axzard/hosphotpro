@@ -473,27 +473,66 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
           SizedBox(
             width: double.infinity,
             height: 54,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                controller.deleteVoucher(voucher.idVoucher);
-                Get.back();
-              },
-              icon: const Icon(Icons.delete_outline),
-              label: Text(
-                'Hapus Voucher',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+            child: Obx(() {
+              final isDeleting = controller.deletingVoucherIds.contains(voucher.idVoucher);
+              return OutlinedButton.icon(
+                onPressed: isDeleting
+                    ? null
+                    : () {
+                        Get.dialog(
+                          AlertDialog(
+                            backgroundColor: const Color(0xFF131E29),
+                            title: const Text(
+                              'Hapus Voucher',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            content: Text(
+                              'Apakah Anda yakin ingin menghapus voucher "${voucher.kodeVoucher}"?',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Get.back(),
+                                child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Get.back(); // Close dialog
+                                  controller.deleteVoucher(voucher.idVoucher);
+                                  Get.back(); // Close detail screen
+                                },
+                                child: const Text(
+                                  'Hapus',
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                icon: isDeleting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.redAccent),
+                      )
+                    : const Icon(Icons.delete_outline),
+                label: Text(
+                  isDeleting ? 'Menghapus...' : 'Hapus Voucher',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.redAccent,
-                side: const BorderSide(color: Colors.redAccent, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.redAccent,
+                  side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
-              ),
-            ),
+              );
+            }),
           ),
         ],
       ),

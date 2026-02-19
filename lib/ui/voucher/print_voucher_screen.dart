@@ -313,8 +313,37 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                         size: 20,
                         color: Colors.redAccent,
                       ),
-                      onPressed: () =>
-                          controller.deleteVoucher(voucher.idVoucher),
+                      onPressed: () {
+                        Get.dialog(
+                          AlertDialog(
+                            backgroundColor: const Color(0xFF131E29),
+                            title: const Text(
+                              'Hapus Voucher',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            content: Text(
+                              'Apakah Anda yakin ingin menghapus voucher "${voucher.kodeVoucher}"?',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Get.back(),
+                                child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Get.back();
+                                  controller.deleteVoucher(voucher.idVoucher);
+                                },
+                                child: const Text(
+                                  'Hapus',
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                     IconButton(
                       icon: const Icon(

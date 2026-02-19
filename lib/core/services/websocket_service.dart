@@ -134,9 +134,6 @@ class WebSocketService extends GetxService {
     }
   }
 
-  void _notifyDataUpdate(String event, dynamic data) {
-    _onAnyHandler(event, data);
-  }
 
   /// Returns true if the event is a data/business event, not a technical socket event.
   bool isBusinessEvent(String event) {
