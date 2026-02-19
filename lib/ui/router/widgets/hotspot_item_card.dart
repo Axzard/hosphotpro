@@ -18,8 +18,28 @@ class HotspotItemCard extends StatelessWidget {
     required this.onDelete,
   });
 
+  static TextStyle _titleStyle(Color color) => GoogleFonts.plusJakartaSans(
+    color: color,
+    fontSize: 18,
+    fontWeight: FontWeight.bold,
+  );
+
+  static TextStyle _statusStyle(Color color) => GoogleFonts.plusJakartaSans(
+    color: color,
+    fontSize: 10,
+    fontWeight: FontWeight.bold,
+  );
+
+  static TextStyle _interfaceStyle(Color color) => GoogleFonts.plusJakartaSans(
+    color: color,
+    fontSize: 13,
+  );
+
   @override
   Widget build(BuildContext context) {
+    final statusColor = hotspot.statusHotspot == 'aktif' ? Colors.green : Colors.red;
+    final secondaryTextColor = Colors.white.withValues(alpha: 0.5);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -34,27 +54,24 @@ class HotspotItemCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                hotspot.namaServer,
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  hotspot.namaServer,
+                  style: _titleStyle(Colors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: (hotspot.statusHotspot == 'aktif' ? Colors.green : Colors.red).withValues(alpha: 0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   hotspot.statusHotspot.toUpperCase(),
-                  style: GoogleFonts.plusJakartaSans(
-                    color: hotspot.statusHotspot == 'aktif' ? Colors.green : Colors.red,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: _statusStyle(statusColor),
                 ),
               ),
             ],
@@ -62,14 +79,11 @@ class HotspotItemCard extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.lan_outlined, size: 14, color: Colors.white.withValues(alpha: 0.5)),
+              Icon(Icons.lan_outlined, size: 14, color: secondaryTextColor),
               const SizedBox(width: 8),
               Text(
                 'Interface: ${hotspot.interface}',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 13,
-                ),
+                style: _interfaceStyle(secondaryTextColor),
               ),
             ],
           ),
@@ -77,18 +91,22 @@ class HotspotItemCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton.icon(
-                onPressed: () => onEdit(hotspot),
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('Edit'),
-                style: TextButton.styleFrom(foregroundColor: accentColor),
+              Flexible(
+                child: TextButton.icon(
+                  onPressed: () => onEdit(hotspot),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Edit'),
+                  style: TextButton.styleFrom(foregroundColor: accentColor),
+                ),
               ),
               const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: () => onDelete(hotspot),
-                icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('Hapus'),
-                style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+              Flexible(
+                child: TextButton.icon(
+                  onPressed: () => onDelete(hotspot),
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Hapus'),
+                  style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                ),
               ),
             ],
           ),

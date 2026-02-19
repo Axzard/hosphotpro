@@ -37,15 +37,23 @@ class SubscriptionViewModel extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadPackages();
-    loadMySubscriptions();
+    // Use parallel fetching to speed up initial load
+    Future.wait([
+      loadPackages(),
+      loadMySubscriptions(),
+    ]);
     _initRealtimeListeners();
   }
 
   void _initRealtimeListeners() {
     print('🚀 [SubscriptionVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
-      final event = eventData['event'] ?? '';
+      final event = (eventData['event'] ?? '').toString().toLowerCase();
+      
+      // Filter: Only refresh on payment/subscription related events
+      const relevantEvents = ['payment_success', 'payment_failed', 'subscription_updated'];
+      if (!relevantEvents.contains(event)) return;
+
       print('💳 [SubscriptionVM] Refreshing due to Event: $event');
       loadMySubscriptions();
     });

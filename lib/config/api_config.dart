@@ -22,6 +22,7 @@ class ApiConfig {
   static String hotspotDetail(int id) => '$baseUrl/api/hotspot/$id';
   static String updateHotspot(int id) => '$baseUrl/api/hotspot/$id';
   static String deleteHotspot(int id) => '$baseUrl/api/hotspot/$id';
+  static const String syncHotspots = '$baseUrl/api/hotspot/sync';
 
   // Voucher endpoints
   static const String createVoucher = '$baseUrl/api/voucher';

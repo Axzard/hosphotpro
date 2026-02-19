@@ -44,7 +44,12 @@ class VoucherViewModel extends GetxController {
   void _initRealtimeListeners() {
     print('🚀 [VoucherVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
-      final event = eventData['event'] ?? '';
+      final event = (eventData['event'] ?? '').toString().toLowerCase();
+      
+      // Filter: Only refresh if event is relevant to vouchers or hotspots
+      const relevantEvents = ['voucher_created', 'voucher_deleted', 'hotspot_updated', 'router_updated'];
+      if (!relevantEvents.contains(event)) return;
+
       print('🎟️ [VoucherVM] Refreshing due to Event: $event');
       loadVouchers();
       loadVoucherPackages();
@@ -64,11 +69,17 @@ class VoucherViewModel extends GetxController {
       final result = await _routerRepository.getRouters();
       routers.value = result;
 
-      List<HotspotModel> allHotspots = [];
-      for (var router in result) {
+      // Parallel fetch for hotspots from all routers
+      final hotspotFutures = result.map((router) {
         final idRouter = int.tryParse(router.id) ?? 0;
-        final hotspotResult = await _routerRepository.getHotspots(idRouter);
-        allHotspots.addAll(hotspotResult);
+        return _routerRepository.getHotspots(idRouter);
+      }).toList();
+
+      final hotspotGroups = await Future.wait(hotspotFutures);
+      
+      List<HotspotModel> allHotspots = [];
+      for (var group in hotspotGroups) {
+        allHotspots.addAll(group);
       }
       hotspots.assignAll(allHotspots);
 

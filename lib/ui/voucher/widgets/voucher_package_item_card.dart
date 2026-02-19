@@ -59,9 +59,9 @@ class VoucherPackageItemCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              _buildInfoChip(Icons.timer_outlined, package.durasi),
+              Flexible(child: _buildInfoChip(Icons.timer_outlined, package.durasi)),
               const SizedBox(width: 8),
-              _buildInfoChip(Icons.person_outline, package.namaProfileMikrotik),
+              Flexible(child: _buildInfoChip(Icons.person_outline, package.namaProfileMikrotik)),
             ],
           ),
           const Divider(height: 32, color: Colors.white10),
@@ -106,11 +106,15 @@ class VoucherPackageItemCard extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: Colors.white54),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white70,
-              fontSize: 12,
+          Flexible(
+            child: Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

@@ -85,4 +85,12 @@ class RouterRepositoryImpl implements RouterRepository {
       throw Exception(response.message);
     }
   }
+
+  @override
+  Future<void> syncHotspots(int idRouter) async {
+    final response = await _routerService.syncHotspots(idRouter);
+    if (!response.success) {
+      throw Exception(response.message);
+    }
+  }
 }

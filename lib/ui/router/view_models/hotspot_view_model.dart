@@ -32,7 +32,12 @@ class HotspotViewModel extends GetxController {
   void _initRealtimeListeners() {
     print('🚀 [HotspotVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
-      final event = eventData['event'] ?? '';
+      final event = (eventData['event'] ?? '').toString().toLowerCase();
+      
+      // Filter: Only refresh on relevant events
+      const relevantEvents = ['hotspot_updated', 'router_updated', 'hotspot_created', 'hotspot_deleted'];
+      if (!relevantEvents.contains(event)) return;
+
       print('📡 [HotspotVM] Refreshing due to Event: $event');
       loadHotspots();
     });
@@ -107,6 +112,25 @@ class HotspotViewModel extends GetxController {
       loadHotspots();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal menghapus hotspot: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> syncHotspots() async {
+    if (selectedRouter.value == null) {
+      SnackbarUtils.showError('Error', 'Pilih router terlebih dahulu');
+      return;
+    }
+
+    try {
+      isLoading.value = true;
+      final idRouter = int.tryParse(selectedRouter.value!.id) ?? 0;
+      await _routerRepository.syncHotspots(idRouter);
+      SnackbarUtils.showSuccess('Berhasil', 'Sinkronisasi hotspot selesai');
+      loadHotspots();
+    } catch (e) {
+      SnackbarUtils.showError('Error', 'Gagal sinkronisasi: $e');
     } finally {
       isLoading.value = false;
     }

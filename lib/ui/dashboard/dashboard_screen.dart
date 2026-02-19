@@ -92,26 +92,32 @@ class DashboardScreen extends GetView<DashboardViewModel> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Halo, Admin',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Halo, Admin',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Selamat datang kembali',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 14,
+              const SizedBox(height: 4),
+              Text(
+                'Selamat datang kembali',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 14,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         GestureDetector(
           onTap: () {
@@ -402,6 +408,8 @@ class DashboardScreen extends GetView<DashboardViewModel> {
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
@@ -410,6 +418,8 @@ class DashboardScreen extends GetView<DashboardViewModel> {
                 color: Colors.white.withValues(alpha: 0.5),
                 fontSize: 12,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

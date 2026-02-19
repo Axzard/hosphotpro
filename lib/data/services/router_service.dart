@@ -268,4 +268,32 @@ class RouterService extends GetxService {
       return ApiResponse(success: false, message: 'Error: $e');
     }
   }
+
+  Future<ApiResponse<void>> syncHotspots(int idRouter) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.post(
+        ApiConfig.syncHotspots,
+        data: {'id_router': idRouter},
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200 || response.data['sukses'] == true) {
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Sinkronisasi hotspot selesai',
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Gagal sinkronisasi hotspot',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
 }

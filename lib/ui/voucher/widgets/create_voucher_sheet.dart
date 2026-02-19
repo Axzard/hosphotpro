@@ -82,16 +82,21 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  isAddingPackage
-                      ? 'Tambah Paket Voucher'
-                      : 'Buat Voucher Baru',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                Expanded(
+                  child: Text(
+                    isAddingPackage
+                        ? 'Tambah Paket Voucher'
+                        : 'Buat Voucher Baru',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 TextButton.icon(
                   onPressed: () =>
                       setState(() => isAddingPackage = !isAddingPackage),

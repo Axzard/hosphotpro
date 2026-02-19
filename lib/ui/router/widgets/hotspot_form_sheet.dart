@@ -51,12 +51,16 @@ class HotspotFormSheet extends GetView<HotspotViewModel> {
                   color: accentColor,
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Edit Hotspot Server',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                Expanded(
+                  child: Text(
+                    'Edit Hotspot Server',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

@@ -7,6 +7,8 @@ import '../../../domain/models/voucher_repository.dart';
 import '../../../domain/models/subscription_repository.dart';
 import '../../../domain/models/auth_repository.dart';
 import '../../../core/services/websocket_service.dart';
+import '../../../domain/models/router_model.dart';
+import '../../../domain/models/user_subscription_model.dart';
 
 class DashboardViewModel extends GetxController {
   // Repositories
@@ -42,7 +44,12 @@ class DashboardViewModel extends GetxController {
     print('🚀 [DashboardVM] Realtime listeners initialized');
     // Global data refresh via Event Bus
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
-      final event = eventData['event'] ?? '';
+      final event = (eventData['event'] ?? '').toString().toLowerCase();
+      
+      // Filter out high-frequency events that shouldn't trigger total refresh
+      const highFreqEvents = ['router_stats', 'active_users', 'logs'];
+      if (highFreqEvents.contains(event)) return;
+
       print('🏠 [DashboardVM] Refreshing due to Event: $event');
       fetchDashboardData();
     });
@@ -83,21 +90,26 @@ class DashboardViewModel extends GetxController {
   Future<void> fetchDashboardData() async {
     isLoading.value = true;
     try {
-      // Fetch Router Count (Initial)
-      final routers = await _routerRepository.getRouters();
+      // Parallel fetch using Future.wait to reduce loading time
+      final results = await Future.wait([
+        _routerRepository.getRouters(),
+        _subscriptionRepository.getMySubscriptions(),
+      ]);
+
+      final routers = results[0] as List<RouterModel>;
+      final subscriptions = results[1] as List<UserSubscriptionModel>;
+      
       totalRouterCount.value = routers.length;
-      // Assume all are offline initially or wait for WS
-      // onlineRouterCount.value = 0; 
 
       // Fetch Voucher Count (Initial - from first hotspot of first router)
       if (routers.isNotEmpty) {
         final idRouter = int.tryParse(routers.first.id) ?? 0;
-        final hotspots = await _routerRepository.getHotspots(idRouter);
-        if (hotspots.isNotEmpty) {
-          final vouchers = await _voucherRepository.getVouchersByHotspot(
-            hotspots.first.idHotspot,
+        final hotspotsList = await _routerRepository.getHotspots(idRouter);
+        if (hotspotsList.isNotEmpty) {
+          final vouchersList = await _voucherRepository.getVouchersByHotspot(
+            hotspotsList.first.idHotspot,
           );
-          voucherCount.value = vouchers.length;
+          voucherCount.value = vouchersList.length;
         } else {
           voucherCount.value = 0;
         }
@@ -105,11 +117,13 @@ class DashboardViewModel extends GetxController {
         voucherCount.value = 0;
       }
 
-      // Fetch Subscription Status
-      final subscriptions = await _subscriptionRepository.getMySubscriptions();
-
       // Find active subscription
-      final activeSub = subscriptions.firstWhereOrNull((sub) => sub.isActive);
+      UserSubscriptionModel? activeSub;
+      try {
+        activeSub = subscriptions.firstWhere((sub) => sub.isActive);
+      } catch (_) {
+        activeSub = null;
+      }
 
       if (activeSub != null) {
         subscriptionStatus.value = activeSub.status.displayName;
@@ -122,9 +136,6 @@ class DashboardViewModel extends GetxController {
         subscriptionStatus.value = 'Inactive';
         expiryDate.value = null;
       }
-
-      // Initial active user count can be 0 or fetched via API if available.
-      // WebSocket will update it shortly.
     } catch (e) {
       print('Error fetching dashboard data: $e');
     } finally {
