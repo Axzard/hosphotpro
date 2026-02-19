@@ -2,8 +2,8 @@ import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import '../model/api_response.dart';
 import '../../config/api_config.dart';
-import '../../domain/models/voucher_model.dart';
-import '../../domain/models/voucher_package_model.dart';
+import '../model/voucher_api_model.dart';
+import '../model/voucher_package_api_model.dart';
 import 'token_service.dart';
 
 class VoucherService extends GetxService {
@@ -11,7 +11,7 @@ class VoucherService extends GetxService {
   final TokenService _tokenService = Get.find<TokenService>();
 
   /// GET /api/paket-voucher/router/{idRouter}
-  Future<ApiResponse<List<VoucherPackageModel>>> getVoucherPackages(
+  Future<ApiResponse<List<VoucherPackageApiModel>>> getVoucherPackages(
     int idRouter,
   ) async {
     try {
@@ -37,7 +37,7 @@ class VoucherService extends GetxService {
         }
 
         final packages = listData
-            .map((json) => VoucherPackageModel.fromJson(json))
+            .map((json) => VoucherPackageApiModel.fromJson(json))
             .toList();
             
         return ApiResponse(
@@ -64,8 +64,8 @@ class VoucherService extends GetxService {
   }
 
   /// POST /api/paket-voucher
-  Future<ApiResponse<VoucherPackageModel?>> createVoucherPackage(
-    VoucherPackageModel package,
+  Future<ApiResponse<VoucherPackageApiModel?>> createVoucherPackage(
+    VoucherPackageApiModel package,
   ) async {
     try {
       final token = _tokenService.getToken();
@@ -79,9 +79,9 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        VoucherPackageModel? createdPackage;
+        VoucherPackageApiModel? createdPackage;
         if (response.data['id_paket'] != null) {
-          createdPackage = VoucherPackageModel(
+          createdPackage = VoucherPackageApiModel(
             id: response.data['id_paket'],
             idRouter: package.idRouter,
             idHotspot: package.idHotspot,
@@ -95,7 +95,7 @@ class VoucherService extends GetxService {
             dataLimitMb: package.dataLimitMb,
           );
         } else if (response.data['data'] != null) {
-          createdPackage = VoucherPackageModel.fromJson(response.data['data']);
+          createdPackage = VoucherPackageApiModel.fromJson(response.data['data']);
         }
         return ApiResponse(
           success: true,
@@ -120,7 +120,7 @@ class VoucherService extends GetxService {
   }
 
   /// GET /api/paket-voucher/{id}
-  Future<ApiResponse<VoucherPackageModel?>> getVoucherPackageDetail(
+  Future<ApiResponse<VoucherPackageApiModel?>> getVoucherPackageDetail(
     int id,
   ) async {
     try {
@@ -134,7 +134,7 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.data['sukses'] == true) {
-        final package = VoucherPackageModel.fromJson(response.data['data'] ?? response.data);
+        final package = VoucherPackageApiModel.fromJson(response.data['data'] ?? response.data);
         return ApiResponse(success: true, message: 'OK', data: package);
       } else {
         return ApiResponse(
@@ -150,7 +150,7 @@ class VoucherService extends GetxService {
   /// PUT /api/paket-voucher/{id}
   Future<ApiResponse<void>> updateVoucherPackage(
     int id,
-    VoucherPackageModel package,
+    VoucherPackageApiModel package,
   ) async {
     try {
       final token = _tokenService.getToken();
@@ -208,7 +208,7 @@ class VoucherService extends GetxService {
   }
 
   /// GET /api/voucher/router/{idRouter}
-  Future<ApiResponse<List<VoucherModel>>> getVouchersByRouter(
+  Future<ApiResponse<List<VoucherApiModel>>> getVouchersByRouter(
     int idRouter,
   ) async {
     try {
@@ -227,7 +227,7 @@ class VoucherService extends GetxService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final List<dynamic> data = response.data['data'] ?? [];
         final vouchers = data
-            .map((json) => VoucherModel.fromJson(json))
+            .map((json) => VoucherApiModel.fromJson(json))
             .toList();
         return ApiResponse(
           success: true,
@@ -253,7 +253,7 @@ class VoucherService extends GetxService {
   }
 
   /// GET /api/voucher/{id}?id_router={idRouter}
-  Future<ApiResponse<VoucherModel?>> getVoucherDetail(
+  Future<ApiResponse<VoucherApiModel?>> getVoucherDetail(
     int id,
     int idRouter,
   ) async {
@@ -268,7 +268,7 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200 && response.data['sukses'] == true) {
-        final voucher = VoucherModel.fromJson(response.data['data']);
+        final voucher = VoucherApiModel.fromJson(response.data['data']);
         return ApiResponse(success: true, message: 'OK', data: voucher);
       } else {
         return ApiResponse(
@@ -287,7 +287,7 @@ class VoucherService extends GetxService {
   }
 
   /// POST /api/voucher  (single)
-  Future<ApiResponse<VoucherModel?>> createVoucher(
+  Future<ApiResponse<VoucherApiModel?>> createVoucher(
     int idPaket,
     int idRouter,
   ) async {
@@ -305,9 +305,9 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        VoucherModel? voucher;
+        VoucherApiModel? voucher;
         if (response.data['data'] != null) {
-          voucher = VoucherModel.fromJson(response.data['data']);
+          voucher = VoucherApiModel.fromJson(response.data['data']);
         }
         return ApiResponse(
           success: true,
@@ -332,7 +332,7 @@ class VoucherService extends GetxService {
   }
 
   /// POST /api/voucher/bulk
-  Future<ApiResponse<List<VoucherModel>>> createVoucherBulk(
+  Future<ApiResponse<List<VoucherApiModel>>> createVoucherBulk(
     int idPaket,
     int idRouter,
     int jumlah,
@@ -349,10 +349,10 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        List<VoucherModel> vouchers = [];
+        List<VoucherApiModel> vouchers = [];
         if (response.data['data'] != null && response.data['data'] is List) {
           vouchers = (response.data['data'] as List)
-              .map((json) => VoucherModel.fromJson(json))
+              .map((json) => VoucherApiModel.fromJson(json))
               .toList();
         }
         return ApiResponse(

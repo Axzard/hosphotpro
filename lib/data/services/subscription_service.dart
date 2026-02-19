@@ -4,7 +4,7 @@ import '../model/subscription_package_api_model.dart';
 import '../model/transaction_api_model.dart';
 import '../model/api_response.dart';
 import '../../config/api_config.dart';
-import '../../domain/models/user_subscription_model.dart';
+import '../model/user_subscription_api_model.dart';
 import 'token_service.dart';
 
 class SubscriptionService extends GetxService {
@@ -138,7 +138,7 @@ class SubscriptionService extends GetxService {
   }
 
   // Get my subscriptions
-  Future<ApiResponse<List<UserSubscriptionModel>>> getMySubscriptions() async {
+  Future<ApiResponse<List<UserSubscriptionApiModel>>> getMySubscriptions() async {
     try {
       final token = _tokenService.getToken();
 
@@ -153,7 +153,7 @@ class SubscriptionService extends GetxService {
       if (response.statusCode == 200) {
         final List<dynamic> subscriptionsData = response.data['data'] ?? [];
         final subscriptions = subscriptionsData
-            .map((json) => UserSubscriptionModel.fromJson(json))
+            .map((json) => UserSubscriptionApiModel.fromJson(json))
             .toList();
 
         return ApiResponse(

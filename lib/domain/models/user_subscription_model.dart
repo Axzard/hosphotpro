@@ -63,29 +63,6 @@ class UserSubscriptionModel {
     this.paymentUrl,
   });
 
-  factory UserSubscriptionModel.fromJson(Map<String, dynamic> json) {
-    return UserSubscriptionModel(
-      idLangganan: json['id_langganan'] ?? 0,
-      idPengguna: json['id_pengguna'] ?? 0,
-      idPaketLangganan: json['id_paket_langganan'] ?? 0,
-      tanggalMulai: DateTime.parse(
-        json['tanggal_mulai'] ?? DateTime.now().toIso8601String(),
-      ),
-      tanggalBerakhir: DateTime.parse(
-        json['tanggal_berakhir'] ?? DateTime.now().toIso8601String(),
-      ),
-      dibuatPada: DateTime.parse(
-        json['dibuat_pada'] ?? DateTime.now().toIso8601String(),
-      ),
-      status: SubscriptionStatus.fromString(json['status_langganan'] ?? 'none'),
-      jumlahBulan: json['jumlah_bulan'] ?? 1,
-      namaPaket: json['nama_paket'] ?? '',
-      harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
-      totalBayar: double.tryParse(json['total_bayar']?.toString() ?? '0') ?? 0,
-      paymentUrl: json['payment_url'] ?? json['redirect_url'],
-    );
-  }
-
   bool get isActive => status == SubscriptionStatus.active;
   bool get isPending => status == SubscriptionStatus.pending;
   bool get isExpired => status == SubscriptionStatus.expired;

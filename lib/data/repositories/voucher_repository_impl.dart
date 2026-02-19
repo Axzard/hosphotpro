@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../../domain/models/voucher_model.dart';
 import '../../domain/models/voucher_package_model.dart';
 import '../../domain/models/voucher_repository.dart';
+import '../model/voucher_package_api_model.dart';
 import '../services/voucher_service.dart';
 
 class VoucherRepositoryImpl implements VoucherRepository {
@@ -11,7 +12,7 @@ class VoucherRepositoryImpl implements VoucherRepository {
   Future<List<VoucherModel>> getVouchersByRouter(int idRouter) async {
     final response = await _voucherService.getVouchersByRouter(idRouter);
     if (response.success && response.data != null) {
-      return response.data!;
+      return response.data!.map((apiModel) => apiModel.toDomain()).toList();
     }
     throw Exception(response.message);
   }
@@ -20,7 +21,7 @@ class VoucherRepositoryImpl implements VoucherRepository {
   Future<VoucherModel?> getVoucherDetail(int id, int idRouter) async {
     final response = await _voucherService.getVoucherDetail(id, idRouter);
     if (response.success) {
-      return response.data;
+      return response.data?.toDomain();
     }
     throw Exception(response.message);
   }
@@ -29,7 +30,7 @@ class VoucherRepositoryImpl implements VoucherRepository {
   Future<VoucherModel?> createVoucher(int idPaket, int idRouter) async {
     final response = await _voucherService.createVoucher(idPaket, idRouter);
     if (response.success) {
-      return response.data;
+      return response.data?.toDomain();
     }
     throw Exception(response.message);
   }
@@ -46,7 +47,7 @@ class VoucherRepositoryImpl implements VoucherRepository {
       jumlah,
     );
     if (response.success && response.data != null) {
-      return response.data!;
+      return response.data!.map((apiModel) => apiModel.toDomain()).toList();
     }
     throw Exception(response.message);
   }
@@ -61,7 +62,7 @@ class VoucherRepositoryImpl implements VoucherRepository {
   Future<List<VoucherPackageModel>> getVoucherPackages(int idRouter) async {
     final response = await _voucherService.getVoucherPackages(idRouter);
     if (response.success && response.data != null) {
-      return response.data!;
+      return response.data!.map((apiModel) => apiModel.toDomain()).toList();
     }
     throw Exception(response.message);
   }
@@ -70,9 +71,11 @@ class VoucherRepositoryImpl implements VoucherRepository {
   Future<VoucherPackageModel?> createVoucherPackage(
     VoucherPackageModel package,
   ) async {
-    final response = await _voucherService.createVoucherPackage(package);
+    final response = await _voucherService.createVoucherPackage(
+      VoucherPackageApiModel.fromDomain(package),
+    );
     if (response.success) {
-      return response.data;
+      return response.data?.toDomain();
     }
     throw Exception(response.message);
   }
@@ -81,7 +84,7 @@ class VoucherRepositoryImpl implements VoucherRepository {
   Future<VoucherPackageModel?> getVoucherPackageDetail(int id) async {
     final response = await _voucherService.getVoucherPackageDetail(id);
     if (response.success) {
-      return response.data;
+      return response.data!.toDomain();
     }
     throw Exception(response.message);
   }
@@ -91,7 +94,10 @@ class VoucherRepositoryImpl implements VoucherRepository {
     int id,
     VoucherPackageModel package,
   ) async {
-    final response = await _voucherService.updateVoucherPackage(id, package);
+    final response = await _voucherService.updateVoucherPackage(
+      id,
+      VoucherPackageApiModel.fromDomain(package),
+    );
     if (!response.success) {
       throw Exception(response.message);
     }

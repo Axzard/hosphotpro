@@ -53,31 +53,6 @@ class VoucherModel {
     required this.namaServer,
   });
 
-  factory VoucherModel.fromJson(Map<String, dynamic> json) {
-    return VoucherModel(
-      idVoucher: json['id_voucher'] ?? 0,
-      kodeVoucher: json['kode_voucher'] ?? '',
-      passwordVoucher: json['password_voucher'] ?? '',
-      idPaket: json['id_paket'] ?? 0,
-      idRouter: json['id_router'] ?? 0,
-      statusVoucher: VoucherStatus.fromString(json['status_voucher'] ?? 'stok'),
-      tanggalAktif: json['tanggal_aktif'] != null
-          ? DateTime.parse(json['tanggal_aktif'])
-          : null,
-      tanggalExpired: json['tanggal_expired'] != null
-          ? DateTime.parse(json['tanggal_expired'])
-          : null,
-      dibuatPada: DateTime.parse(
-        json['dibuat_pada'] ?? DateTime.now().toIso8601String(),
-      ),
-      namaPaket: json['nama_paket'] ?? '',
-      harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
-      namaProfileMikrotik: json['nama_profile_mikrotik'] ?? '',
-      idHotspot: json['id_hotspot'] ?? 0,
-      namaServer: json['nama_server'] ?? '',
-    );
-  }
-
   bool get isStok => statusVoucher == VoucherStatus.stok;
   bool get isAktif => statusVoucher == VoucherStatus.aktif;
   bool get isExpired => statusVoucher == VoucherStatus.expired;

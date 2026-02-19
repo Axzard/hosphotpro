@@ -70,7 +70,7 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
     try {
       final response = await _subscriptionService.getMySubscriptions();
       if (response.success && response.data != null) {
-        return response.data!;
+        return response.data!.map((apiModel) => apiModel.toDomain()).toList();
       }
       return [];
     } catch (e) {

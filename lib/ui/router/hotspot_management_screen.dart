@@ -6,7 +6,7 @@ import '../../../domain/models/hotspot_model.dart';
 import '../../../domain/models/router_model.dart';
 import 'widgets/hotspot_header.dart';
 import 'widgets/hotspot_item_card.dart';
-import 'widgets/hotspot_edit_dialog.dart';
+import 'widgets/hotspot_form_sheet.dart';
 
 class HotspotManagementScreen extends GetView<HotspotViewModel> {
   const HotspotManagementScreen({super.key});
@@ -87,7 +87,7 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                         hotspot: hotspot,
                         cardColor: cardColor,
                         accentColor: accentColor,
-                        onEdit: (h) => _showEditDialog(h),
+                        onEdit: (h) => _showEditSheet(h),
                         onDelete: (h) => _showDeleteConfirm(h),
                       );
                     },
@@ -101,9 +101,13 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
     );
   }
 
-  void _showEditDialog(HotspotModel hotspot) {
+  void _showEditSheet(HotspotModel hotspot) {
     controller.prepareEdit(hotspot);
-    Get.dialog(HotspotEditDialog(hotspot: hotspot, controller: controller));
+    Get.bottomSheet(
+      HotspotFormSheet(hotspot: hotspot),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
   }
 
   void _showDeleteConfirm(HotspotModel hotspot) {
