@@ -10,5 +10,5 @@ abstract class RouterRepository {
   Future<HotspotModel> getHotspotDetail(int idHotspot);
   Future<void> updateHotspot(int idHotspot, Map<String, dynamic> data);
   Future<void> deleteHotspot(int idHotspot);
-  Future<void> syncHotspots(int idRouter);
+  Future<List<dynamic>> syncHotspots(int idRouter);
 }

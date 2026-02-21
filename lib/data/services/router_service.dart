@@ -269,34 +269,38 @@ class RouterService extends GetxService {
     }
   }
 
-  Future<ApiResponse<void>> syncHotspots(int idRouter) async {
+  Future<ApiResponse<List<dynamic>>> syncHotspots(int idRouter) async {
     try {
       final token = _tokenService.getToken();
       
-      // Using FormData as it's often more compatible with PHP/Laravel backends
-      // that expect specific fields in a multipart or form-encoded way.
-      final formData = FormData.fromMap({
-        'id_router': idRouter,
-      });
-
+      // We'll send id_router both in query parameters and body to be safe,
+      // as some backends are picky about where they look for it.
       final response = await _dio.post(
         ApiConfig.syncHotspots,
-        data: formData,
+        queryParameters: {
+          'id_router': idRouter,
+        },
+        data: {
+          'id_router': idRouter,
+        },
         options: Options(
           headers: ApiConfig.headers(token: token),
+          contentType: 'application/x-www-form-urlencoded',
           validateStatus: (status) => status! < 500,
         ),
       );
 
       if (response.statusCode == 200 || response.data['sukses'] == true) {
+        final List<dynamic> resultData = response.data['data'] ?? [];
         return ApiResponse(
           success: true,
           message: response.data['pesan'] ?? 'Sinkronisasi hotspot selesai',
+          data: resultData,
         );
       } else {
         return ApiResponse(
           success: false,
-          message: response.data['pesan'] ?? 'Gagal sinkronisasi hotspot',
+          message: response.data['pesan'] ?? response.data['message'] ?? 'Gagal sinkronisasi hotspot',
         );
       }
     } catch (e) {

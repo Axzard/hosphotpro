@@ -478,17 +478,25 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
       child: Column(
         children: [
           Text(
+            'DATA LOGIN VOUCHER',
+            style: GoogleFonts.courierPrime(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
             'USERNAME / KODE',
             style: GoogleFonts.courierPrime(
               fontSize: 10,
               color: Colors.black54,
             ),
           ),
-          const SizedBox(height: 4),
           Text(
             voucher.kodeVoucher,
             style: GoogleFonts.courierPrime(
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Colors.black,
               letterSpacing: 2,
@@ -498,46 +506,19 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
               voucher.passwordVoucher != voucher.kodeVoucher) ...[
             const SizedBox(height: 8),
             Text(
-              'PASSWORD: ${voucher.passwordVoucher}',
+              'PASSWORD',
               style: GoogleFonts.courierPrime(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+                fontSize: 10,
+                color: Colors.black54,
               ),
             ),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                voucher.namaPaket,
-                style: GoogleFonts.courierPrime(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              Text(
-                currencyFormat.format(voucher.harga),
-                style: GoogleFonts.courierPrime(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-            ],
-          ),
-          if (voucher.tanggalExpired != null) ...[
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                'Exp: ${DateFormat('dd/MM/yy').format(voucher.tanggalExpired!)}',
-                style: GoogleFonts.courierPrime(
-                  fontSize: 10,
-                  color: Colors.black54,
-                ),
+            Text(
+              voucher.passwordVoucher,
+              style: GoogleFonts.courierPrime(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+                letterSpacing: 2,
               ),
             ),
           ],
@@ -650,35 +631,16 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
             voucher.kodeVoucher,
             style: pw.TextStyle(
               font: fontBold,
-              fontSize: 14,
+              fontSize: 12, // Reduced size for better fit
               fontWeight: pw.FontWeight.bold,
             ),
           ),
-          pw.SizedBox(height: 4),
           if (voucher.passwordVoucher.isNotEmpty &&
               voucher.passwordVoucher != voucher.kodeVoucher)
             pw.Text(
               'Pass: ${voucher.passwordVoucher}',
-              style: pw.TextStyle(font: font, fontSize: 10),
+              style: pw.TextStyle(font: font, fontSize: 9),
             ),
-          pw.Divider(thickness: 0.5),
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text(
-                voucher.namaPaket,
-                style: pw.TextStyle(font: font, fontSize: 8),
-              ),
-              pw.Text(
-                NumberFormat('#,###').format(voucher.harga),
-                style: pw.TextStyle(
-                  font: fontBold,
-                  fontSize: 10,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );

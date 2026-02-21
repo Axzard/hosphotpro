@@ -425,4 +425,67 @@ class VoucherService extends GetxService {
       return ApiResponse(success: false, message: 'Error: $e');
     }
   }
+
+  /// GET /api/voucher/aktif
+  Future<ApiResponse<List<VoucherApiModel>>> getActiveVouchers() async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.vouchersAktif,
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 600,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data['data'] ?? [];
+        final vouchers = data.map((json) => VoucherApiModel.fromJson(json)).toList();
+        return ApiResponse(
+          success: true,
+          message: 'Vouchers fetched',
+          data: vouchers,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Failed to fetch active vouchers',
+          data: [],
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e', data: []);
+    }
+  }
+
+  /// POST /api/voucher/jual/{id}
+  Future<ApiResponse<double>> sellVoucher(int id, String paymentMethod) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.post(
+        ApiConfig.sellVoucher(id),
+        data: {'metode_pembayaran': paymentMethod},
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 600,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data['sukses'] == true) {
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Voucher berhasil dijual',
+          data: double.tryParse(response.data['harga']?.toString() ?? '0') ?? 0,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Gagal menjual voucher',
+          data: 0,
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e', data: 0);
+    }
+  }
 }

@@ -34,6 +34,9 @@ class VoucherPackageViewModel extends GetxController {
   final prefixController = TextEditingController();
   final panjangUsernameController = TextEditingController();
   final dataLimitMbController = TextEditingController();
+  final dnsLoginController = TextEditingController();
+  
+  final RxBool gunakanSsl = false.obs;
   
   final RxString selectedFormatKarakter = 'mix'.obs;
   final List<String> formatKarakterOptions = ['huruf_kecil', 'huruf_besar', 'angka', 'mix'];
@@ -106,6 +109,7 @@ class VoucherPackageViewModel extends GetxController {
     prefixController.dispose();
     panjangUsernameController.dispose();
     dataLimitMbController.dispose();
+    dnsLoginController.dispose();
     super.onClose();
   }
 
@@ -225,6 +229,8 @@ class VoucherPackageViewModel extends GetxController {
         panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
         formatKarakter: selectedFormatKarakter.value,
         dataLimitMb: dataLimit,
+        dnsLogin: dnsLoginController.text.isNotEmpty ? dnsLoginController.text : null,
+        gunakanSsl: gunakanSsl.value,
       );
 
       await _voucherRepository.createVoucherPackage(package);
@@ -262,6 +268,8 @@ class VoucherPackageViewModel extends GetxController {
         panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
         formatKarakter: selectedFormatKarakter.value,
         dataLimitMb: dataLimit,
+        dnsLogin: dnsLoginController.text.isNotEmpty ? dnsLoginController.text : null,
+        gunakanSsl: gunakanSsl.value,
       );
 
       await _voucherRepository.updateVoucherPackage(id, package);
@@ -300,6 +308,8 @@ class VoucherPackageViewModel extends GetxController {
     profileMikrotikController.text = package.namaProfileMikrotik;
     prefixController.text = package.prefix;
     panjangUsernameController.text = package.panjangUsername.toString();
+    dnsLoginController.text = package.dnsLogin ?? '';
+    gunakanSsl.value = package.gunakanSsl;
     
     // Convert MB to GB if it's perfectly divisible and >= 1024
     if (package.dataLimitMb >= 1024 && package.dataLimitMb % 1024 == 0) {
@@ -322,6 +332,8 @@ class VoucherPackageViewModel extends GetxController {
     prefixController.clear();
     panjangUsernameController.clear();
     dataLimitMbController.clear();
+    dnsLoginController.clear();
+    gunakanSsl.value = false;
     selectedFormatKarakter.value = 'mix';
     selectedDataUnit.value = 'MB';
   }

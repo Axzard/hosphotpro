@@ -198,6 +198,24 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                   Expanded(child: _buildTextField(controller.profileMikrotikController, 'Profile Mikrotik', hint: 'profile-1jam')),
                 ],
               ),
+              const SizedBox(height: 16),
+              _buildTextField(controller.dnsLoginController, 'DNS Login', hint: 'hotspot.domain.com'),
+              const SizedBox(height: 16),
+              Obx(() => SwitchListTile(
+                    title: Text(
+                      'Gunakan SSL',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    value: controller.gunakanSsl.value,
+                    onChanged: (val) => controller.gunakanSsl.value = val,
+                    activeThumbColor: const Color(0xFF00C2FF),
+                    activeTrackColor: const Color(0xFF00C2FF).withValues(alpha: 0.5),
+                    contentPadding: EdgeInsets.zero,
+                  )),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
@@ -405,7 +423,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
             hintText: hint,
             hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
+            fillColor: Colors.white.withValues(alpha: 0.05),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,

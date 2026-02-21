@@ -87,10 +87,11 @@ class RouterRepositoryImpl implements RouterRepository {
   }
 
   @override
-  Future<void> syncHotspots(int idRouter) async {
+  Future<List<dynamic>> syncHotspots(int idRouter) async {
     final response = await _routerService.syncHotspots(idRouter);
     if (!response.success) {
       throw Exception(response.message);
     }
+    return response.data ?? [];
   }
 }

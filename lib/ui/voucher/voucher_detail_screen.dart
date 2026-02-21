@@ -348,6 +348,29 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ),
             const SizedBox(height: 28),
           ],
+          if (voucher.dnsLogin != null) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: _buildInfoItem(
+                    'DNS LOGIN',
+                    voucher.dnsLogin!,
+                    Icons.public_outlined,
+                    accentColor,
+                  ),
+                ),
+                Expanded(
+                  child: _buildInfoItem(
+                    'SSL',
+                    voucher.gunakanSsl ? 'AKTIF' : 'NON-AKTIF',
+                    Icons.security_outlined,
+                    voucher.gunakanSsl ? const Color(0xFF4ADE80) : Colors.white24,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+          ],
           Divider(color: Colors.white.withValues(alpha: 0.06)),
           const SizedBox(height: 20),
           // Date info

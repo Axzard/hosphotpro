@@ -10,6 +10,8 @@ abstract class VoucherRepository {
     int jumlah,
   );
   Future<bool> deleteVoucher(int id);
+  Future<List<VoucherModel>> getActiveVouchers();
+  Future<double> sellVoucher(int idVoucher, String paymentMethod);
 
   // Voucher Package methods
   Future<List<VoucherPackageModel>> getVoucherPackages(int idHotspot);

@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hosphotpro/ui/subscription/view_models/subscription_view_model.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../config/routing/app_routes.dart';
 import 'dart:io' show Platform;
 
 class MidtransWebViewScreen extends StatefulWidget {
@@ -14,8 +16,21 @@ class MidtransWebViewScreen extends StatefulWidget {
 }
 
 class _MidtransWebViewScreenState extends State<MidtransWebViewScreen> {
-  final String redirectUrl = Get.arguments as String;
-  final bool useWebView = Platform.isAndroid || Platform.isIOS;
+  late final String _url;
+  late final int _idLangganan;
+
+  @override
+  void initState() {
+    super.initState();
+    final args = Get.arguments;
+    if (args is Map) {
+      _url = args['url'] ?? '';
+      _idLangganan = args['idLangganan'] ?? 0;
+    } else {
+      _url = args as String;
+      _idLangganan = 0;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,35 +38,18 @@ class _MidtransWebViewScreenState extends State<MidtransWebViewScreen> {
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF131E29),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Get.back(),
-          tooltip: 'Keluar',
-        ),
-        title: Text(
-          'Pembayaran',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        centerTitle: true,
+      body: SafeArea(
+        child: _MobileWebView(redirectUrl: _url, idLangganan: _idLangganan),
       ),
-      body: useWebView
-          ? _MobileWebView(redirectUrl: redirectUrl)
-          : _MobileWebView(redirectUrl: redirectUrl), // Fallback for testing, but ideally different for desktop
     );
   }
 }
 
 class _MobileWebView extends StatefulWidget {
   final String redirectUrl;
+  final int idLangganan;
 
-  const _MobileWebView({required this.redirectUrl});
+  const _MobileWebView({required this.redirectUrl, required this.idLangganan});
 
   @override
   State<_MobileWebView> createState() => _MobileWebViewState();
@@ -71,6 +69,7 @@ class _MobileWebViewState extends State<_MobileWebView> {
   void _initializeWebView() {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0xFF0A1118))
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
@@ -81,48 +80,206 @@ class _MobileWebViewState extends State<_MobileWebView> {
             _checkPaymentStatus(url);
           },
           onNavigationRequest: (NavigationRequest request) {
-            final url = request.url;
+            final url = request.url.toLowerCase();
+            debugPrint('🌐 WebView Navigating to: $url');
             
-            // Intercept placeholder redirect URLs to prevent ERR_CLEARTEXT_NOT_PERMITTED
-            if (url.startsWith('http://example.com') || 
-                url.contains('status_code=') || 
-                url.contains('transaction_status=')) {
+            // Catch any cancel/error/finish redirects from Midtrans Snap
+            if (url.contains('status_code=') || 
+                url.contains('transaction_status=') ||
+                url.contains('transaction_id=') ||
+                url.contains('order_id=') ||
+                url.contains('/finish') ||
+                url.contains('/unfinish') ||
+                url.contains('/error') ||
+                url.contains('gopay/finish') || 
+                url.contains('payment/finish')) {
               
-              _handleRedirect(url);
+              _handleRedirect(request.url);
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;
           },
           onWebResourceError: (WebResourceError error) {
-            // Ignore cancel errors if we are already handling it or redirecting
-            if (error.description.contains('net::ERR_CLEARTEXT_NOT_PERMITTED')) {
+            final errorCode = error.errorCode;
+            final description = error.description.toLowerCase();
+            
+            debugPrint('⚠️ WebView Resource Error: $errorCode - $description');
+
+            if (errorCode == -2 || errorCode == -202 || description.contains('ssl') || description.contains('handshake')) {
               return;
             }
-            SnackbarUtils.showError('Error', 'Gagal memuat halaman pembayaran');
+            
+            if (error.isForMainFrame ?? true) {
+              if (Get.isSnackbarOpen == false) {
+                 SnackbarUtils.showInfo('Koneksi', 'Halaman sedang dimuat, harap tunggu...');
+              }
+            }
           },
         ),
-      )
-      ..loadRequest(Uri.parse(widget.redirectUrl));
+      );
+
+    // Android specific tweaks (if needed in future, use correct Manager)
+    if (_controller.platform is AndroidWebViewController) {
+      AndroidWebViewController.enableDebugging(true);
+      // setAcceptThirdPartyCookies is set via AndroidCookieManager if needed
+    }
+
+    _controller.loadRequest(Uri.parse(widget.redirectUrl));
+  }
+
+  Future<bool> _onWillPop() async {
+    final result = await Get.dialog<bool>(
+      AlertDialog(
+        backgroundColor: const Color(0xFF131E29),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Batalkan Pembayaran?', 
+          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold)
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin ke luar? Pembayaran Anda akan dibatalkan.',
+          style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('Lanjutkan', style: GoogleFonts.plusJakartaSans(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('Batal & Keluar', style: GoogleFonts.plusJakartaSans(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    
+    return result ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _onWillPop();
+        if (shouldPop) {
+          // Explicitly cancel if user confirms exit
+          if (widget.idLangganan != 0) {
+            subscriptionViewModel.cancelSubscription(widget.idLangganan);
+          }
+          Get.back();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0A1118),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF131E29),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () async {
+              // Reload back to method selection
+              isLoading.value = true;
+              _controller.loadRequest(Uri.parse(widget.redirectUrl));
+              SnackbarUtils.showInfo('Informasi', 'Kembali ke daftar metode pembayaran.');
+            },
+            tooltip: 'Kembali ke Metode Pembayaran',
+          ),
+          title: Text(
+            'Pembayaran',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white54),
+              onPressed: () async {
+                final shouldPop = await _onWillPop();
+                if (shouldPop) {
+                  // Explicitly cancel on Close button
+                  if (widget.idLangganan != 0) {
+                    subscriptionViewModel.cancelSubscription(widget.idLangganan);
+                  }
+                  Get.back();
+                }
+              },
+              tooltip: 'Tutup & Batalkan',
+            ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            WebViewWidget(controller: _controller),
+            Obx(
+              () => isLoading.value
+                  ? Container(
+                      color: const Color(0xFF0A1118),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(
+                              color: Color(0xFF00C2FF),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Memuat halaman pembayaran...',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                color: Colors.white.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _handleRedirect(String url) {
-    // Extract status and ID if possible from the URL
-    final Uri uri = Uri.parse(url);
-    final String? statusCode = uri.queryParameters['status_code'];
-    final String? transactionStatus = uri.queryParameters['transaction_status'];
-    final String? orderId = uri.queryParameters['order_id'];
+    try {
+      final Uri uri = Uri.parse(url);
+      final String? statusCode = uri.queryParameters['status_code'];
+      final String? transactionStatus = uri.queryParameters['transaction_status'];
+      final String? orderId = uri.queryParameters['order_id'];
 
-    if (statusCode == '200' || transactionStatus == 'settlement' || transactionStatus == 'capture') {
-      _finishPayment(true, 'Pembayaran berhasil! Langganan Anda akan segera aktif.', orderId);
-    } else if (statusCode == '201' || transactionStatus == 'pending') {
-      _finishPayment(false, 'Pembayaran sedang diproses. Silakan selesaikan pembayaran.', orderId);
-    } else if (statusCode == '202' || transactionStatus == 'cancel' || transactionStatus == 'expire') {
-      _finishPayment(false, 'Pembayaran dibatalkan atau kadaluarsa.', orderId);
-    } else {
-      // Default fallback for any other redirect
-      Get.back();
+      debugPrint('🌐 Redirect detected: Status=$statusCode, TransStatus=$transactionStatus');
+
+      if (statusCode == '200' || transactionStatus == 'settlement' || transactionStatus == 'capture') {
+        _finishPayment(true, 'Pembayaran berhasil! Langganan Anda akan segera aktif.', orderId);
+      } else if (statusCode == '201' || transactionStatus == 'pending') {
+        _finishPayment(false, 'Pembayaran sedang diproses. Silakan selesaikan pembayaran.', orderId);
+      } else if (statusCode == '202' || transactionStatus == 'cancel' || transactionStatus == 'expire' || transactionStatus == 'expired' || url.contains('/unfinish')) {
+        // If expired or explicitly canceled, we return to the method list
+        if (transactionStatus == 'expire' || transactionStatus == 'expired') {
+          if (widget.idLangganan != 0) {
+            subscriptionViewModel.cancelSubscription(widget.idLangganan);
+          }
+        }
+        
+        SnackbarUtils.showInfo('Informasi', 'Kembali ke daftar metode pembayaran.');
+        _controller.loadRequest(Uri.parse(widget.redirectUrl));
+      } else if (url.contains('/error') || statusCode == '407') {
+        _finishPayment(false, 'Pembayaran gagal. Silakan coba lagi.', orderId);
+      } else {
+        _controller.loadRequest(Uri.parse(widget.redirectUrl));
+      }
+    } catch (e) {
+      debugPrint('Error parsing redirect URL: $e');
+      _controller.loadRequest(Uri.parse(widget.redirectUrl));
     }
   }
+
 
   void _finishPayment(bool isSuccess, String message, String? orderId) {
     if (isSuccess) {
@@ -137,48 +294,21 @@ class _MobileWebViewState extends State<_MobileWebView> {
       SnackbarUtils.showInfo('Informasi', message);
     }
     
-    if (Get.isOverlaysOpen) Get.back(); // Close any overlays
-    Get.back(); // Close WebView screen
+    // Safely exit
+    if (Get.isOverlaysOpen) Get.back(); 
+    
+    Future.delayed(const Duration(milliseconds: 200), () {
+      // Check if we are still on the WebView page before calling back
+      if (Get.currentRoute == Routes.MIDTRANS_WEBVIEW || Get.currentRoute.contains('MidtransWebView')) {
+        Get.back();
+      }
+    });
   }
 
   void _checkPaymentStatus(String url) {
-    // legacy check, onNavigationRequest should handle most cases now
     if (url.contains('status_code=200') || url.contains('transaction_status=settlement')) {
       _finishPayment(true, 'Pembayaran berhasil!', null);
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        WebViewWidget(controller: _controller),
-        Obx(
-          () => isLoading.value
-              ? Container(
-                  color: const Color(0xFF0A1118),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const CircularProgressIndicator(
-                          color: Color(0xFF00C2FF),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Memuat halaman pembayaran...',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            color: Colors.white.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
 }
+

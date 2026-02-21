@@ -14,74 +14,50 @@ class DashboardScreen extends GetView<DashboardViewModel> {
       backgroundColor: const Color(0xFF0F172A),
       body: Stack(
         children: [
-          // Background Gradient Blobs
-          Positioned(
-            top: -100,
-            right: -100,
-            child: ImageFiltered(
-              imageFilter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF00C2FF).withValues(alpha: 0.15),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: ImageFiltered(
-              imageFilter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
-              child: Container(
-                width: 250,
-                height: 250,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF4ADE80).withValues(alpha: 0.1),
-                ),
-              ),
-            ),
-          ),
+          // Background Gradient Blobs - Non-reactive (Optimized)
+          const _BackgroundBlobs(),
 
           SafeArea(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF00C2FF)),
-                );
-              }
-              return RefreshIndicator(
-                onRefresh: controller.fetchDashboardData,
-                color: const Color(0xFF00C2FF),
-                backgroundColor: const Color(0xFF1E293B),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 20,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeader(),
-                      const SizedBox(height: 32),
-                      _buildSubscriptionCard(),
-                      const SizedBox(height: 32),
-                      _buildSectionTitle('Ringkasan'),
-                      const SizedBox(height: 16),
-                      _buildStatusCards(),
-                      const SizedBox(height: 32),
-                      _buildSectionTitle('Menu Utama'),
-                      const SizedBox(height: 16),
-                      _buildMenuGrid(),
-                      const SizedBox(height: 32),
-                    ],
-                  ),
+            child: RefreshIndicator(
+              onRefresh: () => controller.fetchDashboardData(isSilent: true),
+              color: const Color(0xFF00C2FF),
+              backgroundColor: const Color(0xFF1E293B),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
                 ),
-              );
-            }),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 32),
+                    _buildSubscriptionCard(),
+                    const SizedBox(height: 32),
+                    _buildSectionTitle('Ringkasan'),
+                    const SizedBox(height: 16),
+                    _buildStatusCards(),
+                    const SizedBox(height: 32),
+                    _buildSectionTitle('Menu Utama'),
+                    const SizedBox(height: 16),
+                    _buildMenuGrid(),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          // Only show full screen loader on VERY FIRST load
+          Obx(() => controller.isLoading.value 
+            ? Container(
+                color: const Color(0xFF0F172A).withValues(alpha: 0.8),
+                child: const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF00C2FF)),
+                ),
+              )
+            : const SizedBox.shrink(),
           ),
         ],
       ),
@@ -161,7 +137,7 @@ class DashboardScreen extends GetView<DashboardViewModel> {
             );
           },
           child: Container(
-            padding: const EdgeInsets.all(2), // Border width
+            padding: const EdgeInsets.all(2),
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -185,7 +161,7 @@ class DashboardScreen extends GetView<DashboardViewModel> {
   }
 
   Widget _buildSubscriptionCard() {
-    return Container(
+    return Obx(() => Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -270,7 +246,7 @@ class DashboardScreen extends GetView<DashboardViewModel> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildSectionTitle(String title) {
@@ -292,7 +268,7 @@ class DashboardScreen extends GetView<DashboardViewModel> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: _buildMenuCard(
+                child: Obx(() => _buildMenuCard(
                   icon: Icons.shopping_bag_outlined,
                   title: 'Paket Langganan',
                   subtitle: controller.expiryDate.value != null
@@ -300,17 +276,17 @@ class DashboardScreen extends GetView<DashboardViewModel> {
                       : 'Beli / Perpanjang',
                   color: const Color(0xFFF472B6),
                   onTap: controller.navigateToPackageList,
-                ),
+                )),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: _buildMenuCard(
-                  icon: Icons.router,
+                child: Obx(() => _buildMenuCard(
+                  icon: Icons.router_rounded,
                   title: 'Router',
                   subtitle: '${controller.totalRouterCount.value} Unit',
                   color: const Color(0xFF4ADE80),
                   onTap: controller.navigateToRouters,
-                ),
+                )),
               ),
             ],
           ),
@@ -322,7 +298,7 @@ class DashboardScreen extends GetView<DashboardViewModel> {
             children: [
               Expanded(
                 child: _buildMenuCard(
-                  icon: Icons.wifi_tethering,
+                  icon: Icons.wifi_tethering_rounded,
                   title: 'Hotspot',
                   subtitle: 'Manajemen Server',
                   color: const Color(0xFF00C2FF),
@@ -331,7 +307,7 @@ class DashboardScreen extends GetView<DashboardViewModel> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: _buildMenuCard(
+                child: Obx(() => _buildMenuCard(
                   icon: Icons.inventory_2_outlined,
                   title: 'Paket Voucher',
                   subtitle: controller.selectedRouter.value != null 
@@ -339,7 +315,7 @@ class DashboardScreen extends GetView<DashboardViewModel> {
                       : 'Pilih Router Dahulu',
                   color: const Color(0xFF94A3B8),
                   onTap: controller.navigateToVoucherPackages,
-                ),
+                )),
               ),
             ],
           ),
@@ -350,7 +326,7 @@ class DashboardScreen extends GetView<DashboardViewModel> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: _buildMenuCard(
+                child: Obx(() => _buildMenuCard(
                   icon: Icons.confirmation_number_outlined,
                   title: 'Voucher',
                   subtitle: controller.selectedRouter.value != null
@@ -358,12 +334,12 @@ class DashboardScreen extends GetView<DashboardViewModel> {
                       : 'Pilih Router Dahulu',
                   color: const Color(0xFFFFB547),
                   onTap: controller.navigateToVouchers,
-                ),
+                )),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: _buildMenuCard(
-                  icon: Icons.receipt_long_outlined,
+                  icon: Icons.receipt_long_rounded,
                   title: 'Transaksi',
                   subtitle: 'Riwayat Penjualan',
                   color: const Color(0xFFFF6B81),
@@ -392,6 +368,13 @@ class DashboardScreen extends GetView<DashboardViewModel> {
           color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,25 +415,57 @@ class DashboardScreen extends GetView<DashboardViewModel> {
   }
 
   Widget _buildStatusCards() {
-    return Row(
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
+    
+    return Column(
       children: [
-        Expanded(
-          child: _buildInfoCard(
-            title: 'Router Online',
-            value:
-                '${controller.onlineRouterCount.value} / ${controller.totalRouterCount.value}',
-            icon: Icons.wifi,
-            color: const Color(0xFF4ADE80),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Obx(() => _buildInfoCard(
+                title: 'Pendapatan Hari Ini',
+                value: currencyFormat.format(controller.totalIncomeToday.value),
+                icon: Icons.account_balance_wallet_rounded,
+                color: const Color(0xFF4ADE80),
+              )),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Obx(() => _buildInfoCard(
+                title: 'Transaksi Hari Ini',
+                value: '${controller.totalTransactionsToday.value}',
+                icon: Icons.receipt_long_rounded,
+                color: const Color(0xFFFFB240),
+              )),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildInfoCard(
-            title: 'User Aktif',
-            value: '${controller.activeUserCount.value}',
-            icon: Icons.people_outline,
-            color: const Color(0xFF00C2FF),
-          ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: Obx(() => _buildInfoCard(
+                title: 'Router Online',
+                value:
+                    '${controller.onlineRouterCount.value} / ${controller.totalRouterCount.value}',
+                icon: Icons.dns_rounded,
+                color: const Color(0xFF00C2FF),
+              )),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Obx(() => _buildInfoCard(
+                title: 'User Aktif',
+                value: '${controller.activeUserCount.value}',
+                icon: Icons.bolt_rounded,
+                color: const Color(0xFFF472B6),
+              )),
+            ),
+          ],
         ),
       ],
     );
@@ -466,47 +481,107 @@ class DashboardScreen extends GetView<DashboardViewModel> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  value,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 12,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              Icon(
+                Icons.trending_up_rounded,
+                color: color.withValues(alpha: 0.3),
+                size: 16,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title.toUpperCase(),
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// optimized static background to avoid expensive re-renders
+class _BackgroundBlobs extends StatelessWidget {
+  const _BackgroundBlobs();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -100,
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF00C2FF).withValues(alpha: 0.15),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -50,
+          left: -50,
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF4ADE80).withValues(alpha: 0.1),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

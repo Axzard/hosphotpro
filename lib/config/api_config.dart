@@ -44,6 +44,15 @@ class ApiConfig {
       '$baseUrl/api/voucher/$id';
   static String deleteVoucher(int id) =>
       '$baseUrl/api/voucher/$id';
+  static const String vouchersAktif = '$baseUrl/api/voucher/aktif';
+  static String sellVoucher(int id) => '$baseUrl/api/voucher/jual/$id';
+
+  // Report (Laporan) endpoints
+  static const String reportDashboard = '$baseUrl/api/laporan/dashboard';
+  static const String reportDaily = '$baseUrl/api/laporan/per-hari';
+  static const String reportMonthly = '$baseUrl/api/laporan/per-bulan';
+  static const String reportYearly = '$baseUrl/api/laporan/per-tahun';
+  static const String reportRefresh = '$baseUrl/api/laporan/refresh';
 
   // Headers
   static Map<String, String> headers({String? token}) {

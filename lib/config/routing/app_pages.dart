@@ -5,9 +5,10 @@ import '../../ui/auth/register_screen.dart';
 import '../../ui/dashboard/view_models/dashboard_view_model.dart';
 import '../../ui/subscription/package_list_screen.dart';
 import '../../ui/subscription/payment_screen.dart';
-import '../../ui/subscription/transaction_history_screen.dart';
 import '../../ui/subscription/subscription_status_screen.dart';
 import '../../ui/subscription/view_models/subscription_view_model.dart';
+import '../../ui/report/report_screen.dart';
+import '../../ui/report/view_models/report_view_model.dart';
 import '../../ui/voucher/print_voucher_screen.dart';
 import '../../ui/voucher/voucher_detail_screen.dart';
 import '../../ui/voucher/view_models/voucher_view_model.dart';
@@ -56,9 +57,9 @@ class AppPages {
     ),
     GetPage(
       name: Routes.TRANSACTIONS,
-      page: () => const TransactionHistoryScreen(),
+      page: () => const ReportScreen(),
       binding: BindingsBuilder(() {
-        Get.lazyPut(() => SubscriptionViewModel(Get.find()));
+        Get.lazyPut(() => ReportViewModel());
       }),
     ),
     GetPage(

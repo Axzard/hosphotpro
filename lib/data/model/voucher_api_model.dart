@@ -19,6 +19,8 @@ class VoucherApiModel {
   final String namaRouter;
   final String? alamatIp;
   final int? portApi;
+  final String? dnsLogin;
+  final bool gunakanSsl;
 
   VoucherApiModel({
     required this.idVoucher,
@@ -39,6 +41,8 @@ class VoucherApiModel {
     required this.namaRouter,
     this.alamatIp,
     this.portApi,
+    this.dnsLogin,
+    this.gunakanSsl = false,
   });
 
   factory VoucherApiModel.fromJson(Map<String, dynamic> json) {
@@ -68,6 +72,8 @@ class VoucherApiModel {
       namaRouter: json['nama_router']?.toString() ?? '',
       alamatIp: json['alamat_ip']?.toString(),
       portApi: int.tryParse(json['port_api']?.toString() ?? ''),
+      dnsLogin: json['dns_login']?.toString(),
+      gunakanSsl: json['gunakan_ssl'] == true || json['gunakan_ssl'] == 1,
     );
   }
 
@@ -91,6 +97,8 @@ class VoucherApiModel {
       namaRouter: namaRouter,
       alamatIp: alamatIp,
       portApi: portApi,
+      dnsLogin: dnsLogin,
+      gunakanSsl: gunakanSsl,
     );
   }
 }

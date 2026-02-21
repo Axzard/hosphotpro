@@ -13,6 +13,7 @@ import '../../../core/utils/snackbar_utils.dart';
 import '../../../ui/voucher/widgets/voucher_print_preview.dart';
 import '../../../core/services/websocket_service.dart';
 import '../../../core/services/selection_service.dart';
+import '../../../data/model/voucher_api_model.dart';
 
 class VoucherViewModel extends GetxController {
   final VoucherRepository _voucherRepository = Get.find<VoucherRepository>();
@@ -21,11 +22,33 @@ class VoucherViewModel extends GetxController {
   final _selectionService = Get.find<SelectionService>();
 
   final vouchers = <VoucherModel>[].obs;
+  final filterPaketId = Rxn<int>(); // Package filter ID
+
+  // Filtered lists for TabView (respecting both status and package filter)
+  List<VoucherModel> get stockVouchers => _applyFilters(VoucherStatus.stok);
+  List<VoucherModel> get soldVouchers => _applyFilters(VoucherStatus.terjual);
+  List<VoucherModel> get activeVouchers => _applyFilters(VoucherStatus.aktif);
+  List<VoucherModel> get expiredVouchers => _applyFilters(VoucherStatus.expired);
+
+  List<VoucherModel> _applyFilters(VoucherStatus status) {
+    return vouchers.where((v) {
+      final matchStatus = v.statusVoucher == status;
+      if (filterPaketId.value == null) return matchStatus;
+      return matchStatus && v.idPaket == filterPaketId.value;
+    }).toList();
+  }
+
+  void setFilterPaket(int? id) {
+    filterPaketId.value = id;
+  }
+
   final routers = <RouterModel>[].obs;
   final voucherPackages = <VoucherPackageModel>[].obs;
   final hotspots = <HotspotModel>[].obs;
 
   final isLoading = false.obs;
+  // State management for optimization
+  final _isInitialLoad = true.obs;
   final isGenerating = false.obs;
   final deletingVoucherIds = <int>{}.obs; // Track IDs being deleted
   final count = 1.obs;
@@ -43,14 +66,16 @@ class VoucherViewModel extends GetxController {
     loadRouters();
     _initRealtimeListeners();
 
-    // Listen to global changes to reload data
+    // Listen to global changes to reload data - Skip if initial load to prevent double load
     ever(selectedRouter, (router) {
+      if (_isInitialLoad.value) return;
       if (router != null) {
         loadRouters(); // This will refresh hotspots for the new router
       }
     });
 
     ever(selectedHotspot, (hotspot) {
+      if (_isInitialLoad.value) return;
       if (hotspot != null) {
         onHotspotChanged(hotspot);
       }
@@ -61,14 +86,82 @@ class VoucherViewModel extends GetxController {
     print('🚀 [VoucherVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
       final event = (eventData['event'] ?? '').toString().toLowerCase();
+      final data = eventData['data'];
       
-      // Filter: Only refresh if event is relevant to vouchers or hotspots
-      const relevantEvents = ['voucher_created', 'voucher_deleted', 'hotspot_updated', 'router_updated'];
-      if (!relevantEvents.contains(event)) return;
+      print('🎟️ [VoucherVM] Event Received: $event');
 
-      print('🎟️ [VoucherVM] Refreshing due to Event: $event');
-      loadVouchers();
-      loadVoucherPackages();
+      // 1. Created (Single)
+      if (event == 'voucher:created' && data != null) {
+        try {
+          final idPaket = int.tryParse(data['id_paket']?.toString() ?? '') ?? 0;
+          // Check if this package belongs to our current hotspot packages
+          final package = voucherPackages.firstWhereOrNull((p) => p.id == idPaket);
+
+          if (package != null) {
+            final newVoucher = VoucherApiModel.fromJson(data).toDomain().copyWith(
+              namaPaket: package.namaPaket,
+            );
+            vouchers.insert(0, newVoucher);
+          }
+        } catch (e) {
+          print('Error parsing voucher:created: $e');
+        }
+        return;
+      }
+
+      // 2. Created (Bulk)
+      if (event == 'voucher:bulkcreated' && data != null) {
+        try {
+          final idPaket = int.tryParse(data['id_paket']?.toString() ?? '') ?? 0;
+          final package = voucherPackages.firstWhereOrNull((p) => p.id == idPaket);
+
+          if (package != null) {
+            final listData = data['data'] as List?;
+            if (listData != null) {
+              final newVouchers = listData
+                  .map((e) => VoucherApiModel.fromJson(e).toDomain().copyWith(
+                        namaPaket: package.namaPaket,
+                      ))
+                  .toList();
+              vouchers.insertAll(0, newVouchers);
+            }
+          }
+        } catch (e) {
+          print('Error parsing voucher:bulkcreated: $e');
+        }
+        return;
+      }
+
+      // 3. Deleted
+      if (event == 'voucher:deleted' && data != null) {
+        final id = data['id_voucher'] as int?;
+        if (id != null) {
+          vouchers.removeWhere((v) => v.idVoucher == id);
+        }
+        return;
+      }
+
+      // 4. Updated / Sold
+      if ((event == 'voucher:updated' || event == 'voucher:sold') && data != null) {
+        final id = data['id_voucher'] as int?;
+        final statusStr = data['status_voucher']?.toString();
+        if (id != null && statusStr != null) {
+          final index = vouchers.indexWhere((v) => v.idVoucher == id);
+          if (index != -1) {
+            vouchers[index] = vouchers[index].copyWith(
+              statusVoucher: VoucherStatus.fromString(statusStr),
+            );
+          }
+        }
+        return;
+      }
+
+      // Fallback for other relevant structural changes
+      const relevantEvents = ['hotspot_updated', 'router_updated'];
+      if (relevantEvents.contains(event)) {
+        loadVoucherPackages();
+        loadVouchers();
+      }
     });
   }
 
@@ -115,6 +208,7 @@ class VoucherViewModel extends GetxController {
       SnackbarUtils.showError('Error', 'Gagal memuat daftar hotspot');
     } finally {
       isLoading.value = false;
+      _isInitialLoad.value = false;
     }
   }
 
@@ -276,6 +370,41 @@ class VoucherViewModel extends GetxController {
       SnackbarUtils.showError('Error', 'Gagal menghapus voucher: $e');
     } finally {
       deletingVoucherIds.remove(idVoucher);
+    }
+  }
+
+  /// Sell a voucher
+  Future<void> sellVoucher(VoucherModel voucher, String paymentMethod) async {
+    try {
+      isLoading.value = true;
+      final price = await _voucherRepository.sellVoucher(voucher.idVoucher, paymentMethod);
+      
+      SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dijual dengan harga Rp${price.toStringAsFixed(0)}');
+      
+      // Update local status to avoid full refresh if possible
+      final index = vouchers.indexWhere((v) => v.idVoucher == voucher.idVoucher);
+      if (index != -1) {
+        vouchers[index] = voucher.copyWith(statusVoucher: VoucherStatus.terjual);
+      }
+      
+      await loadVouchers(); // Refresh list to be sure
+    } catch (e) {
+      SnackbarUtils.showError('Error', 'Gagal menjual voucher: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Load global active vouchers
+  Future<void> loadActiveVouchers() async {
+    try {
+      isLoading.value = true;
+      await _voucherRepository.getActiveVouchers();
+      // ...
+    } catch (e) {
+      SnackbarUtils.showError('Error', 'Gagal memuat voucher aktif: $e');
+    } finally {
+      isLoading.value = false;
     }
   }
 

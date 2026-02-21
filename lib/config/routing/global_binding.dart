@@ -14,6 +14,9 @@ import '../../data/repositories/router_repository_impl.dart';
 import '../../data/services/voucher_service.dart';
 import '../../domain/models/voucher_repository.dart';
 import '../../data/repositories/voucher_repository_impl.dart';
+import '../../data/services/report_service.dart';
+import '../../domain/models/report_repository.dart';
+import '../../data/repositories/report_repository_impl.dart';
 import '../../core/services/printer_service.dart';
 import '../../core/services/websocket_service.dart';
 import '../../core/services/selection_service.dart';
@@ -39,6 +42,7 @@ class GlobalBinding extends Bindings {
     Get.put<MidtransService>(MidtransService());
     Get.put<RouterService>(RouterService());
     Get.put<VoucherService>(VoucherService());
+    Get.put<ReportService>(ReportService());
     Get.put<SelectionService>(SelectionService());
 
     // Repositories
@@ -46,6 +50,7 @@ class GlobalBinding extends Bindings {
     Get.put<SubscriptionRepository>(SubscriptionRepositoryImpl());
     Get.put<RouterRepository>(RouterRepositoryImpl(Get.find()));
     Get.put<VoucherRepository>(VoucherRepositoryImpl());
+    Get.put<ReportRepository>(ReportRepositoryImpl());
 
     // ViewModels
     Get.put<AuthViewModel>(AuthViewModel(Get.find()), permanent: true);

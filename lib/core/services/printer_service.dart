@@ -1,16 +1,19 @@
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as fbp;
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:get/get.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../domain/models/voucher_model.dart';
-import 'package:intl/intl.dart';
 import 'dart:typed_data';
 import 'dart:async';
+import 'dart:io';
 
 class PrinterService extends GetxService {
   final isConnected = false.obs;
+  final isScanning = false.obs;
   final devices = <fbp.BluetoothDevice>[].obs;
   final selectedDevice = Rxn<fbp.BluetoothDevice>();
   StreamSubscription? _connectionSubscription;
+  StreamSubscription? _scanSubscription;
 
   @override
   void onInit() {
@@ -21,6 +24,7 @@ class PrinterService extends GetxService {
   @override
   void onClose() {
     _connectionSubscription?.cancel();
+    _scanSubscription?.cancel();
     super.onClose();
   }
 
@@ -30,21 +34,68 @@ class PrinterService extends GetxService {
         scanDevices();
       }
     });
+
+    fbp.FlutterBluePlus.isScanning.listen((scanning) {
+      isScanning.value = scanning;
+    });
+  }
+
+  Future<bool> _requestPermissions() async {
+    if (Platform.isAndroid) {
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+        Permission.location,
+      ].request();
+
+      if (statuses[Permission.bluetoothScan] != PermissionStatus.granted ||
+          statuses[Permission.bluetoothConnect] != PermissionStatus.granted) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<void> scanDevices() async {
+    if (!await _requestPermissions()) {
+      print("Bluetooth permissions not granted");
+      return;
+    }
+
     try {
       devices.clear();
-      // Get bonded devices first
+      
+      // Get bonded/connected devices first
       final List<fbp.BluetoothDevice> bonded = await fbp.FlutterBluePlus.bondedDevices;
-      devices.assignAll(bonded);
+      for (var device in bonded) {
+        if (!devices.any((d) => d.remoteId == device.remoteId)) {
+          devices.add(device);
+        }
+      }
 
-      // Also start a short scan for new devices
-      await fbp.FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
-      fbp.FlutterBluePlus.scanResults.listen((results) {
+      // Also get currently connected system devices (very important!)
+      // Some printers might be connected but not bonded
+      final List<fbp.BluetoothDevice> system = await fbp.FlutterBluePlus.systemDevices([]);
+      for (var device in system) {
+        if (!devices.any((d) => d.remoteId == device.remoteId)) {
+          devices.add(device);
+        }
+      }
+
+      // Start scan
+      await fbp.FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 10),
+      );
+
+      _scanSubscription?.cancel();
+      _scanSubscription = fbp.FlutterBluePlus.scanResults.listen((results) {
         for (fbp.ScanResult r in results) {
-          if (!devices.any((d) => d.remoteId == r.device.remoteId)) {
-            devices.add(r.device);
+          // Filter for likely printers or just show all for now
+          // Thermal printers often have 'Printer' in name or specific UUIDs
+          if (r.device.platformName.isNotEmpty) {
+             if (!devices.any((d) => d.remoteId == r.device.remoteId)) {
+              devices.add(r.device);
+            }
           }
         }
       });
@@ -59,17 +110,28 @@ class PrinterService extends GetxService {
     }
 
     try {
-      await device.connect(license: fbp.License.free);
+      print("Connecting to ${device.platformName} (${device.remoteId})");
+      await device.connect(autoConnect: false, license: fbp.License.free);
       selectedDevice.value = device;
       isConnected.value = true;
 
       _connectionSubscription?.cancel();
       _connectionSubscription = device.connectionState.listen((state) {
+        print("Connection state changed: $state");
         if (state == fbp.BluetoothConnectionState.disconnected) {
           isConnected.value = false;
           selectedDevice.value = null;
         }
       });
+      
+      // Request larger MTU for faster printing
+      if (Platform.isAndroid) {
+        try {
+          await device.requestMtu(512);
+        } catch (e) {
+          print("Error requesting MTU: $e");
+        }
+      }
     } catch (e) {
       print("Error connecting to device: $e");
       rethrow;
@@ -111,9 +173,15 @@ class PrinterService extends GetxService {
     );
     bytes += generator.hr();
 
-    // Body
+    // Body - Grouped Login Info
     bytes += generator.text(
-      'Kode Voucher:',
+      'DATA LOGIN VOUCHER',
+      styles: const PosStyles(align: PosAlign.center, bold: true),
+    );
+    bytes += generator.feed(1);
+
+    bytes += generator.text(
+      'USERNAME / KODE',
       styles: const PosStyles(align: PosAlign.center),
     );
     bytes += generator.text(
@@ -128,8 +196,9 @@ class PrinterService extends GetxService {
 
     if (voucher.passwordVoucher.isNotEmpty &&
         voucher.passwordVoucher != voucher.kodeVoucher) {
+      bytes += generator.feed(1);
       bytes += generator.text(
-        'Password:',
+        'PASSWORD',
         styles: const PosStyles(align: PosAlign.center),
       );
       bytes += generator.text(
@@ -143,46 +212,6 @@ class PrinterService extends GetxService {
       );
     }
 
-    bytes += generator.feed(1);
-
-    // Details
-    bytes += generator.row([
-      PosColumn(text: 'Paket', width: 6),
-      PosColumn(
-        text: voucher.namaPaket,
-        width: 6,
-        styles: const PosStyles(align: PosAlign.right),
-      ),
-    ]);
-    bytes += generator.row([
-      PosColumn(text: 'Harga', width: 6),
-      PosColumn(
-        text: NumberFormat.currency(
-          locale: 'id',
-          symbol: 'Rp ',
-          decimalDigits: 0,
-        ).format(voucher.harga),
-        width: 6,
-        styles: const PosStyles(align: PosAlign.right),
-      ),
-    ]);
-
-    if (voucher.tanggalExpired != null) {
-      bytes += generator.row([
-        PosColumn(text: 'Expired', width: 6),
-        PosColumn(
-          text: DateFormat('dd/MM/yy').format(voucher.tanggalExpired!),
-          width: 6,
-          styles: const PosStyles(align: PosAlign.right),
-        ),
-      ]);
-    }
-
-    bytes += generator.hr();
-    bytes += generator.text(
-      'Terima Kasih',
-      styles: const PosStyles(align: PosAlign.center, bold: true),
-    );
     bytes += generator.feed(2);
     bytes += generator.cut();
 

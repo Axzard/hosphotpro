@@ -124,4 +124,22 @@ class VoucherRepositoryImpl implements VoucherRepository {
       throw Exception(response.message);
     }
   }
+
+  @override
+  Future<List<VoucherModel>> getActiveVouchers() async {
+    final response = await _voucherService.getActiveVouchers();
+    if (response.success && response.data != null) {
+      return response.data!.map((apiModel) => apiModel.toDomain()).toList();
+    }
+    return [];
+  }
+
+  @override
+  Future<double> sellVoucher(int id, String paymentMethod) async {
+    final response = await _voucherService.sellVoucher(id, paymentMethod);
+    if (response.success) {
+      return response.data ?? 0;
+    }
+    throw Exception(response.message);
+  }
 }

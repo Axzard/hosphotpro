@@ -205,7 +205,10 @@ class SubscriptionViewModel extends GetxController {
           transaction.redirectUrl!.isNotEmpty) {
         Get.to(
           () => const MidtransWebViewScreen(),
-          arguments: transaction.redirectUrl,
+          arguments: {
+            'url': transaction.redirectUrl,
+            'idLangganan': idLangganan,
+          },
         );
       } else if (transaction.snapToken != null &&
           transaction.snapToken!.isNotEmpty) {
@@ -251,7 +254,10 @@ class SubscriptionViewModel extends GetxController {
         
         Get.to(
           () => const MidtransWebViewScreen(),
-          arguments: transaction.redirectUrl,
+          arguments: {
+            'url': transaction.redirectUrl!,
+            'idLangganan': idLangganan,
+          },
         );
       } else if (transaction.snapToken != null &&
           transaction.snapToken!.isNotEmpty) {
@@ -267,24 +273,31 @@ class SubscriptionViewModel extends GetxController {
   }
 
   /// Resume an existing pending payment using its saved payment URL
-  Future<void> resumePayment(UserSubscriptionModel subscription) async {
-    // Priority 1: Persistent Local Storage
-    String? url = _paymentPersistenceService.getPendingUrl(subscription.idLangganan);
+  /// If forced or URL is missing, it will re-create the transaction
+  Future<void> resumePayment(UserSubscriptionModel subscription, {bool forceNew = false}) async {
+    String? url;
     
-    // Priority 2: API Model URL
-    url ??= subscription.paymentUrl;
+    if (!forceNew) {
+      // Priority 1: Persistent Local Storage
+      url = _paymentPersistenceService.getPendingUrl(subscription.idLangganan);
+      // Priority 2: API Model URL
+      url ??= subscription.paymentUrl;
+    }
 
-    if (url != null && url.isNotEmpty) {
+    if (url != null && url.isNotEmpty && !forceNew) {
       Get.to(
         () => const MidtransWebViewScreen(),
-        arguments: url,
+        arguments: {
+          'url': url,
+          'idLangganan': subscription.idLangganan,
+        },
       );
     } else {
-      // If payment URL is missing, we might need to "re-checkout" 
-      // but still using the SAME idLangganan (not creating a new subscription record)
+      // Re-create transaction (Re-checkout) for the SAME idLangganan
       try {
         processingSubscriptionId.value = subscription.idLangganan;
         
+        // Use current totalBayar
         final transaction = await _subscriptionRepository.createTransaction(
           idLangganan: subscription.idLangganan,
           amount: subscription.totalBayar,
@@ -296,13 +309,16 @@ class SubscriptionViewModel extends GetxController {
           
           Get.to(
             () => const MidtransWebViewScreen(),
-            arguments: transaction.redirectUrl,
+            arguments: {
+              'url': transaction.redirectUrl!,
+              'idLangganan': subscription.idLangganan,
+            },
           );
         } else {
-          Get.snackbar('Error', 'Gagal mendapatkan tautan pembayaran');
+          SnackbarUtils.showError('Error', 'Gagal memperbarui tautan pembayaran');
         }
       } catch (e) {
-        Get.snackbar('Error', 'Gagal memproses pembayaran: $e');
+        SnackbarUtils.showError('Error', 'Gagal memproses pembayaran: $e');
       } finally {
         processingSubscriptionId.value = null;
       }
@@ -312,6 +328,27 @@ class SubscriptionViewModel extends GetxController {
   /// Clear local pending payment
   Future<void> clearPendingPayment(int idLangganan) async {
     await _paymentPersistenceService.clearPendingPayment(idLangganan);
+  }
+
+  /// Cancel subscription (Explicitly by user or on expiry detect)
+  Future<void> cancelSubscription(int idLangganan) async {
+    try {
+      isLoading.value = true;
+      // Step 1: Tell backend to update status to 'canceled'
+      final success = await _subscriptionRepository.updateSubscriptionStatus(idLangganan, 'canceled');
+      
+      // Step 2: Clear local persistence
+      await clearPendingPayment(idLangganan);
+      
+      if (success) {
+        // Step 3: Refresh lists so it disappears from status screen
+        await loadMySubscriptions();
+      }
+    } catch (e) {
+      debugPrint('Error canceling subscription: $e');
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   void navigateToPackages() {

@@ -145,10 +145,40 @@ class HotspotViewModel extends GetxController {
       }
       
       print('🔄 [HotspotVM] Syncing hotspots for Router ID: $idRouter');
-      await _routerRepository.syncHotspots(idRouter);
-      SnackbarUtils.showSuccess('Berhasil', 'Sinkronisasi hotspot selesai');
+      
+      // Show loading dialog
+      Get.dialog(
+        const Center(
+          child: CircularProgressIndicator(color: Color(0xFF00C2FF)),
+        ),
+        barrierDismissible: false,
+      );
+
+      final results = await _routerRepository.syncHotspots(idRouter);
+      
+      // Close dialog
+      if (Get.isDialogOpen ?? false) Get.back();
+
+      if (results.isEmpty) {
+        SnackbarUtils.showSuccess('Berhasil', 'Sinkronisasi hotspot selesai');
+      } else {
+        // Build message from results: "nama_server: status"
+        final StringBuffer message = StringBuffer();
+        for (var i = 0; i < results.length; i++) {
+          final res = results[i];
+          final nama = res['nama_server'] ?? 'Unknown';
+          final status = res['status'] ?? 'OK';
+          message.write('$nama: $status');
+          if (i < results.length - 1) message.write('\n');
+        }
+        SnackbarUtils.showSuccess('Sinkronisasi Selesai', message.toString());
+      }
+      
       await loadHotspots();
     } catch (e) {
+      // Close dialog if still open
+      if (Get.isDialogOpen ?? false) Get.back();
+
       print('❌ [HotspotVM] Sync Error: $e');
       SnackbarUtils.showError('Error', 'Gagal sinkronisasi: $e');
     } finally {
