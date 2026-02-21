@@ -235,16 +235,19 @@ class SubscriptionService extends GetxService {
 
   // Create checkout transaction
   Future<ApiResponse<TransactionApiModel>> createTransaction({
-    required int idLangganan,
+    required int idPaketLangganan,
+    required int jumlahBulan,
     required double amount,
+    String metodePembayaran = 'midtrans',
   }) async {
     try {
       final token = _tokenService.getToken();
 
       final data = {
-        'id_langganan': idLangganan,
+        'id_paket_langganan': idPaketLangganan,
+        'jumlah_bulan': jumlahBulan,
         'total_bayar': amount.toInt(),
-        'metode_pembayaran': 'midtrans',
+        'metode_pembayaran': metodePembayaran,
       };
 
       final response = await _dio.post(

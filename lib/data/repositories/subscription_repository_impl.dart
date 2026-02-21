@@ -46,13 +46,17 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
 
   @override
   Future<TransactionModel> createTransaction({
-    required int idLangganan,
+    required int idPaketLangganan,
+    required int jumlahBulan,
     required double amount,
+    String metodePembayaran = 'midtrans',
   }) async {
     try {
       final response = await _subscriptionService.createTransaction(
-        idLangganan: idLangganan,
+        idPaketLangganan: idPaketLangganan,
+        jumlahBulan: jumlahBulan,
         amount: amount,
+        metodePembayaran: metodePembayaran,
       );
 
       if (response.success && response.data != null) {

@@ -20,8 +20,8 @@ class ReportService extends GetxService {
     try {
       final token = _tokenService.getToken();
       final queryParams = <String, dynamic>{};
-      if (year != null) queryParams['year'] = year;
-      if (month != null) queryParams['month'] = month;
+      if (year != null) queryParams['tahun'] = year;
+      if (month != null) queryParams['bulan'] = month;
 
       final response = await _dio.get(
         ApiConfig.reportDashboard,
@@ -49,6 +49,132 @@ class ReportService extends GetxService {
     }
   }
 
+  Future<ApiResponse<DailyReportApiModel?>> getDailyReportHarian({
+    required int tahun,
+    required int bulan,
+    required int tgl,
+  }) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.reportHarian,
+        queryParameters: {
+          'tahun': tahun,
+          'bulan': bulan,
+          'tgl': tgl,
+        },
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return ApiResponse(
+          success: true,
+          message: 'Success',
+          data: DailyReportApiModel.fromJson(response.data['data']),
+        );
+      }
+      return ApiResponse(success: false, message: 'Failed');
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  Future<ApiResponse<List<DailyReportApiModel>>> getGroupedReport({
+    required String type,
+    required String start,
+    required String end,
+  }) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.reportGrouped,
+        queryParameters: {
+          'type': type,
+          'start': start,
+          'end': end,
+        },
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List data = response.data['data'] as List? ?? [];
+        return ApiResponse(
+          success: true,
+          message: 'Success',
+          data: data.map((json) => DailyReportApiModel.fromJson(json)).toList(),
+        );
+      }
+      return ApiResponse(success: false, message: 'Failed');
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  Future<ApiResponse<List<DailyReportApiModel>>> getRangeReport({
+    required String start,
+    required String end,
+  }) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.reportRange,
+        queryParameters: {
+          'start': start,
+          'end': end,
+        },
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List data = response.data['data'] as List? ?? [];
+        return ApiResponse(
+          success: true,
+          message: 'Success',
+          data: data.map((json) => DailyReportApiModel.fromJson(json)).toList(),
+        );
+      }
+      return ApiResponse(success: false, message: 'Failed');
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  Future<ApiResponse<ReportSummaryApiModel?>> getSummaryReport({
+    required String start,
+    required String end,
+  }) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.reportSummary,
+        queryParameters: {
+          'start': start,
+          'end': end,
+        },
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return ApiResponse(
+          success: true,
+          message: 'Success',
+          data: ReportSummaryApiModel.fromJson(response.data['data']),
+        );
+      }
+      return ApiResponse(success: false, message: 'Failed');
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
   Future<ApiResponse<List<DailyReportApiModel>>> getDailyReports({
     int? year,
     int? month,
@@ -57,8 +183,8 @@ class ReportService extends GetxService {
     try {
       final token = _tokenService.getToken();
       final queryParams = <String, dynamic>{};
-      if (year != null) queryParams['year'] = year;
-      if (month != null) queryParams['month'] = month;
+      if (year != null) queryParams['tahun'] = year;
+      if (month != null) queryParams['bulan'] = month;
       if (date != null) queryParams['date'] = date;
 
       final response = await _dio.get(
@@ -69,6 +195,7 @@ class ReportService extends GetxService {
           validateStatus: (status) => status! < 600,
         ),
       );
+// ... keeps rest for compatibility
 
       if (response.statusCode == 200) {
         final data = response.data['data'] as List? ?? [];
@@ -91,7 +218,7 @@ class ReportService extends GetxService {
     try {
       final token = _tokenService.getToken();
       final queryParams = <String, dynamic>{};
-      if (year != null) queryParams['year'] = year;
+      if (year != null) queryParams['tahun'] = year;
 
       final response = await _dio.get(
         ApiConfig.reportMonthly,
@@ -143,22 +270,21 @@ class ReportService extends GetxService {
     }
   }
 
-  Future<ApiResponse<void>> refreshReports() async {
+  Future<ApiResponse<bool>> refreshReports() async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.post(
         ApiConfig.reportRefresh,
         options: Options(
           headers: ApiConfig.headers(token: token),
-          validateStatus: (status) => status! < 600,
         ),
       );
 
-      if (response.statusCode == 200) {
-        return ApiResponse(success: true, message: response.data['message']);
-      } else {
-        return ApiResponse(success: false, message: 'Gagal refresh laporan');
-      }
+      return ApiResponse(
+        success: response.statusCode == 200,
+        message: response.data['message'] ?? 'Refresh Success',
+        data: response.statusCode == 200,
+      );
     } catch (e) {
       return ApiResponse(success: false, message: 'Error: $e');
     }

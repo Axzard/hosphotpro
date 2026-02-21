@@ -484,6 +484,36 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (voucher.statusVoucher == VoucherStatus.stok) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  controller.sellVoucher(voucher, 'cash');
+                  Get.back(); // Return to list after selling
+                },
+                icon: const Icon(Icons.sell_outlined),
+                label: Text(
+                  'Jual Sekarang',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4ADE80),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 8,
+                  shadowColor: const Color(0xFF4ADE80).withValues(alpha: 0.4),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
           SizedBox(
             width: double.infinity,
             height: 54,

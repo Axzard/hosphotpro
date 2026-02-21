@@ -20,6 +20,7 @@ import '../../ui/router/hotspot_management_screen.dart';
 import '../../ui/router/view_models/hotspot_view_model.dart';
 import '../../ui/voucher/voucher_package_management_screen.dart';
 import '../../ui/voucher/view_models/voucher_package_view_model.dart';
+import '../../ui/core/widgets/error_screen.dart';
 import 'app_routes.dart';
 export 'app_routes.dart';
 
@@ -116,6 +117,10 @@ class AppPages {
       binding: BindingsBuilder(() {
         Get.lazyPut(() => VoucherPackageViewModel());
       }),
+    ),
+    GetPage(
+      name: Routes.ERROR,
+      page: () => ErrorScreen(message: Get.arguments as String?),
     ),
   ];
 }

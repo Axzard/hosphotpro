@@ -17,6 +17,7 @@ class CreateVoucherSheet extends StatefulWidget {
 class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
   final controller = Get.find<VoucherViewModel>();
   bool isAddingPackage = false;
+  Worker? _countWorker;
 
   final namaPaketController = TextEditingController();
   final durasiController = TextEditingController();
@@ -25,20 +26,36 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
   final prefixController = TextEditingController();
   final panjangUsernameController = TextEditingController();
   final dataLimitMbController = TextEditingController();
+  final voucherCountController = TextEditingController();
   int? selectedHotspotId;
   String selectedFormatKarakter = 'mix';
 
   @override
   void initState() {
     super.initState();
+    voucherCountController.text = controller.count.value.toString();
     // Refresh packages when sheet is opened
     if (controller.voucherPackages.isEmpty) {
       controller.loadVoucherPackages();
     }
+    
+    // Listen to count changes to update controller
+    _countWorker = ever(controller.count, (int val) {
+      if (voucherCountController.text != val.toString()) {
+        voucherCountController.text = val.toString();
+        // Keep cursor at the end
+        if (voucherCountController.text.isNotEmpty) {
+          voucherCountController.selection = TextSelection.fromPosition(
+            TextPosition(offset: voucherCountController.text.length),
+          );
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    _countWorker?.dispose();
     namaPaketController.dispose();
     durasiController.dispose();
     hargaController.dispose();
@@ -46,6 +63,7 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
     prefixController.dispose();
     panjangUsernameController.dispose();
     dataLimitMbController.dispose();
+    voucherCountController.dispose();
     super.dispose();
   }
 
@@ -152,61 +170,94 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
 
               _buildLabel('Jumlah Voucher'),
               const SizedBox(height: 8),
-              Obx(
-                () => Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        if (controller.count.value > 1) {
-                          controller.count.value--;
-                        }
-                      },
-                      icon: const Icon(
-                        Icons.remove_circle_outline,
-                        color: accentColor,
-                      ),
+              Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B), // Explicit dark background
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${controller.count.value}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            // Ensure we have a valid number even if input is empty
+                            int current = int.tryParse(voucherCountController.text) ?? controller.count.value;
+                            if (current > 1) {
+                              controller.count.value = current - 1;
+                            } else {
+                              controller.count.value = 1;
+                            }
+                          },
+                          icon: const Icon(Icons.remove_circle_outline, color: accentColor, size: 28),
                         ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        if (controller.count.value < 500) {
-                          controller.count.value++;
-                        }
-                      },
-                      icon: const Icon(
-                        Icons.add_circle_outline,
-                        color: accentColor,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (controller.count.value > 1)
-                      Text(
-                        'Mode Bulk',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                        SizedBox(
+                          width: 80,
+                          child: TextField(
+                            textAlign: TextAlign.center,
+                            onChanged: (val) {
+                              if (val.isEmpty) return;
+                              final n = int.tryParse(val) ?? 1;
+                              controller.count.value = n.clamp(1, 400);
+                            },
+                            controller: voucherCountController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white, // Absolute white
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              filled: false, // Ensure no background from theme
+                              contentPadding: EdgeInsets.zero,
+                              border: InputBorder.none,
+                            ),
+                          ),
                         ),
-                      ),
-                  ],
-                ),
+                        IconButton(
+                          onPressed: () {
+                            int current = int.tryParse(voucherCountController.text) ?? controller.count.value;
+                            if (current < 500) {
+                              controller.count.value = current + 1;
+                            }
+                          },
+                          icon: const Icon(Icons.add_circle_outline, color: accentColor, size: 28),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Obx(() => controller.count.value > 1
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.auto_awesome, color: Colors.orange, size: 14),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'MODE BULK AKTIF',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : const SizedBox.shrink()),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 32),

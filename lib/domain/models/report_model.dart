@@ -2,11 +2,15 @@ class ReportDashboardModel {
   final List<DailyReportModel> perHari;
   final List<MonthlyReportModel> perBulan;
   final List<YearlyReportModel> perTahun;
+  final double totalIncome;
+  final int totalTransactions;
 
   ReportDashboardModel({
     required this.perHari,
     required this.perBulan,
     required this.perTahun,
+    this.totalIncome = 0,
+    this.totalTransactions = 0,
   });
 }
 

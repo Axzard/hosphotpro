@@ -6,7 +6,6 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../config/routing/app_routes.dart';
-import 'dart:io' show Platform;
 
 class MidtransWebViewScreen extends StatefulWidget {
   const MidtransWebViewScreen({super.key});
@@ -173,27 +172,18 @@ class _MobileWebViewState extends State<_MobileWebView> {
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF0A1118),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF131E29),
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () async {
-              // Reload back to method selection
-              isLoading.value = true;
-              _controller.loadRequest(Uri.parse(widget.redirectUrl));
-              SnackbarUtils.showInfo('Informasi', 'Kembali ke daftar metode pembayaran.');
-            },
-            tooltip: 'Kembali ke Metode Pembayaran',
-          ),
-          title: Text(
-            'Pembayaran',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF131E29),
+            elevation: 0,
+            leading: const Icon(Icons.payment, color: Colors.white70), // Replaced back arrow with informative icon
+            title: Text(
+              'Pembayaran',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-          ),
           centerTitle: true,
           actions: [
             IconButton(

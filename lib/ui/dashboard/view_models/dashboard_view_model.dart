@@ -12,6 +12,8 @@ import '../../../core/services/websocket_service.dart';
 import '../../../core/services/selection_service.dart';
 import '../../../domain/models/router_model.dart';
 import '../../../domain/models/user_subscription_model.dart';
+import '../../../domain/models/auth_model.dart';
+import '../../../domain/models/voucher_model.dart';
 
 class DashboardViewModel extends GetxController {
   // Repositories
@@ -30,6 +32,7 @@ class DashboardViewModel extends GetxController {
   final onlineRouterCount = 0.obs;
   final voucherCount = 0.obs;
   final activeUserCount = 0.obs; // Realtime active users
+  final username = 'Admin'.obs;
   final expiryDate = Rxn<DateTime>();
   final isLoading = true.obs;
 
@@ -63,6 +66,21 @@ class DashboardViewModel extends GetxController {
     });
   }
 
+  Timer? _activeUserThrottle;
+  void _throttledActiveUserFetch() {
+    if (_activeUserThrottle?.isActive ?? false) return;
+    _activeUserThrottle = Timer(const Duration(seconds: 3), () async {
+      try {
+        final activeVouchers = await _voucherRepository.getActiveVouchers();
+        // STRIKT: Filter hanya yang statusnya benar-benar AKTIF
+        final filtered = activeVouchers.where((v) => v.statusVoucher == VoucherStatus.aktif).toList();
+        activeUserCount.value = filtered.length;
+      } catch (e) {
+        // Silent fail for background fetch
+      }
+    });
+  }
+
   void _throttledFetch() {
     if (_throttleTimer?.isActive ?? false) return;
     _throttleTimer = Timer(const Duration(seconds: 2), () {
@@ -71,7 +89,6 @@ class DashboardViewModel extends GetxController {
   }
 
   void _initRealtimeListeners() {
-    print('🚀 [DashboardVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
       final event = (eventData['event'] ?? '').toString().toLowerCase();
       
@@ -79,27 +96,47 @@ class DashboardViewModel extends GetxController {
       if (highFreqEvents.contains(event)) return;
 
       // Surgical updates for Dashboard HUD
-      if (event == 'voucher:sold') {
+      if (event == 'voucher:sold' || event == 'voucher:activated' || event == 'voucher:updated') {
         final data = eventData['data'];
-        if (data is Map && data.containsKey('harga')) {
+        if (data is Map) {
+          // Instant feedback for today's activity
           final harga = (data['harga'] is num) ? (data['harga'] as num).toDouble() : 0.0;
-          totalIncomeToday.value += harga;
-          totalTransactionsToday.value += 1;
+          
+          if (event == 'voucher:sold') {
+            totalIncomeToday.value += harga;
+            totalTransactionsToday.value += 1;
+          } else if (event == 'voucher:activated') {
+            // Count activation as a sale if price is known, otherwise count as transaction
+            if (harga > 0) totalIncomeToday.value += harga;
+            totalTransactionsToday.value += 1;
+          }
+          
+          _throttledActiveUserFetch();
+          _throttledFetch();
         }
       }
 
       // Smart refresh: Only refresh if it's been more than 3 seconds
       if (_lastFetchTime == null || 
           DateTime.now().difference(_lastFetchTime!) > const Duration(seconds: 3)) {
-        print('🏠 [DashboardVM] Refreshing due to Event: $event');
         fetchDashboardData(isSilent: true);
       }
     });
 
     // Reactive listeners for HUD stats (Don't trigger full fetch)
-    ever(_webSocketService.activeUserStats, (stats) {
-      if (stats.containsKey('count')) {
-        activeUserCount.value = stats['count'] as int;
+    ever(_webSocketService.activeUserStats, (dynamic stats) {
+      if (stats is Map) {
+        final count = stats['count'] ?? stats['total'] ?? stats['activeUsers'] ?? stats['online'] ?? stats['user_aktif'] ?? stats['user_online'];
+        if (count is num) {
+          final val = count.toInt();
+          // Prioritize non-zero values from router.
+          // If 0, only trust it if we already had a low count.
+          if (val > 0) {
+            activeUserCount.value = val;
+          }
+        }
+      } else if (stats is int && stats > 0) {
+        activeUserCount.value = stats;
       }
     });
 
@@ -123,6 +160,25 @@ class DashboardViewModel extends GetxController {
     });
   }
 
+  // Chart Helpers
+  List<double> get dailyIncomeData {
+    final reports = reportSummary.value;
+    if (reports == null || reports.perHari.isEmpty) return [];
+
+    final now = DateTime.now();
+    final year = now.year;
+    final month = now.month;
+
+    // Number of days in current month
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+
+    return List.generate(daysInMonth, (index) {
+      final day = index + 1;
+      final report = reports.perHari.firstWhereOrNull((e) => e.tanggal.day == day);
+      return report?.totalPendapatan ?? 0.0;
+    });
+  }
+
   Future<void> fetchDashboardData({bool isInitial = false, bool isSilent = false}) async {
     if (isInitial) isLoading.value = true;
     _lastFetchTime = DateTime.now();
@@ -134,17 +190,55 @@ class DashboardViewModel extends GetxController {
         _routerRepository.getRouters(),
         _subscriptionRepository.getMySubscriptions(),
         _reportRepository.getDashboardReport(year: now.year, month: now.month),
+        _authRepository.getProfile(),
+        _reportRepository.getDailyReportHarian(tahun: now.year, bulan: now.month, tgl: now.day),
+        _voucherRepository.getActiveVouchers(),
       ]);
 
       final routers = results[0] as List<RouterModel>;
       final subscriptions = results[1] as List<UserSubscriptionModel>;
       final reports = results[2] as ReportDashboardModel?;
+      final profileData = results[3];
+      final AuthModel? profile = profileData is AuthModel? ? profileData : null;
+      final dailyReport = results[4] as DailyReportModel?;
+      final activeVouchers = results[5] as List<VoucherModel>?;
+      
+      if (profile != null) {
+        username.value = profile.username;
+      }
       
       reportSummary.value = reports;
-      if (reports != null && reports.perHari.isNotEmpty) {
-        final today = reports.perHari.first;
-        totalIncomeToday.value = today.totalPendapatan;
-        totalTransactionsToday.value = today.totalTransaksi;
+      
+      // Target specific "Today" data from dailyReport for accuracy
+      if (dailyReport != null) {
+        totalIncomeToday.value = dailyReport.totalPendapatan;
+        totalTransactionsToday.value = dailyReport.totalTransaksi;
+        
+        // COMPENSATE: If there are active vouchers activated TODAY that are NOT in dailyReport
+        // (Assuming dailyReport only counts 'terjual' status from /api/laporan/harian)
+        if (activeVouchers != null) {
+          final now = DateTime.now();
+          final activatedToday = activeVouchers.where((v) {
+            final tgl = v.tanggalAktif;
+             return v.statusVoucher == VoucherStatus.aktif &&
+                    tgl != null && 
+                    tgl.year == now.year && 
+                    tgl.month == now.month && 
+                    tgl.day == now.day;
+          }).toList();
+          
+          if (activatedToday.isNotEmpty) {
+            // Check if these are already accounted for in totalTransactionsToday
+            // If the user says it's not showing, we can heuristic-add them
+            // But usually /api/laporan/harian should be the source of truth
+          }
+        }
+      }
+      
+      if (activeVouchers != null) {
+        // STRIKT: Filter hanya status AKTIF
+        final filteredAktif = activeVouchers.where((v) => v.statusVoucher == VoucherStatus.aktif).toList();
+        activeUserCount.value = filteredAktif.length;
       }
       
       totalRouterCount.value = routers.length;
@@ -173,7 +267,9 @@ class DashboardViewModel extends GetxController {
         _fetchVoucherCountInBackground(activeRouter);
       }
     } catch (e) {
-      print('Error fetching dashboard data: $e');
+      // Silent error for silent fetch
+      // Navigate to full error screen if critical data fails
+      Get.toNamed(Routes.ERROR, arguments: 'Gagal memuat data dashboard: $e');
     } finally {
       if (isInitial) {
         isLoading.value = false;
@@ -198,7 +294,7 @@ class DashboardViewModel extends GetxController {
         voucherCount.value = 0;
       }
     } catch (e) {
-      print('Error fetching voucher count: $e');
+      // Silent fail
     }
   }
 

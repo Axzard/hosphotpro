@@ -36,7 +36,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
         body: SafeArea(
           child: Column(
             children: [
-              _buildHeader(accentColor),
+              _buildHeader(context, accentColor),
               _buildTabBar(accentColor),
               Expanded(
                 child: TabBarView(
@@ -245,7 +245,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
     return [];
   }
 
-  Widget _buildHeader(Color accentColor) {
+  Widget _buildHeader(BuildContext context, Color accentColor) {
     return Padding(
       padding: const EdgeInsets.only(left: 24, top: 24, right: 24, bottom: 8),
       child: Column(
@@ -297,6 +297,17 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                   ],
                 ),
               ),
+              Obx(() => controller.vouchers.isNotEmpty 
+                ? IconButton(
+                    icon: controller.isDeletingAll.value 
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.redAccent))
+                      : const Icon(Icons.delete_sweep_outlined, color: Colors.redAccent),
+                    onPressed: controller.isDeletingAll.value 
+                      ? null 
+                      : () => _showBulkDeleteConfirm(context),
+                    tooltip: 'Hapus Semua',
+                  )
+                : const SizedBox.shrink()),
             ],
           ),
           const SizedBox(height: 24),
@@ -483,28 +494,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: TextButton.icon(
-                          onPressed: () {
-                            Get.dialog(
-                              AlertDialog(
-                                backgroundColor: const Color(0xFF131E29),
-                                title: const Text('Jual Voucher', style: TextStyle(color: Colors.white)),
-                                content: Text('Pilih metode pembayaran untuk voucher "${voucher.kodeVoucher}"'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Get.back();
-                                      controller.sellVoucher(voucher, 'cash');
-                                    },
-                                    child: const Text('CASH', style: TextStyle(color: Color(0xFF4ADE80))),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Get.back(),
-                                    child: const Text('Batal', style: TextStyle(color: Colors.white54)),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                          onPressed: () => controller.sellVoucher(voucher, 'cash'),
                           icon: const Icon(Icons.sell_outlined, size: 18, color: Color(0xFF4ADE80)),
                           label: const Text('Jual', style: TextStyle(color: Color(0xFF4ADE80), fontWeight: FontWeight.bold)),
                           style: TextButton.styleFrom(
@@ -565,6 +555,38 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showBulkDeleteConfirm(BuildContext context) {
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: const Color(0xFF131E29),
+        title: const Text(
+          'Hapus Semua Voucher',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin menghapus SEMUA voucher yang ada saat ini? Tindakan ini tidak dapat dibatalkan.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              controller.deleteAllVouchers();
+            },
+            child: const Text(
+              'Hapus Semua',
+              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
     );
   }

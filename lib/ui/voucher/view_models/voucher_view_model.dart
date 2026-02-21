@@ -50,6 +50,7 @@ class VoucherViewModel extends GetxController {
   // State management for optimization
   final _isInitialLoad = true.obs;
   final isGenerating = false.obs;
+  final isDeletingAll = false.obs;
   final deletingVoucherIds = <int>{}.obs; // Track IDs being deleted
   final count = 1.obs;
 
@@ -223,7 +224,7 @@ class VoucherViewModel extends GetxController {
       print('Loaded ${result.length} voucher packages for hotspot $idHotspot');
     } catch (e) {
       print('Error loading voucher packages: $e');
-      SnackbarUtils.showError('Error', 'Gagal memuat daftar paket: $e');
+      Get.toNamed(Routes.ERROR, arguments: 'Gagal memuat daftar paket: $e');
       voucherPackages.clear();
     }
   }
@@ -241,7 +242,7 @@ class VoucherViewModel extends GetxController {
       final result = await _voucherRepository.getVouchersByHotspot(idHotspot);
       vouchers.value = result;
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat daftar voucher: $e');
+      Get.toNamed(Routes.ERROR, arguments: 'Gagal memuat daftar voucher: $e');
     } finally {
       isLoading.value = false;
     }
@@ -370,6 +371,35 @@ class VoucherViewModel extends GetxController {
       SnackbarUtils.showError('Error', 'Gagal menghapus voucher: $e');
     } finally {
       deletingVoucherIds.remove(idVoucher);
+    }
+  }
+
+  /// Delete all vouchers in current list
+  Future<void> deleteAllVouchers() async {
+    if (vouchers.isEmpty) return;
+    
+    isDeletingAll.value = true;
+    try {
+      int successCount = 0;
+      // Copy list to avoid concurrent modification issues
+      final listToDelete = List<VoucherModel>.from(vouchers);
+      
+      for (var voucher in listToDelete) {
+        final success = await _voucherRepository.deleteVoucher(voucher.idVoucher);
+        if (success) {
+          vouchers.removeWhere((v) => v.idVoucher == voucher.idVoucher);
+          successCount++;
+        }
+      }
+      
+      if (successCount > 0) {
+        SnackbarUtils.showSuccess('Berhasil', '$successCount voucher berhasil dihapus');
+      }
+    } catch (e) {
+      SnackbarUtils.showError('Error', 'Gagal menghapus beberapa voucher: $e');
+    } finally {
+      isDeletingAll.value = false;
+      await loadVouchers(); // Final sync
     }
   }
 

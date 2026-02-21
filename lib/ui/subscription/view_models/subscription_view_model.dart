@@ -46,7 +46,6 @@ class SubscriptionViewModel extends GetxController {
   }
 
   void _initRealtimeListeners() {
-    print('🚀 [SubscriptionVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
       final event = (eventData['event'] ?? '').toString().toLowerCase();
       
@@ -54,7 +53,6 @@ class SubscriptionViewModel extends GetxController {
       const relevantEvents = ['payment_success', 'payment_failed', 'subscription_updated'];
       if (!relevantEvents.contains(event)) return;
 
-      print('💳 [SubscriptionVM] Refreshing due to Event: $event');
       loadMySubscriptions();
     });
   }
@@ -108,11 +106,10 @@ class SubscriptionViewModel extends GetxController {
         throw Exception('Gagal mendapatkan ID Langganan');
       }
 
-      final int idLangganan = subscriptionData['id_langganan'];
-
       // Step 2: Create Transaction (Checkout)
       final transaction = await _subscriptionRepository.createTransaction(
-        idLangganan: idLangganan,
+        idPaketLangganan: packageId,
+        jumlahBulan: 1, // Default to 1 for direct select if not specified
         amount: package.price,
       );
 
@@ -197,7 +194,8 @@ class SubscriptionViewModel extends GetxController {
 
       // Step 2: Create Transaction (Checkout)
       final transaction = await _subscriptionRepository.createTransaction(
-        idLangganan: idLangganan,
+        idPaketLangganan: packageId,
+        jumlahBulan: selectedDuration.value,
         amount: totalPrice,
       );
 
@@ -242,7 +240,8 @@ class SubscriptionViewModel extends GetxController {
 
       // Step 2: Checkout — use the same totalBayar as the previous subscription
       final transaction = await _subscriptionRepository.createTransaction(
-        idLangganan: idLangganan,
+        idPaketLangganan: subscription.idPaketLangganan,
+        jumlahBulan: 1, // Renewal usually 1 or based on period
         amount: subscription.totalBayar,
       );
 
@@ -299,7 +298,8 @@ class SubscriptionViewModel extends GetxController {
         
         // Use current totalBayar
         final transaction = await _subscriptionRepository.createTransaction(
-          idLangganan: subscription.idLangganan,
+          idPaketLangganan: subscription.idPaketLangganan,
+          jumlahBulan: 1, 
           amount: subscription.totalBayar,
         );
 

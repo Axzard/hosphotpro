@@ -18,6 +18,7 @@ abstract class _Paths {
   static const MIDTRANS_WEBVIEW = '/midtrans-webview';
   static const HOTSPOTS = '/hotspots';
   static const VOUCHER_PACKAGES = '/voucher-packages';
+  static const ERROR = '/error';
 }
 
 abstract class Routes {
@@ -37,4 +38,5 @@ abstract class Routes {
   static const MIDTRANS_WEBVIEW = _Paths.MIDTRANS_WEBVIEW;
   static const HOTSPOTS = _Paths.HOTSPOTS;
   static const VOUCHER_PACKAGES = _Paths.VOUCHER_PACKAGES;
+  static const ERROR = _Paths.ERROR;
 }

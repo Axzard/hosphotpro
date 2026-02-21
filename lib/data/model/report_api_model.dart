@@ -1,19 +1,22 @@
 import '../../domain/models/report_model.dart';
 
 class DailyReportApiModel {
-  final String tanggal;
+  final String? tanggal;
+  final String? periode;
   final String totalPendapatan;
   final int totalTransaksi;
 
   DailyReportApiModel({
-    required this.tanggal,
+    this.tanggal,
+    this.periode,
     required this.totalPendapatan,
     required this.totalTransaksi,
   });
 
   factory DailyReportApiModel.fromJson(Map<String, dynamic> json) {
     return DailyReportApiModel(
-      tanggal: json['tanggal'] ?? '',
+      tanggal: json['tanggal'],
+      periode: json['periode'],
       totalPendapatan: json['total_pendapatan']?.toString() ?? '0',
       totalTransaksi: json['total_transaksi'] ?? 0,
     );
@@ -21,7 +24,7 @@ class DailyReportApiModel {
 
   DailyReportModel toDomain() {
     return DailyReportModel(
-      tanggal: DateTime.tryParse(tanggal) ?? DateTime.now(),
+      tanggal: DateTime.tryParse(tanggal ?? periode ?? '') ?? DateTime.now(),
       totalPendapatan: double.tryParse(totalPendapatan) ?? 0,
       totalTransaksi: totalTransaksi,
     );
@@ -29,27 +32,41 @@ class DailyReportApiModel {
 }
 
 class MonthlyReportApiModel {
-  final int bulan;
+  final dynamic periode; // can be int or string
+  final int? bulan;
   final String totalPendapatan;
   final int totalTransaksi;
 
   MonthlyReportApiModel({
-    required this.bulan,
+    this.periode,
+    this.bulan,
     required this.totalPendapatan,
     required this.totalTransaksi,
   });
 
   factory MonthlyReportApiModel.fromJson(Map<String, dynamic> json) {
     return MonthlyReportApiModel(
-      bulan: json['bulan'] ?? 0,
+      periode: json['periode'],
+      bulan: json['bulan'],
       totalPendapatan: json['total_pendapatan']?.toString() ?? '0',
       totalTransaksi: json['total_transaksi'] ?? 0,
     );
   }
 
   MonthlyReportModel toDomain() {
+    int m = 1;
+    if (bulan != null) {
+      m = bulan!;
+    } else if (periode != null) {
+      if (periode is int) {
+        m = 1; // Actually if periode is int in perBulan context? user example shows 2026 for perTahun
+      } else if (periode is String && periode.contains('-')) {
+        m = int.tryParse(periode.split('-').last) ?? 1;
+      }
+    }
+
     return MonthlyReportModel(
-      bulan: bulan,
+      bulan: m,
       totalPendapatan: double.tryParse(totalPendapatan) ?? 0,
       totalTransaksi: totalTransaksi,
     );
@@ -57,19 +74,22 @@ class MonthlyReportApiModel {
 }
 
 class YearlyReportApiModel {
-  final int tahun;
+  final dynamic periode;
+  final int? tahun;
   final String totalPendapatan;
   final int totalTransaksi;
 
   YearlyReportApiModel({
-    required this.tahun,
+    this.periode,
+    this.tahun,
     required this.totalPendapatan,
     required this.totalTransaksi,
   });
 
   factory YearlyReportApiModel.fromJson(Map<String, dynamic> json) {
     return YearlyReportApiModel(
-      tahun: json['tahun'] ?? 0,
+      periode: json['periode'],
+      tahun: json['tahun'],
       totalPendapatan: json['total_pendapatan']?.toString() ?? '0',
       totalTransaksi: json['total_transaksi'] ?? 0,
     );
@@ -77,9 +97,26 @@ class YearlyReportApiModel {
 
   YearlyReportModel toDomain() {
     return YearlyReportModel(
-      tahun: tahun,
+      tahun: tahun ?? (periode is int ? periode : (int.tryParse(periode?.toString() ?? '') ?? 2024)),
       totalPendapatan: double.tryParse(totalPendapatan) ?? 0,
       totalTransaksi: totalTransaksi,
+    );
+  }
+}
+
+class ReportSummaryApiModel {
+  final String totalPendapatan;
+  final int totalTransaksi;
+
+  ReportSummaryApiModel({
+    required this.totalPendapatan,
+    required this.totalTransaksi,
+  });
+
+  factory ReportSummaryApiModel.fromJson(Map<String, dynamic> json) {
+    return ReportSummaryApiModel(
+      totalPendapatan: json['total_pendapatan']?.toString() ?? '0',
+      totalTransaksi: json['total_transaksi'] ?? 0,
     );
   }
 }
@@ -88,11 +125,13 @@ class ReportDashboardApiModel {
   final List<DailyReportApiModel> perHari;
   final List<MonthlyReportApiModel> perBulan;
   final List<YearlyReportApiModel> perTahun;
+  final ReportSummaryApiModel? summary;
 
   ReportDashboardApiModel({
     required this.perHari,
     required this.perBulan,
     required this.perTahun,
+    this.summary,
   });
 
   factory ReportDashboardApiModel.fromJson(Map<String, dynamic> json) {
@@ -108,6 +147,7 @@ class ReportDashboardApiModel {
       perTahun: (data['perTahun'] as List? ?? [])
           .map((i) => YearlyReportApiModel.fromJson(i))
           .toList(),
+      summary: data['summary'] != null ? ReportSummaryApiModel.fromJson(data['summary']) : null,
     );
   }
 
@@ -116,6 +156,8 @@ class ReportDashboardApiModel {
       perHari: perHari.map((i) => i.toDomain()).toList(),
       perBulan: perBulan.map((i) => i.toDomain()).toList(),
       perTahun: perTahun.map((i) => i.toDomain()).toList(),
+      totalIncome: double.tryParse(summary?.totalPendapatan ?? '0') ?? 0,
+      totalTransactions: summary?.totalTransaksi ?? 0,
     );
   }
 }

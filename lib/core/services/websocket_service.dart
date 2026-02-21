@@ -22,7 +22,7 @@ class WebSocketService extends GetxService {
 
   // Global Streams
   final routerStatus = <String, dynamic>{}.obs;
-  final activeUserStats = <String, dynamic>{}.obs;
+  final activeUserStats = Rxn<dynamic>();
   final latestLogs = <String>[].obs;
 
   @override

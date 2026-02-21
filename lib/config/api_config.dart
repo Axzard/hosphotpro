@@ -52,6 +52,10 @@ class ApiConfig {
   static const String reportDaily = '$baseUrl/api/laporan/per-hari';
   static const String reportMonthly = '$baseUrl/api/laporan/per-bulan';
   static const String reportYearly = '$baseUrl/api/laporan/per-tahun';
+  static const String reportHarian = '$baseUrl/api/laporan/harian';
+  static const String reportGrouped = '$baseUrl/api/laporan/grouped';
+  static const String reportRange = '$baseUrl/api/laporan/range';
+  static const String reportSummary = '$baseUrl/api/laporan/summary';
   static const String reportRefresh = '$baseUrl/api/laporan/refresh';
 
   // Headers

@@ -4,6 +4,7 @@ import '../../../domain/models/report_repository.dart';
 import '../../../domain/models/report_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/services/websocket_service.dart';
+import '../../../config/routing/app_routes.dart' as app_routes;
 import 'package:intl/intl.dart';
 
 class ReportViewModel extends GetxController {
@@ -37,7 +38,6 @@ class ReportViewModel extends GetxController {
           event == 'voucher:updated' || 
           event == 'voucher:created' || 
           event == 'voucher:bulkcreated') {
-        print('📊 [ReportVM] Realtime refresh for event: $event');
         fetchAllReports(isSilent: true);
       }
     });
@@ -50,31 +50,59 @@ class ReportViewModel extends GetxController {
   }
 
   // --- Chart Helpers ---
-  List<double> get dailyIncomeData => dailyReports.isEmpty 
-      ? [] 
-      : dailyReports.map((e) => e.totalPendapatan).toList();
+  List<double> get dailyIncomeData {
+    if (dailyReports.isEmpty) return [];
 
-  List<double> get monthlyIncomeData => monthlyReports.isEmpty 
-      ? List.filled(12, 0.0) 
-      : List.generate(12, (index) {
-          final month = index + 1;
-          final report = monthlyReports.firstWhereOrNull((e) => e.bulan == month);
-          return report?.totalPendapatan ?? 0.0;
-        });
+    final now = DateTime.now();
+    final year = selectedDate.value?.year ?? now.year;
+    final month = selectedDate.value?.month ?? now.month;
+
+    // Number of days in that month
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+
+    return List.generate(daysInMonth, (index) {
+      final day = index + 1;
+      final report = dailyReports.firstWhereOrNull((e) => e.tanggal.day == day);
+      return report?.totalPendapatan ?? 0.0;
+    });
+  }
+
+  List<double> get monthlyIncomeData {
+    return List.generate(12, (index) {
+      final month = index + 1;
+      final report = monthlyReports.firstWhereOrNull((e) => e.bulan == month);
+      return report?.totalPendapatan ?? 0.0;
+    });
+  }
+
+  List<double> get yearlyIncomeData {
+    final currentYear = DateTime.now().year;
+    return List.generate(5, (index) {
+      final year = currentYear - 4 + index;
+      final report = yearlyReports.firstWhereOrNull((e) => e.tahun == year);
+      return report?.totalPendapatan ?? 0.0;
+    });
+  }
 
   Future<void> fetchAllReports({bool isSilent = false}) async {
     if (!isSilent) isLoading.value = true;
     try {
       final now = DateTime.now();
-      final dateStr = selectedDate.value != null 
-          ? DateFormat('yyyy-MM-dd').format(selectedDate.value!) 
-          : null;
+      final year = selectedDate.value?.year ?? now.year;
+      final month = selectedDate.value?.month ?? now.month;
+
+      // Calculate start and end of month for range/grouped queries
+      final firstDay = DateTime(year, month, 1);
+      final lastDay = DateTime(year, month + 1, 0);
+      
+      final startDateStr = DateFormat('yyyy-MM-dd').format(firstDay);
+      final endDateStr = DateFormat('yyyy-MM-dd').format(lastDay);
 
       final results = await Future.wait([
-        _reportRepository.getDailyReports(
-          year: selectedDate.value?.year ?? now.year,
-          month: selectedDate.value?.month ?? now.month,
-          date: dateStr,
+        _reportRepository.getGroupedReport(
+          type: 'day',
+          start: startDateStr,
+          end: endDateStr,
         ),
         _reportRepository.getMonthlyReports(year: selectedYear.value),
         _reportRepository.getYearlyReports(),
@@ -84,7 +112,9 @@ class ReportViewModel extends GetxController {
       monthlyReports.assignAll(results[1] as List<MonthlyReportModel>);
       yearlyReports.assignAll(results[2] as List<YearlyReportModel>);
     } catch (e) {
-      if (!isSilent) SnackbarUtils.showError('Error', 'Gagal memuat laporan: $e');
+      if (!isSilent) {
+        Get.toNamed(app_routes.Routes.ERROR, arguments: 'Gagal memuat laporan: $e');
+      }
     } finally {
       if (!isSilent) isLoading.value = false;
     }
@@ -92,11 +122,20 @@ class ReportViewModel extends GetxController {
 
   void setDate(DateTime? date) {
     selectedDate.value = date;
+    if (date != null) {
+      selectedYear.value = date.year;
+    }
     fetchAllReports();
   }
 
   void setYear(int year) {
     selectedYear.value = year;
+    // Keep daily reports in sync with the selected year
+    if (selectedDate.value != null) {
+      selectedDate.value = DateTime(year, selectedDate.value!.month, 1);
+    } else {
+      selectedDate.value = DateTime(year, DateTime.now().month, 1);
+    }
     fetchAllReports();
   }
 

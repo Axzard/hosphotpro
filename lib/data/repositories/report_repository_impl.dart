@@ -58,4 +58,46 @@ class ReportRepositoryImpl implements ReportRepository {
     final response = await _reportService.refreshReports();
     return response.success;
   }
+
+  @override
+  Future<DailyReportModel?> getDailyReportHarian({required int tahun, required int bulan, required int tgl}) async {
+    final response = await _reportService.getDailyReportHarian(tahun: tahun, bulan: bulan, tgl: tgl);
+    if (response.success && response.data != null) {
+      return response.data!.toDomain();
+    }
+    return null;
+  }
+
+  @override
+  Future<List<DailyReportModel>> getGroupedReport({required String type, required String start, required String end}) async {
+    final response = await _reportService.getGroupedReport(type: type, start: start, end: end);
+    if (response.success && response.data != null) {
+      return response.data!.map((e) => e.toDomain()).toList();
+    }
+    return [];
+  }
+
+  @override
+  Future<List<DailyReportModel>> getRangeReport({required String start, required String end}) async {
+    final response = await _reportService.getRangeReport(start: start, end: end);
+    if (response.success && response.data != null) {
+      return response.data!.map((e) => e.toDomain()).toList();
+    }
+    return [];
+  }
+
+  @override
+  Future<Map<String, dynamic>> getSummaryReport({required String start, required String end}) async {
+    final response = await _reportService.getSummaryReport(start: start, end: end);
+    if (response.success && response.data != null) {
+      return {
+        'total_pendapatan': double.tryParse(response.data!.totalPendapatan) ?? 0.0,
+        'total_transaksi': response.data!.totalTransaksi,
+      };
+    }
+    return {
+      'total_pendapatan': 0.0,
+      'total_transaksi': 0,
+    };
+  }
 }

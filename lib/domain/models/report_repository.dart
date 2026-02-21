@@ -6,4 +6,10 @@ abstract class ReportRepository {
   Future<List<MonthlyReportModel>> getMonthlyReports({int? year});
   Future<List<YearlyReportModel>> getYearlyReports();
   Future<bool> refreshReports();
+
+  // New analytic methods
+  Future<DailyReportModel?> getDailyReportHarian({required int tahun, required int bulan, required int tgl});
+  Future<List<DailyReportModel>> getGroupedReport({required String type, required String start, required String end});
+  Future<List<DailyReportModel>> getRangeReport({required String start, required String end});
+  Future<Map<String, dynamic>> getSummaryReport({required String start, required String end});
 }

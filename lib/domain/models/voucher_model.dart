@@ -7,10 +7,14 @@ enum VoucherStatus {
   static VoucherStatus fromString(String status) {
     switch (status.toLowerCase()) {
       case 'stok':
+      case 'stock':
         return VoucherStatus.stok;
       case 'terjual':
+      case 'sold':
         return VoucherStatus.terjual;
       case 'aktif':
+      case 'active':
+      case 'activated':
         return VoucherStatus.aktif;
       case 'expired':
         return VoucherStatus.expired;

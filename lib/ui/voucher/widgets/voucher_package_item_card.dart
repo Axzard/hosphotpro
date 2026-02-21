@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../domain/models/voucher_package_model.dart';
+import '../../../core/utils/currency_formatter.dart';
 
 class VoucherPackageItemCard extends StatelessWidget {
   final VoucherPackageModel package;
@@ -47,7 +48,7 @@ class VoucherPackageItemCard extends StatelessWidget {
                 ),
               ),
               Text(
-                'Rp${package.harga.toStringAsFixed(0)}',
+                'Rp${CurrencyFormatter.format(package.harga)}',
                 style: GoogleFonts.plusJakartaSans(
                   color: accentColor,
                   fontSize: 16,
