@@ -560,33 +560,90 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
   }
 
   void _showBulkDeleteConfirm(BuildContext context) {
+    final Rx<VoucherStatus?> selectedStatus = Rx<VoucherStatus?>(null);
+
     Get.dialog(
-      AlertDialog(
-        backgroundColor: const Color(0xFF131E29),
-        title: const Text(
-          'Hapus Semua Voucher',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: const Text(
-          'Apakah Anda yakin ingin menghapus SEMUA voucher yang ada saat ini? Tindakan ini tidak dapat dibatalkan.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Batal', style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              Get.back();
-              controller.deleteAllVouchers();
-            },
-            child: const Text(
-              'Hapus Semua',
-              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+      Obx(() => AlertDialog(
+            backgroundColor: const Color(0xFF131E29),
+            title: Text(
+              'Hapus Voucher',
+              style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white, fontWeight: FontWeight.bold),
             ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pilih kategori voucher yang ingin dihapus:',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                _buildDeleteOption(null, 'Semua Voucher', selectedStatus),
+                _buildDeleteOption(VoucherStatus.stok, 'Voucher Stok', selectedStatus),
+                _buildDeleteOption(VoucherStatus.terjual, 'Voucher Terjual', selectedStatus),
+                _buildDeleteOption(VoucherStatus.aktif, 'Voucher Aktif', selectedStatus),
+                _buildDeleteOption(VoucherStatus.expired, 'Voucher Expired', selectedStatus),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(),
+                child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Get.back();
+                  controller.deleteAllVouchers(status: selectedStatus.value);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Hapus Sekarang'),
+              ),
+            ],
+          )),
+    );
+  }
+
+  Widget _buildDeleteOption(
+      VoucherStatus? status, String label, Rx<VoucherStatus?> selectedStatus) {
+    final isSelected = selectedStatus.value == status;
+    return GestureDetector(
+      onTap: () => selectedStatus.value = status,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF00C2FF).withValues(alpha: 0.1)
+              : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF00C2FF).withValues(alpha: 0.3)
+                : Colors.transparent,
           ),
-        ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: isSelected ? const Color(0xFF00C2FF) : Colors.white24,
+              size: 18,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

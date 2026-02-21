@@ -4,6 +4,19 @@ enum VoucherStatus {
   aktif,
   expired;
 
+  String get displayName {
+    switch (this) {
+      case VoucherStatus.stok:
+        return 'Stok';
+      case VoucherStatus.terjual:
+        return 'Terjual';
+      case VoucherStatus.aktif:
+        return 'Aktif';
+      case VoucherStatus.expired:
+        return 'Expired';
+    }
+  }
+
   static VoucherStatus fromString(String status) {
     switch (status.toLowerCase()) {
       case 'stok':

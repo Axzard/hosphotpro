@@ -167,6 +167,7 @@ class PrinterService extends GetxService {
         width: PosTextSize.size2,
       ),
     );
+    bytes += generator.feed(1); // Jarak kecil antara HosphotPro dengan nama hotspot
     bytes += generator.text(
       voucher.namaServer,
       styles: const PosStyles(align: PosAlign.center),
@@ -178,7 +179,7 @@ class PrinterService extends GetxService {
       'DATA LOGIN VOUCHER',
       styles: const PosStyles(align: PosAlign.center, bold: true),
     );
-    bytes += generator.feed(1);
+    bytes += generator.feed(1); // Jarak sedikit dengan USERNAME / KODE
 
     bytes += generator.text(
       'USERNAME / KODE',
@@ -212,7 +213,14 @@ class PrinterService extends GetxService {
       );
     }
 
-    bytes += generator.feed(2);
+    bytes += generator.hr();
+    bytes += generator.text(
+      'Terima Kasih',
+      styles: const PosStyles(align: PosAlign.center, bold: true),
+    );
+
+    // Potong tepat setelah "Terima Kasih"
+    bytes += generator.feed(1);
     bytes += generator.cut();
 
     await _writeToPrinter(Uint8List.fromList(bytes));

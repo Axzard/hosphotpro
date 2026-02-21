@@ -18,6 +18,7 @@ class ApiConfig {
 
   // Router endpoints
   static const String routers = '$baseUrl/api/router';
+  static String routerPing(int id) => '$baseUrl/api/router/$id/ping';
   static String hotspots(int idRouter) => '$baseUrl/api/hotspot?id_router=$idRouter';
   static String hotspotDetail(int id) => '$baseUrl/api/hotspot/$id';
   static String updateHotspot(int id) => '$baseUrl/api/hotspot/$id';

@@ -307,4 +307,25 @@ class RouterService extends GetxService {
       return ApiResponse(success: false, message: 'Error: $e');
     }
   }
+
+  Future<ApiResponse<Map<String, dynamic>>> pingRouter(int id) async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.routerPing(id),
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 600,
+        ),
+      );
+
+      return ApiResponse(
+        success: response.statusCode == 200 && (response.data['sukses'] == true),
+        message: response.data['pesan'] ?? response.data['message'] ?? 'Ping complete',
+        data: response.data,
+      );
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Ping error: $e');
+    }
+  }
 }

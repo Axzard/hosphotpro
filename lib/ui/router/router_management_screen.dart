@@ -255,6 +255,10 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
               ],
             ),
           ),
+          _buildActionIcon(Icons.sensors_outlined, () {
+            controller.pingRouter(router.id);
+          }, const Color(0xFF00C2FF).withValues(alpha: 0.8)),
+          const SizedBox(width: 8),
           _buildActionIcon(Icons.edit_outlined, () {
             controller.prepareEdit(router);
             Get.bottomSheet(
@@ -262,8 +266,8 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
             );
-          }, Colors.white.withOpacity(0.3)),
-          const SizedBox(width: 12),
+          }, Colors.white.withValues(alpha: 0.3)),
+          const SizedBox(width: 8),
           _buildActionIcon(
             Icons.delete_outline,
             () => _showDeleteDialog(router),

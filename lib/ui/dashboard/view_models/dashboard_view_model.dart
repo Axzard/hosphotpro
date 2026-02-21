@@ -235,10 +235,11 @@ class DashboardViewModel extends GetxController {
         }
       }
       
-      if (activeVouchers != null) {
+      if (activeVouchers != null && activeVouchers.isNotEmpty) {
         // STRIKT: Filter hanya status AKTIF
         final filteredAktif = activeVouchers.where((v) => v.statusVoucher == VoucherStatus.aktif).toList();
         activeUserCount.value = filteredAktif.length;
+        print('📊 [DashboardVM] Active Users (Global): ${activeUserCount.value}');
       }
       
       totalRouterCount.value = routers.length;
@@ -269,7 +270,7 @@ class DashboardViewModel extends GetxController {
     } catch (e) {
       // Silent error for silent fetch
       // Navigate to full error screen if critical data fails
-      Get.toNamed(Routes.ERROR, arguments: 'Gagal memuat data dashboard: $e');
+      Get.toNamed(Routes.ERROR, arguments: 'Gagal memuat data dashboard, terjadi gangguan pada server.');
     } finally {
       if (isInitial) {
         isLoading.value = false;
@@ -289,12 +290,21 @@ class DashboardViewModel extends GetxController {
         ).toList();
         
         final voucherGroups = await Future.wait(voucherFutures);
-        voucherCount.value = voucherGroups.fold(0, (sum, group) => sum + group.length);
+        final allVouchers = voucherGroups.expand((x) => x).toList();
+        
+        voucherCount.value = allVouchers.length;
+        
+        // Perbaikan: Jika activeUserCount global masih 0, hitung dari data per hotspot ini
+        final filteredAktif = allVouchers.where((v) => v.statusVoucher == VoucherStatus.aktif).toList();
+        if (activeUserCount.value == 0 && filteredAktif.isNotEmpty) {
+           activeUserCount.value = filteredAktif.length;
+           print('📊 [DashboardVM] Active Users (Fallback from Hotspots): ${activeUserCount.value}');
+        }
       } else {
         voucherCount.value = 0;
       }
     } catch (e) {
-      // Silent fail
+      print('❌ [DashboardVM] Error background fetch: $e');
     }
   }
 

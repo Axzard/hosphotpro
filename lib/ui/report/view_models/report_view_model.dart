@@ -113,7 +113,7 @@ class ReportViewModel extends GetxController {
       yearlyReports.assignAll(results[2] as List<YearlyReportModel>);
     } catch (e) {
       if (!isSilent) {
-        Get.toNamed(app_routes.Routes.ERROR, arguments: 'Gagal memuat laporan: $e');
+        Get.toNamed(app_routes.Routes.ERROR, arguments: 'Gagal memuat laporan, terjadi gangguan pada server.');
       }
     } finally {
       if (!isSilent) isLoading.value = false;

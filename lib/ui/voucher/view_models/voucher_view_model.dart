@@ -224,7 +224,7 @@ class VoucherViewModel extends GetxController {
       print('Loaded ${result.length} voucher packages for hotspot $idHotspot');
     } catch (e) {
       print('Error loading voucher packages: $e');
-      Get.toNamed(Routes.ERROR, arguments: 'Gagal memuat daftar paket: $e');
+      Get.toNamed(Routes.ERROR, arguments: 'Gagal memuat daftar paket, terjadi gangguan pada server.');
       voucherPackages.clear();
     }
   }
@@ -242,7 +242,7 @@ class VoucherViewModel extends GetxController {
       final result = await _voucherRepository.getVouchersByHotspot(idHotspot);
       vouchers.value = result;
     } catch (e) {
-      Get.toNamed(Routes.ERROR, arguments: 'Gagal memuat daftar voucher: $e');
+      Get.toNamed(Routes.ERROR, arguments: 'Gagal memuat daftar voucher, terjadi gangguan pada server.');
     } finally {
       isLoading.value = false;
     }
@@ -374,16 +374,23 @@ class VoucherViewModel extends GetxController {
     }
   }
 
-  /// Delete all vouchers in current list
-  Future<void> deleteAllVouchers() async {
+  /// Delete vouchers in current list, optionally filtered by status
+  Future<void> deleteAllVouchers({VoucherStatus? status}) async {
     if (vouchers.isEmpty) return;
     
     isDeletingAll.value = true;
     try {
       int successCount = 0;
-      // Copy list to avoid concurrent modification issues
-      final listToDelete = List<VoucherModel>.from(vouchers);
+      // Filter list based on status if provided, otherwise all in current list
+      final listToDelete = status != null 
+          ? vouchers.where((v) => v.statusVoucher == status).toList()
+          : List<VoucherModel>.from(vouchers);
       
+      if (listToDelete.isEmpty) {
+        SnackbarUtils.showInfo('Informasi', 'Tidak ada voucher dengan status ${status?.displayName.toUpperCase() ?? "tersebut"} untuk dihapus');
+        return;
+      }
+
       for (var voucher in listToDelete) {
         final success = await _voucherRepository.deleteVoucher(voucher.idVoucher);
         if (success) {
@@ -393,7 +400,7 @@ class VoucherViewModel extends GetxController {
       }
       
       if (successCount > 0) {
-        SnackbarUtils.showSuccess('Berhasil', '$successCount voucher berhasil dihapus');
+        SnackbarUtils.showSuccess('Berhasil', '$successCount voucher ${status?.displayName.toUpperCase() ?? ""} berhasil dihapus');
       }
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal menghapus beberapa voucher: $e');

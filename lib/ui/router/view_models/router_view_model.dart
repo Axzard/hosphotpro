@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'package:get/get.dart';
 import '../../../../domain/models/router_model.dart';
@@ -137,6 +138,83 @@ class RouterViewModel extends GetxController {
       return false;
     }
     return true;
+  }
+
+  Future<void> pingRouter(String id) async {
+    try {
+      isLoading.value = true;
+      final int routerId = int.tryParse(id) ?? 0;
+      final result = await _routerRepository.pingRouter(routerId);
+      
+      final isOnline = result['status'] == 'ONLINE';
+      final detail = result['detail'] ?? {};
+      final output = detail['output'] ?? 'No output';
+      final time = detail['time']?.toString() ?? '-';
+
+      Get.dialog(
+        AlertDialog(
+          backgroundColor: const Color(0xFF131E29),
+          title: Row(
+            children: [
+              Icon(
+                isOnline ? Icons.check_circle : Icons.error,
+                color: isOnline ? Colors.green : Colors.red,
+              ),
+              const SizedBox(width: 12),
+              const Text('Router Ping Status', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildStatusRow('Status', result['status'] ?? 'UNKNOWN', isOnline ? Colors.green : Colors.red),
+                _buildStatusRow('Response Time', '$time ms', Colors.white70),
+                const SizedBox(height: 16),
+                const Text('Console Output:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  width: double.maxFinite,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    output,
+                    style: GoogleFonts.firaCode(color: Colors.greenAccent, fontSize: 10),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('Tutup', style: TextStyle(color: Color(0xFF00C2FF))),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      SnackbarUtils.showError('Ping Gagal', e.toString());
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Widget _buildStatusRow(String label, String value, Color valueColor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white60, fontSize: 13)),
+          Text(value, style: TextStyle(color: valueColor, fontWeight: FontWeight.bold, fontSize: 13)),
+        ],
+      ),
+    );
   }
 
   @override

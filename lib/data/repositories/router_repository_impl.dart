@@ -94,4 +94,13 @@ class RouterRepositoryImpl implements RouterRepository {
     }
     return response.data ?? [];
   }
+
+  @override
+  Future<Map<String, dynamic>> pingRouter(int id) async {
+    final response = await _routerService.pingRouter(id);
+    if (!response.success) {
+      throw Exception(response.message);
+    }
+    return response.data ?? {};
+  }
 }
