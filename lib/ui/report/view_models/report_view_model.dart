@@ -85,7 +85,9 @@ class ReportViewModel extends GetxController {
   }
 
   Future<void> fetchAllReports({bool isSilent = false}) async {
-    if (!isSilent) isLoading.value = true;
+    // Skip loader if we already have data
+    final hasData = dailyReports.isNotEmpty || monthlyReports.isNotEmpty || yearlyReports.isNotEmpty;
+    if (!isSilent && !hasData) isLoading.value = true;
     try {
       final now = DateTime.now();
       final year = selectedDate.value?.year ?? now.year;

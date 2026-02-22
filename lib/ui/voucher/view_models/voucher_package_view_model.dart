@@ -10,6 +10,7 @@ import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../../../core/services/selection_service.dart';
+import '../../dashboard/view_models/dashboard_view_model.dart';
 
 class VoucherPackageViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
@@ -114,8 +115,16 @@ class VoucherPackageViewModel extends GetxController {
   }
 
   Future<void> loadRouters() async {
+    final dashboardVM = Get.find<DashboardViewModel>();
+    if (!dashboardVM.isActiveSubscription.value) {
+      routers.clear();
+      hotspots.clear();
+      packages.clear();
+      return;
+    }
+
     try {
-      isLoading.value = true;
+      if (routers.isEmpty) isLoading.value = true;
       final result = await _routerRepository.getRouters();
       routers.assignAll(result);
 
@@ -166,10 +175,13 @@ class VoucherPackageViewModel extends GetxController {
   }
 
   Future<void> loadPackages() async {
+    final dashboardVM = Get.find<DashboardViewModel>();
+    if (!dashboardVM.isActiveSubscription.value) return;
+
     if (selectedHotspot.value == null) return;
     
     try {
-      isLoading.value = true;
+      if (packages.isEmpty) isLoading.value = true;
       final idHotspot = selectedHotspot.value!.idHotspot;
       final result = await _voucherRepository.getVoucherPackages(idHotspot);
       packages.assignAll(result);
@@ -207,6 +219,12 @@ class VoucherPackageViewModel extends GetxController {
   }
 
   Future<void> createPackage() async {
+    final dashboardVM = Get.find<DashboardViewModel>();
+    if (!dashboardVM.isActiveSubscription.value) {
+      SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.');
+      return;
+    }
+
     if (!_validateForm()) return;
 
     try {

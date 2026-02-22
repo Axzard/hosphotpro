@@ -14,6 +14,7 @@ import '../../../ui/voucher/widgets/voucher_print_preview.dart';
 import '../../../core/services/websocket_service.dart';
 import '../../../core/services/selection_service.dart';
 import '../../../data/model/voucher_api_model.dart';
+import '../../dashboard/view_models/dashboard_view_model.dart';
 
 class VoucherViewModel extends GetxController {
   final VoucherRepository _voucherRepository = Get.find<VoucherRepository>();
@@ -173,8 +174,18 @@ class VoucherViewModel extends GetxController {
   }
 
   Future<void> loadRouters() async {
+    final dashboardVM = Get.find<DashboardViewModel>();
+    if (!dashboardVM.isActiveSubscription.value) {
+      routers.clear();
+      hotspots.clear();
+      vouchers.clear();
+      return;
+    }
+
     try {
-      isLoading.value = true;
+      // Only show full loader if we have no routers yet
+      if (routers.isEmpty) isLoading.value = true;
+      
       final result = await _routerRepository.getRouters();
       routers.assignAll(result);
 
@@ -228,15 +239,17 @@ class VoucherViewModel extends GetxController {
       voucherPackages.clear();
     }
   }
-
   // Hotspots are now loaded during loadRouters (aggregation)
 
   /// Load vouchers for the selected hotspot
   Future<void> loadVouchers() async {
+    final dashboardVM = Get.find<DashboardViewModel>();
+    if (!dashboardVM.isActiveSubscription.value) return;
+
     final hotspot = selectedHotspot.value;
     if (hotspot == null) return;
 
-    isLoading.value = true;
+    if (vouchers.isEmpty) isLoading.value = true;
     try {
       final idHotspot = hotspot.idHotspot;
       final result = await _voucherRepository.getVouchersByHotspot(idHotspot);
@@ -250,6 +263,12 @@ class VoucherViewModel extends GetxController {
 
   /// Create a single voucher
   Future<void> createVoucher() async {
+    final dashboardVM = Get.find<DashboardViewModel>();
+    if (!dashboardVM.isActiveSubscription.value) {
+      SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.');
+      return;
+    }
+
     final idPaket = selectedPaketId.value;
 
     if (idPaket == null) {
@@ -342,6 +361,12 @@ class VoucherViewModel extends GetxController {
   }
 
   Future<void> createVoucherPackage(VoucherPackageModel package) async {
+    final dashboardVM = Get.find<DashboardViewModel>();
+    if (!dashboardVM.isActiveSubscription.value) {
+      SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.');
+      return;
+    }
+
     isGenerating.value = true;
     try {
       await _voucherRepository.createVoucherPackage(package);

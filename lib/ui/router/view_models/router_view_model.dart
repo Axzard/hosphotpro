@@ -6,6 +6,7 @@ import '../../../../domain/models/router_model.dart';
 import '../../../../domain/models/router_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/services/websocket_service.dart';
+import '../../dashboard/view_models/dashboard_view_model.dart';
 
 class RouterViewModel extends GetxController {
   final RouterRepository _routerRepository;
@@ -47,7 +48,12 @@ class RouterViewModel extends GetxController {
 
   Future<void> loadRouters() async {
     try {
-      isLoading.value = true;
+      if (routers.isEmpty) isLoading.value = true;
+      final dashboardVM = Get.find<DashboardViewModel>();
+      if (!dashboardVM.isActiveSubscription.value) {
+        routers.clear();
+        return;
+      }
       routers.value = await _routerRepository.getRouters();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal memuat router: $e');
@@ -57,6 +63,12 @@ class RouterViewModel extends GetxController {
   }
 
   Future<void> saveRouter() async {
+    final dashboardVM = Get.find<DashboardViewModel>();
+    if (!dashboardVM.isActiveSubscription.value) {
+      SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.');
+      return;
+    }
+
     if (!_validateForm()) return;
 
     try {

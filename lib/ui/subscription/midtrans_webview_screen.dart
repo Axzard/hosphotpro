@@ -57,6 +57,7 @@ class _MobileWebView extends StatefulWidget {
 class _MobileWebViewState extends State<_MobileWebView> {
   late final WebViewController _controller;
   final isLoading = true.obs;
+  final isPaymentFinished = false.obs;
   final SubscriptionViewModel subscriptionViewModel = Get.find<SubscriptionViewModel>();
 
   @override
@@ -230,6 +231,47 @@ class _MobileWebViewState extends State<_MobileWebView> {
                     )
                   : const SizedBox.shrink(),
             ),
+            Obx(
+              () => isPaymentFinished.value
+                  ? Positioned(
+                      bottom: 32,
+                      left: 24,
+                      right: 24,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00C2FF).withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Get.offAllNamed(Routes.DASHBOARD);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF00C2FF),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'KEMBALI KE DASHBOARD',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
@@ -246,7 +288,8 @@ class _MobileWebViewState extends State<_MobileWebView> {
       debugPrint('🌐 Redirect detected: Status=$statusCode, TransStatus=$transactionStatus');
 
       if (statusCode == '200' || transactionStatus == 'settlement' || transactionStatus == 'capture') {
-        _finishPayment(true, 'Pembayaran berhasil! Langganan Anda akan segera aktif.', orderId);
+        isPaymentFinished.value = true;
+        _finishPayment(true, 'Pembayaran berhasil! Langganan Anda akan segera aktif.', orderId, stayOnPage: true);
       } else if (statusCode == '201' || transactionStatus == 'pending') {
         _finishPayment(false, 'Pembayaran sedang diproses. Silakan selesaikan pembayaran.', orderId);
       } else if (statusCode == '202' || transactionStatus == 'cancel' || transactionStatus == 'expire' || transactionStatus == 'expired' || url.contains('/unfinish')) {
@@ -271,7 +314,7 @@ class _MobileWebViewState extends State<_MobileWebView> {
   }
 
 
-  void _finishPayment(bool isSuccess, String message, String? orderId) {
+  void _finishPayment(bool isSuccess, String message, String? orderId, {bool stayOnPage = false}) {
     if (isSuccess) {
       if (orderId != null) {
         final id = int.tryParse(orderId.split('-').last);
@@ -284,6 +327,8 @@ class _MobileWebViewState extends State<_MobileWebView> {
       SnackbarUtils.showInfo('Informasi', message);
     }
     
+    if (stayOnPage) return; // Wait for user to click button
+
     // Safely exit
     if (Get.isOverlaysOpen) Get.back(); 
     
@@ -297,7 +342,8 @@ class _MobileWebViewState extends State<_MobileWebView> {
 
   void _checkPaymentStatus(String url) {
     if (url.contains('status_code=200') || url.contains('transaction_status=settlement')) {
-      _finishPayment(true, 'Pembayaran berhasil!', null);
+      isPaymentFinished.value = true;
+      _finishPayment(true, 'Pembayaran berhasil!', null, stayOnPage: true);
     }
   }
 }

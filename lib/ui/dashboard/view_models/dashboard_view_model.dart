@@ -34,6 +34,7 @@ class DashboardViewModel extends GetxController {
   final activeUserCount = 0.obs; // Realtime active users
   final username = 'Admin'.obs;
   final expiryDate = Rxn<DateTime>();
+  final isActiveSubscription = false.obs;
   final isLoading = true.obs;
 
   // Report Summary (Laporan Penjualan)
@@ -180,8 +181,17 @@ class DashboardViewModel extends GetxController {
   }
 
   Future<void> fetchDashboardData({bool isInitial = false, bool isSilent = false}) async {
-    if (isInitial) isLoading.value = true;
-    _lastFetchTime = DateTime.now();
+    // Only show full loader if it's the VERY FIRST load or data is really old (>5 mins)
+    // AND we don't have existing cached data
+    final nowTime = DateTime.now();
+    final isDataOld = _lastFetchTime == null || nowTime.difference(_lastFetchTime!).inMinutes > 5;
+    final hasNoData = reportSummary.value == null;
+    
+    if (isInitial && (isDataOld || hasNoData)) {
+      isLoading.value = true;
+    }
+    
+    _lastFetchTime = nowTime;
 
     try {
       final now = DateTime.now();
@@ -239,7 +249,7 @@ class DashboardViewModel extends GetxController {
         // STRIKT: Filter hanya status AKTIF
         final filteredAktif = activeVouchers.where((v) => v.statusVoucher == VoucherStatus.aktif).toList();
         activeUserCount.value = filteredAktif.length;
-        print('📊 [DashboardVM] Active Users (Global): ${activeUserCount.value}');
+        print('[DashboardVM] Active Users (Global): ${activeUserCount.value}');
       }
       
       totalRouterCount.value = routers.length;
@@ -248,13 +258,19 @@ class DashboardViewModel extends GetxController {
       UserSubscriptionModel? activeSub;
       try {
         activeSub = subscriptions.firstWhere((sub) => sub.isActive);
+        isActiveSubscription.value = true;
       } catch (_) {
         activeSub = subscriptions.isNotEmpty ? subscriptions.first : null;
+        isActiveSubscription.value = activeSub?.isActive ?? false;
       }
 
       if (activeSub != null) {
         subscriptionStatus.value = activeSub.status.displayName;
         expiryDate.value = activeSub.tanggalBerakhir;
+      } else {
+        subscriptionStatus.value = 'Tidak Ada Langganan';
+        expiryDate.value = null;
+        isActiveSubscription.value = false;
       }
 
       // Router & Voucher count - Only if changed or initial

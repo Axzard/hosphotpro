@@ -7,6 +7,7 @@ import '../../../../domain/models/router_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../../../core/services/selection_service.dart';
+import '../../dashboard/view_models/dashboard_view_model.dart';
 
 class HotspotViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
@@ -73,10 +74,16 @@ class HotspotViewModel extends GetxController {
   }
 
   Future<void> loadHotspots() async {
+    final dashboardVM = Get.find<DashboardViewModel>();
+    if (!dashboardVM.isActiveSubscription.value) {
+      hotspots.clear();
+      return;
+    }
+
     if (selectedRouter.value == null) return;
     
     try {
-      isLoading.value = true;
+      if (hotspots.isEmpty) isLoading.value = true;
       final idRouter = int.tryParse(selectedRouter.value!.id) ?? 0;
       final result = await _routerRepository.getHotspots(idRouter);
       hotspots.assignAll(result);
@@ -130,6 +137,12 @@ class HotspotViewModel extends GetxController {
   }
 
   Future<void> syncHotspots() async {
+    final dashboardVM = Get.find<DashboardViewModel>();
+    if (!dashboardVM.isActiveSubscription.value) {
+      SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.');
+      return;
+    }
+
     final router = selectedRouter.value;
     if (router == null) {
       SnackbarUtils.showError('Error', 'Pilih router terlebih dahulu');
