@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/models/subscription_package_model.dart';
 import '../view_models/subscription_view_model.dart';
+import '../../../config/routing/app_routes.dart';
 
 class PackageDetailBottomBar extends StatelessWidget {
   final SubscriptionPackageModel package;
@@ -33,60 +34,31 @@ class PackageDetailBottomBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Price row
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left: label + price
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total Biaya',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Obx(() {
-                      final totalPrice = controller.calculateTotalPrice(
-                        package,
-                      );
-                      return Text(
-                        currencyFormat.format(totalPrice),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      );
-                    }),
-                  ],
+              Text(
+                'Total Biaya',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withValues(alpha: 0.5),
                 ),
               ),
-              // Right: PPN badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: accentColor.withValues(alpha: 0.2)),
-                ),
-                child: Text(
-                  'PPN 0% TERMASUK',
+              const SizedBox(height: 2),
+              Obx(() {
+                final totalPrice = controller.calculateTotalPrice(package);
+                return Text(
+                  currencyFormat.format(totalPrice),
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 9,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: accentColor,
-                    letterSpacing: 0.5,
+                    color: Colors.white,
                   ),
-                ),
-              ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                );
+              }),
             ],
           ),
           const SizedBox(height: 18),
@@ -98,7 +70,18 @@ class PackageDetailBottomBar extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: controller.isProcessingPayment.value
                     ? null
-                    : () => controller.initiatePayment(package),
+                    : () {
+                        final totalPrice = controller.calculateTotalPrice(
+                          package,
+                        );
+                        Get.toNamed(
+                          Routes.PAYMENT,
+                          arguments: {
+                            'package': package,
+                            'total_bayar': totalPrice,
+                          },
+                        );
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentColor,
                   foregroundColor: Colors.white,
@@ -121,14 +104,19 @@ class PackageDetailBottomBar extends StatelessWidget {
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            'Lanjutkan ke Pembayaran',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              'Lanjutkan ke Pembayaran',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           const Icon(
                             Icons.account_balance_wallet_outlined,
                             size: 20,

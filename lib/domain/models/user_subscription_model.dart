@@ -3,6 +3,7 @@ enum SubscriptionStatus {
   active,
   pending,
   expired,
+  canceled,
   none;
 
   String get displayName {
@@ -13,6 +14,8 @@ enum SubscriptionStatus {
         return 'Menunggu Pembayaran';
       case SubscriptionStatus.expired:
         return 'Kadaluarsa';
+      case SubscriptionStatus.canceled:
+        return 'Dibatalkan';
       case SubscriptionStatus.none:
         return 'Tidak Ada Langganan';
     }
@@ -28,6 +31,9 @@ enum SubscriptionStatus {
       case 'expired':
       case 'kadaluarsa':
         return SubscriptionStatus.expired;
+      case 'canceled':
+      case 'dibatalkan':
+        return SubscriptionStatus.canceled;
       default:
         return SubscriptionStatus.none;
     }
@@ -47,6 +53,8 @@ class UserSubscriptionModel {
   final double harga;
   final double totalBayar;
   final String? paymentUrl;
+  final String? vaNumber;
+  final String? bankName;
 
   UserSubscriptionModel({
     required this.idLangganan,
@@ -61,6 +69,8 @@ class UserSubscriptionModel {
     required this.harga,
     required this.totalBayar,
     this.paymentUrl,
+    this.vaNumber,
+    this.bankName,
   });
 
   bool get isActive => status == SubscriptionStatus.active;

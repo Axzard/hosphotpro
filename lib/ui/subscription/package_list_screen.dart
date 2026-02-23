@@ -31,6 +31,41 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
                   );
                 }
 
+                if (controller.errorMessage.isNotEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            color: Colors.redAccent,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            controller.errorMessage.value,
+                            style: const TextStyle(color: Colors.white70),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => controller.loadPackages(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.cyan,
+                            ),
+                            child: const Text(
+                              'Coba Lagi',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
                 if (controller.packages.isEmpty) {
                   return const Center(
                     child: Text(
@@ -74,23 +109,6 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
                         ),
                       ];
 
-                      // Add extra features based on name for visual parity with design
-                      if (package.name.toLowerCase().contains('pro') ||
-                          package.name.toLowerCase().contains('bisnis')) {
-                        features.add(
-                          PackageFeature(
-                            icon: Icons.speed,
-                            text: 'Kecepatan: 100 Mbps',
-                          ),
-                        );
-                        features.add(
-                          PackageFeature(
-                            icon: Icons.support_agent,
-                            text: 'Dukungan Prioritas 24/7',
-                          ),
-                        );
-                      }
-
                       return SubscriptionPackageCard(
                         name: 'Paket ${package.name}',
                         price: currencyFormat.format(package.price),
@@ -98,7 +116,7 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
                             ? 'Bulan'
                             : '${package.durationDays} Hari',
                         features: features,
-                        isPopuler: package.name.toLowerCase().contains('pro'),
+                        isPopuler: false,
                         isSelected: isCurrentPackage,
                         isLoading: controller.isProcessingPayment.value,
                         onBuy: () {

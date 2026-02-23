@@ -13,6 +13,8 @@ class UserSubscriptionApiModel {
   final double harga;
   final double totalBayar;
   final String? paymentUrl;
+  final String? vaNumber;
+  final String? bankName;
 
   UserSubscriptionApiModel({
     required this.idLangganan,
@@ -27,6 +29,8 @@ class UserSubscriptionApiModel {
     required this.harga,
     required this.totalBayar,
     this.paymentUrl,
+    this.vaNumber,
+    this.bankName,
   });
 
   factory UserSubscriptionApiModel.fromJson(Map<String, dynamic> json) {
@@ -49,6 +53,16 @@ class UserSubscriptionApiModel {
       harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
       totalBayar: double.tryParse(json['total_bayar']?.toString() ?? '0') ?? 0,
       paymentUrl: json['payment_url'] ?? json['redirect_url'],
+      vaNumber:
+          json['va_number'] ??
+          (json['va_numbers'] is List && (json['va_numbers'] as List).isNotEmpty
+              ? (json['va_numbers'] as List)[0]['va_number']
+              : null),
+      bankName:
+          json['bank_name'] ??
+          (json['va_numbers'] is List && (json['va_numbers'] as List).isNotEmpty
+              ? (json['va_numbers'] as List)[0]['bank']
+              : null),
     );
   }
 
@@ -66,6 +80,8 @@ class UserSubscriptionApiModel {
       harga: harga,
       totalBayar: totalBayar,
       paymentUrl: paymentUrl,
+      vaNumber: vaNumber,
+      bankName: bankName,
     );
   }
 }

@@ -15,10 +15,12 @@ abstract class _Paths {
   static const VOUCHER_DETAIL = '/voucher-detail';
   static const MIKROTIK_ROUTERS = '/mikrotik-routers';
   static const PACKAGE_DETAIL = '/package-detail';
+  static const PAYMENT_DETAIL = '/payment-detail';
   static const MIDTRANS_WEBVIEW = '/midtrans-webview';
   static const HOTSPOTS = '/hotspots';
   static const VOUCHER_PACKAGES = '/voucher-packages';
   static const ERROR = '/error';
+  static const PAYMENT_ERROR = '/payment-error';
 }
 
 abstract class Routes {
@@ -35,8 +37,10 @@ abstract class Routes {
   static const VOUCHER_DETAIL = _Paths.VOUCHER_DETAIL;
   static const MIKROTIK_ROUTERS = _Paths.MIKROTIK_ROUTERS;
   static const PACKAGE_DETAIL = _Paths.PACKAGE_DETAIL;
+  static const PAYMENT_DETAIL = _Paths.PAYMENT_DETAIL;
   static const MIDTRANS_WEBVIEW = _Paths.MIDTRANS_WEBVIEW;
   static const HOTSPOTS = _Paths.HOTSPOTS;
   static const VOUCHER_PACKAGES = _Paths.VOUCHER_PACKAGES;
   static const ERROR = _Paths.ERROR;
+  static const PAYMENT_ERROR = _Paths.PAYMENT_ERROR;
 }

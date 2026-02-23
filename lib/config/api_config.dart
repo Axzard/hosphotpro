@@ -1,6 +1,6 @@
 class ApiConfig {
-  // static const String baseUrl = 'http://76.13.197.9:3000';
-  static const String baseUrl = 'https://api.siodev.sbs';
+  static const String baseUrl = 'http://76.13.197.9:3000';
+  // static const String baseUrl = 'https://api.siodev.sbs';
 
   // Auth endpoints
   static const String register = '$baseUrl/api/daftar-admin';
@@ -14,12 +14,14 @@ class ApiConfig {
   static String updateSubscriptionStatus(int id) =>
       '$baseUrl/api/langganan/$id/status';
   static const String checkout = '$baseUrl/api/transaksi/checkout';
+  static const String perpanjang = '$baseUrl/api/transaksi/perpanjang';
   static const String callback = '$baseUrl/api/transaksi/callback';
 
   // Router endpoints
   static const String routers = '$baseUrl/api/router';
   static String routerPing(int id) => '$baseUrl/api/router/$id/ping';
-  static String hotspots(int idRouter) => '$baseUrl/api/hotspot?id_router=$idRouter';
+  static String hotspots(int idRouter) =>
+      '$baseUrl/api/hotspot?id_router=$idRouter';
   static String hotspotDetail(int id) => '$baseUrl/api/hotspot/$id';
   static String updateHotspot(int id) => '$baseUrl/api/hotspot/$id';
   static String deleteHotspot(int id) => '$baseUrl/api/hotspot/$id';
@@ -41,10 +43,8 @@ class ApiConfig {
       '$baseUrl/api/voucher/paket/$idPaket';
   static String vouchersByHotspot(int idHotspot) =>
       '$baseUrl/api/voucher/hotspot/$idHotspot'; // Keeping as a guess if package-based is too slow
-  static String voucherDetail(int id) =>
-      '$baseUrl/api/voucher/$id';
-  static String deleteVoucher(int id) =>
-      '$baseUrl/api/voucher/$id';
+  static String voucherDetail(int id) => '$baseUrl/api/voucher/$id';
+  static String deleteVoucher(int id) => '$baseUrl/api/voucher/$id';
   static const String vouchersAktif = '$baseUrl/api/voucher/aktif';
   static String sellVoucher(int id) => '$baseUrl/api/voucher/jual/$id';
 

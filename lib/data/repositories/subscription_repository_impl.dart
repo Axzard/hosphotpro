@@ -36,8 +36,14 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
   }
 
   @override
-  Future<Map<String, dynamic>?> createSubscription(int packageId) async {
-    final response = await _subscriptionService.createSubscription(packageId);
+  Future<Map<String, dynamic>?> createSubscription(
+    int packageId,
+    int jumlahBulan,
+  ) async {
+    final response = await _subscriptionService.createSubscription(
+      packageId,
+      jumlahBulan,
+    );
     if (response.success) {
       return response.data;
     }
@@ -46,24 +52,47 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
 
   @override
   Future<TransactionModel> createTransaction({
+    required int idLangganan,
     required int idPaketLangganan,
     required int jumlahBulan,
-    required double amount,
-    String metodePembayaran = 'midtrans',
+    String? metodePembayaran,
   }) async {
     try {
       final response = await _subscriptionService.createTransaction(
+        idLangganan: idLangganan,
         idPaketLangganan: idPaketLangganan,
         jumlahBulan: jumlahBulan,
-        amount: amount,
         metodePembayaran: metodePembayaran,
       );
 
       if (response.success && response.data != null) {
         return response.data!.toDomain();
       }
+      throw Exception(response.message);
+    } catch (e) {
+      rethrow;
+    }
+  }
 
-      throw Exception('Failed to create transaction: ${response.message}');
+  @override
+  Future<TransactionModel> renewTransaction({
+    required int jumlahBulan,
+    int? idLangganan,
+    int? idPaketLangganan,
+    String? metodePembayaran,
+  }) async {
+    try {
+      final response = await _subscriptionService.renewTransaction(
+        jumlahBulan: jumlahBulan,
+        idLangganan: idLangganan,
+        idPaketLangganan: idPaketLangganan,
+        metodePembayaran: metodePembayaran,
+      );
+
+      if (response.success && response.data != null) {
+        return response.data!.toDomain();
+      }
+      throw Exception(response.message);
     } catch (e) {
       rethrow;
     }

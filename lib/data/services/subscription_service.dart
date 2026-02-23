@@ -8,11 +8,13 @@ import '../model/user_subscription_api_model.dart';
 import 'token_service.dart';
 
 class SubscriptionService extends GetxService {
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-    sendTimeout: const Duration(seconds: 30),
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
+      sendTimeout: const Duration(seconds: 15),
+    ),
+  );
   final TokenService _tokenService = Get.find<TokenService>();
 
   // Get packages from backend API
@@ -110,10 +112,14 @@ class SubscriptionService extends GetxService {
   // Create subscription record
   Future<ApiResponse<Map<String, dynamic>>> createSubscription(
     int packageId,
+    int jumlahBulan,
   ) async {
     try {
       final token = _tokenService.getToken();
-      final data = {'id_paket_langganan': packageId};
+      final data = {
+        'id_paket_langganan': packageId,
+        'jumlah_bulan': jumlahBulan,
+      };
 
       final response = await _dio.post(
         ApiConfig.createSubscription,
@@ -127,13 +133,21 @@ class SubscriptionService extends GetxService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return ApiResponse(
           success: true,
-          message: response.data['pesan'] ?? 'Subscription created',
-          data: response.data['data'],
+          message:
+              response.data['pesan'] ??
+              response.data['message'] ??
+              'Subscription created',
+          data: response.data['data'] != null
+              ? response.data['data']
+              : response.data,
         );
       } else {
         return ApiResponse(
           success: false,
-          message: response.data['pesan'] ?? 'Failed to create subscription',
+          message:
+              response.data['pesan'] ??
+              response.data['message'] ??
+              'Failed to create subscription',
         );
       }
     } catch (e) {
@@ -142,7 +156,8 @@ class SubscriptionService extends GetxService {
   }
 
   // Get my subscriptions
-  Future<ApiResponse<List<UserSubscriptionApiModel>>> getMySubscriptions() async {
+  Future<ApiResponse<List<UserSubscriptionApiModel>>>
+  getMySubscriptions() async {
     try {
       final token = _tokenService.getToken();
 
@@ -235,23 +250,70 @@ class SubscriptionService extends GetxService {
 
   // Create checkout transaction
   Future<ApiResponse<TransactionApiModel>> createTransaction({
+    required int idLangganan,
     required int idPaketLangganan,
     required int jumlahBulan,
-    required double amount,
-    String metodePembayaran = 'midtrans',
+    String? metodePembayaran,
+  }) async {
+    final Map<String, dynamic> data = {
+      'id_langganan': idLangganan,
+      'id_subscription': idLangganan, // Redundant key for compatibility
+      'id_paket_langganan': idPaketLangganan,
+      'id_paket': idPaketLangganan, // Redundant key for compatibility
+      'jumlah_bulan': jumlahBulan,
+    };
+
+    if (metodePembayaran != null && metodePembayaran.isNotEmpty) {
+      data['metode_pembayaran'] = metodePembayaran;
+    }
+
+    return _processTransaction(
+      url: ApiConfig.checkout,
+      data: data,
+      idPaketLangganan: idPaketLangganan,
+    );
+  }
+
+  // Create renewal transaction
+  Future<ApiResponse<TransactionApiModel>> renewTransaction({
+    required int jumlahBulan,
+    int? idLangganan,
+    int? idPaketLangganan,
+    String? metodePembayaran,
+  }) async {
+    final Map<String, dynamic> data = {'jumlah_bulan': jumlahBulan};
+
+    if (metodePembayaran != null && metodePembayaran.isNotEmpty) {
+      data['metode_pembayaran'] = metodePembayaran;
+    }
+
+    if (idLangganan != null && idLangganan > 0) {
+      data['id_langganan'] = idLangganan;
+      data['id_subscription'] = idLangganan;
+    }
+    if (idPaketLangganan != null && idPaketLangganan > 0) {
+      data['id_paket_langganan'] = idPaketLangganan;
+      data['id_paket'] = idPaketLangganan;
+    }
+
+    return _processTransaction(
+      url: ApiConfig.perpanjang,
+      data: data,
+      idPaketLangganan: idPaketLangganan ?? 0,
+    );
+  }
+
+  // Shared helper for transaction processing
+  Future<ApiResponse<TransactionApiModel>> _processTransaction({
+    required String url,
+    required Map<String, dynamic> data,
+    required int idPaketLangganan,
   }) async {
     try {
       final token = _tokenService.getToken();
 
-      final data = {
-        'id_paket_langganan': idPaketLangganan,
-        'jumlah_bulan': jumlahBulan,
-        'total_bayar': amount.toInt(),
-        'metode_pembayaran': metodePembayaran,
-      };
-
       final response = await _dio.post(
-        ApiConfig.checkout,
+        url,
         data: data,
         options: Options(
           headers: ApiConfig.headers(token: token),
@@ -262,58 +324,33 @@ class SubscriptionService extends GetxService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;
 
-        final snapToken =
-            responseData['data']?['snap_token'] ??
-            responseData['snap_token'] ??
-            '';
-        final redirectUrl =
-            responseData['data']?['redirect_url'] ??
-            responseData['redirect_url'];
-
-        final transaction = TransactionApiModel(
-          id:
-              responseData['id_langganan']?.toString() ??
-              responseData['data']?['id_langganan']?.toString() ??
-              '0',
-          packageId: '0',
+        final transaction = TransactionApiModel.fromJson(responseData).copyWith(
+          packageId: idPaketLangganan.toString(),
           packageName: 'Subscription Package',
-          userId: '0',
-          amount:
-              double.tryParse(
-                responseData['total_bayar']?.toString() ??
-                    responseData['data']?['total_bayar']?.toString() ??
-                    '0',
-              ) ??
-              0,
-          status: 'pending',
-          createdAt: DateTime.now().toIso8601String(),
-          snapToken: snapToken,
-          redirectUrl: redirectUrl,
         );
 
         return ApiResponse(
           success: true,
-          message: 'Transaction created successfully',
+          message:
+              responseData['message'] ?? responseData['pesan'] ?? 'Success',
           data: transaction,
         );
       } else {
         return ApiResponse(
           success: false,
           message:
-              response.data['pesan'] ??
               response.data['message'] ??
-              'Failed to create transaction',
-          data: null,
+              response.data['pesan'] ??
+              'Failed to process transaction',
         );
       }
     } on DioException catch (e) {
       return ApiResponse(
         success: false,
         message: 'Network error: ${e.message}',
-        data: null,
       );
     } catch (e) {
-      return ApiResponse(success: false, message: 'Error: $e', data: null);
+      return ApiResponse(success: false, message: 'Error: $e');
     }
   }
 }

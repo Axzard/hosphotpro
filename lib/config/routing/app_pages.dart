@@ -16,11 +16,13 @@ import '../../ui/router/router_management_screen.dart';
 import '../../ui/router/view_models/router_view_model.dart';
 import '../../ui/subscription/package_detail_screen.dart';
 import '../../ui/subscription/midtrans_webview_screen.dart';
+import '../../ui/subscription/payment_detail_screen.dart';
 import '../../ui/router/hotspot_management_screen.dart';
 import '../../ui/router/view_models/hotspot_view_model.dart';
 import '../../ui/voucher/voucher_package_management_screen.dart';
 import '../../ui/voucher/view_models/voucher_package_view_model.dart';
 import '../../ui/core/widgets/error_screen.dart';
+import '../../ui/subscription/payment_error_screen.dart';
 import 'app_routes.dart';
 export 'app_routes.dart';
 
@@ -30,14 +32,8 @@ class AppPages {
   static const INITIAL = Routes.LOGIN;
 
   static final routes = [
-    GetPage(
-      name: Routes.LOGIN,
-      page: () => const LoginScreen(),
-    ),
-    GetPage(
-      name: Routes.REGISTER,
-      page: () => const RegisterScreen(),
-    ),
+    GetPage(name: Routes.LOGIN, page: () => const LoginScreen()),
+    GetPage(name: Routes.REGISTER, page: () => const RegisterScreen()),
     GetPage(
       name: Routes.DASHBOARD,
       page: () => const DashboardScreen(),
@@ -52,10 +48,7 @@ class AppPages {
         Get.put(SubscriptionViewModel(Get.find()));
       }),
     ),
-    GetPage(
-      name: Routes.PAYMENT,
-      page: () => const PaymentScreen(),
-    ),
+    GetPage(name: Routes.PAYMENT, page: () => const PaymentScreen()),
     GetPage(
       name: Routes.TRANSACTIONS,
       page: () => const ReportScreen(),
@@ -67,7 +60,9 @@ class AppPages {
       name: Routes.SUBSCRIPTION_STATUS,
       page: () => const SubscriptionStatusScreen(),
       binding: BindingsBuilder(() {
-        Get.lazyPut(() => SubscriptionViewModel(Get.find()));
+        if (!Get.isRegistered<SubscriptionViewModel>()) {
+          Get.put(SubscriptionViewModel(Get.find()));
+        }
       }),
     ),
     GetPage(
@@ -105,6 +100,10 @@ class AppPages {
       page: () => const MidtransWebViewScreen(),
     ),
     GetPage(
+      name: Routes.PAYMENT_DETAIL,
+      page: () => const PaymentDetailScreen(),
+    ),
+    GetPage(
       name: Routes.HOTSPOTS,
       page: () => const HotspotManagementScreen(),
       binding: BindingsBuilder(() {
@@ -121,6 +120,16 @@ class AppPages {
     GetPage(
       name: Routes.ERROR,
       page: () => ErrorScreen(message: Get.arguments as String?),
+    ),
+    GetPage(
+      name: Routes.PAYMENT_ERROR,
+      page: () {
+        final args = Get.arguments as Map<String, dynamic>? ?? {};
+        return PaymentErrorScreen(
+          message: args['message'],
+          bankName: args['bankName'],
+        );
+      },
     ),
   ];
 }

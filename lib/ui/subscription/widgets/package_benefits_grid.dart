@@ -21,38 +21,31 @@ class PackageBenefitsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final voucherFormat = NumberFormat('#,###', 'id_ID');
 
-    final benefits = [
+    final benefits = <_BenefitData>[
       _BenefitData(
         icon: Icons.payments_outlined,
         label: 'HARGA PAKET',
         value: currencyFormat.format(package.price),
         isHighlighted: true,
       ),
-      _BenefitData(
-        icon: Icons.dns_outlined,
-        label: 'BATAS ROUTER',
-        value: '${package.maxRouters} Perangkat',
-      ),
-      _BenefitData(
-        icon: Icons.confirmation_number_outlined,
-        label: 'BATAS VOUCHER',
-        value: '${voucherFormat.format(package.maxVouchers)} Voucher',
-      ),
-      _BenefitData(
-        icon: Icons.speed_outlined,
-        label: 'KECEPATAN',
-        value: 'Bandwidth Maks',
-      ),
-      _BenefitData(
-        icon: Icons.monitor_heart_outlined,
-        label: 'AKSES',
-        value: 'Real-time',
-      ),
-      _BenefitData(
-        icon: Icons.support_agent_outlined,
-        label: 'LAYANAN',
-        value: '24/7 CS',
-      ),
+      if (package.durationDays > 0)
+        _BenefitData(
+          icon: Icons.schedule_outlined,
+          label: 'DURASI LANGGANAN',
+          value: '${package.durationDays} Hari',
+        ),
+      if (package.maxRouters > 0)
+        _BenefitData(
+          icon: Icons.dns_outlined,
+          label: 'BATAS ROUTER',
+          value: '${package.maxRouters} Perangkat',
+        ),
+      if (package.maxVouchers > 0)
+        _BenefitData(
+          icon: Icons.confirmation_number_outlined,
+          label: 'BATAS VOUCHER',
+          value: '${voucherFormat.format(package.maxVouchers)} Voucher',
+        ),
     ];
 
     return Column(
@@ -76,15 +69,17 @@ class PackageBenefitsGrid extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.55,
+            childAspectRatio: 0.95, // Increased vertical space (lowered ratio)
           ),
           itemCount: benefits.length,
           itemBuilder: (context, index) {
             final data = benefits[index];
             return Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               decoration: BoxDecoration(
-                color: data.isHighlighted ? accentColor.withValues(alpha: 0.12) : cardColor,
+                color: data.isHighlighted
+                    ? accentColor.withValues(alpha: 0.12)
+                    : cardColor,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: data.isHighlighted
@@ -96,28 +91,30 @@ class PackageBenefitsGrid extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(data.icon, color: accentColor, size: 28),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Text(
                     data.label,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 9,
+                      fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: accentColor.withValues(alpha: 0.7),
                       letterSpacing: 0.8,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    data.value,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  const SizedBox(height: 6),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      data.value,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
                     ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

@@ -13,30 +13,36 @@ class DashboardStatusCards extends StatelessWidget {
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(
       locale: 'id_ID',
-      symbol: 'Rp',
+      symbol: 'Rp ',
       decimalDigits: 0,
     );
-    
+
     return Column(
       children: [
         Row(
           children: [
             Expanded(
-              child: Obx(() => _buildInfoCard(
-                title: 'Pendapatan Hari Ini',
-                value: currencyFormat.format(controller.totalIncomeToday.value),
-                icon: Icons.account_balance_wallet_rounded,
-                color: const Color(0xFF4ADE80),
-              )),
+              child: Obx(
+                () => _buildInfoCard(
+                  title: 'Pendapatan Hari Ini',
+                  value: currencyFormat.format(
+                    controller.totalIncomeToday.value,
+                  ),
+                  icon: Icons.account_balance_wallet_rounded,
+                  color: const Color(0xFF4ADE80),
+                ),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Obx(() => _buildInfoCard(
-                title: 'Transaksi Hari Ini',
-                value: '${controller.totalTransactionsToday.value}',
-                icon: Icons.receipt_long_rounded,
-                color: const Color(0xFFFFB240),
-              )),
+              child: Obx(
+                () => _buildInfoCard(
+                  title: 'Transaksi Hari Ini',
+                  value: '${controller.totalTransactionsToday.value}',
+                  icon: Icons.receipt_long_rounded,
+                  color: const Color(0xFFFFB240),
+                ),
+              ),
             ),
           ],
         ),
@@ -44,22 +50,27 @@ class DashboardStatusCards extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Obx(() => _buildInfoCard(
-                title: 'Router Online',
-                value:
-                    '${controller.onlineRouterCount.value} / ${controller.totalRouterCount.value}',
-                icon: Icons.dns_rounded,
-                color: const Color(0xFF00C2FF),
-              )),
+              child: Obx(
+                () => _buildInfoCard(
+                  title: 'Router Online',
+                  value:
+                      '${controller.onlineRouterCount.value} / ${controller.totalRouterCount.value}',
+                  icon: Icons.dns_rounded,
+                  color: const Color(0xFF00C2FF),
+                ),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Obx(() => _buildInfoCard(
-                title: 'User Aktif',
-                value: '${controller.activeUserCount.value < 0 ? 0 : controller.activeUserCount.value}',
-                icon: Icons.bolt_rounded,
-                color: const Color(0xFFF472B6),
-              )),
+              child: Obx(
+                () => _buildInfoCard(
+                  title: 'User Aktif',
+                  value:
+                      '${controller.activeUserCount.value < 0 ? 0 : controller.activeUserCount.value}',
+                  icon: Icons.bolt_rounded,
+                  color: const Color(0xFFF472B6),
+                ),
+              ),
             ),
           ],
         ),
@@ -78,10 +89,7 @@ class DashboardStatusCards extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-          width: 1.5,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.08),

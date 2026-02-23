@@ -15,11 +15,7 @@ class AuthLogo extends StatelessWidget {
             color: const Color(0xFF1E293B),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Icon(
-            Icons.business,
-            color: Colors.cyan,
-            size: 40,
-          ),
+          child: const Icon(Icons.business, color: Colors.cyan, size: 40),
         ),
         const SizedBox(height: 16),
         Text(
@@ -80,20 +76,30 @@ class _AuthTextFieldState extends State<AuthTextField> {
           decoration: InputDecoration(
             hintText: widget.hint,
             hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
-            prefixIcon: Icon(widget.prefixIcon, color: Colors.white38, size: 20),
+            prefixIcon: Icon(
+              widget.prefixIcon,
+              color: Colors.white38,
+              size: 20,
+            ),
             suffixIcon: widget.isPassword
                 ? IconButton(
                     icon: Icon(
-                      _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _obscureText
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       color: Colors.white38,
                       size: 20,
                     ),
-                    onPressed: () => setState(() => _obscureText = !_obscureText),
+                    onPressed: () =>
+                        setState(() => _obscureText = !_obscureText),
                   )
                 : null,
             filled: true,
             fillColor: const Color(0xFF1F2937),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFF374151)),
@@ -144,13 +150,18 @@ class AuthButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         child: isLoading
             ? const SizedBox(
                 height: 24,
                 width: 24,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -299,7 +310,7 @@ class SubscriptionPackageCard extends StatelessWidget {
                   color: Colors.cyan.withOpacity(0.2),
                   blurRadius: 20,
                   spreadRadius: 2,
-                )
+                ),
               ]
             : null,
       ),
@@ -311,62 +322,71 @@ class SubscriptionPackageCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (isPopuler) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            child: const Text(
-                              'POPULER',
-                              style: TextStyle(
-                                color: Colors.orange,
-                                fontSize: 10,
+                          ),
+                          if (isPopuler) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'POPULER',
+                                style: TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: price,
+                              style: const TextStyle(
+                                color: Colors.cyan,
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: price,
-                            style: const TextStyle(
-                              color: Colors.cyan,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                            TextSpan(
+                              text: '/$duration',
+                              style: const TextStyle(
+                                color: Colors.white38,
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
-                          TextSpan(
-                            text: '/$duration',
-                            style: const TextStyle(
-                              color: Colors.white38,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -379,19 +399,28 @@ class SubscriptionPackageCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 32),
-            ...features.map((feature) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Row(
-                    children: [
-                      Icon(feature.icon, color: Colors.cyan, size: 20),
-                      const SizedBox(width: 12),
-                      Text(
+            ...features.map(
+              (feature) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Row(
+                  children: [
+                    Icon(feature.icon, color: Colors.cyan, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
                         feature.text,
-                        style: const TextStyle(color: Colors.white70, fontSize: 14),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
-                )),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
             AuthButton(
               text: 'Beli Sekarang',

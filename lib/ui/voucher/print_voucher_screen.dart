@@ -18,7 +18,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
       length: 4,
       child: Scaffold(
         backgroundColor: bgColor,
-        floatingActionButton: FloatingActionButton.extended(
+        floatingActionButton: FloatingActionButton(
           onPressed: () {
             Get.bottomSheet(
               const CreateVoucherSheet(),
@@ -27,11 +27,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
             );
           },
           backgroundColor: accentColor,
-          icon: const Icon(Icons.add_rounded),
-          label: Text(
-            'Buat Voucher',
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
-          ),
+          child: const Icon(Icons.add_rounded),
         ),
         body: SafeArea(
           child: Column(
@@ -41,10 +37,30 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
               Expanded(
                 child: TabBarView(
                   children: [
-                    _buildVoucherList(controller.stockVouchers, accentColor, cardColor, 'Belum ada voucher stok'),
-                    _buildVoucherList(controller.soldVouchers, accentColor, cardColor, 'Belum ada voucher terjual'),
-                    _buildVoucherList(controller.activeVouchers, accentColor, cardColor, 'Belum ada voucher aktif'),
-                    _buildVoucherList(controller.expiredVouchers, accentColor, cardColor, 'Belum ada voucher expired'),
+                    _buildVoucherList(
+                      controller.stockVouchers,
+                      accentColor,
+                      cardColor,
+                      'Belum ada voucher stok',
+                    ),
+                    _buildVoucherList(
+                      controller.soldVouchers,
+                      accentColor,
+                      cardColor,
+                      'Belum ada voucher terjual',
+                    ),
+                    _buildVoucherList(
+                      controller.activeVouchers,
+                      accentColor,
+                      cardColor,
+                      'Belum ada voucher aktif',
+                    ),
+                    _buildVoucherList(
+                      controller.expiredVouchers,
+                      accentColor,
+                      cardColor,
+                      'Belum ada voucher expired',
+                    ),
                   ],
                 ),
               ),
@@ -99,14 +115,21 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
     );
   }
 
-  Widget _buildVoucherList(List<VoucherModel> items, Color accentColor, Color cardColor, String emptyMessage) {
+  Widget _buildVoucherList(
+    List<VoucherModel> items,
+    Color accentColor,
+    Color cardColor,
+    String emptyMessage,
+  ) {
     return Column(
       children: [
         _buildPackageFilter(accentColor),
         Expanded(
           child: Obx(() {
             if (controller.isLoading.value) {
-              return const Center(child: CircularProgressIndicator(color: Color(0xFF00C2FF)));
+              return const Center(
+                child: CircularProgressIndicator(color: Color(0xFF00C2FF)),
+              );
             }
 
             final filteredItems = _getFilteredItemsByMessage(emptyMessage);
@@ -116,11 +139,18 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.confirmation_number_outlined, size: 64, color: Colors.white.withValues(alpha: 0.2)),
+                    Icon(
+                      Icons.confirmation_number_outlined,
+                      size: 64,
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       emptyMessage,
-                      style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 16),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white54,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -128,7 +158,12 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
             }
 
             return ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              padding: const EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 10,
+                bottom: 80,
+              ),
               itemCount: filteredItems.length,
               itemBuilder: (context, index) {
                 final voucher = filteredItems[index];
@@ -175,12 +210,14 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                   onTap: () => controller.setFilterPaket(null),
                   accentColor: accentColor,
                 ),
-                ...controller.voucherPackages.map((paket) => _buildFilterTab(
-                      label: paket.namaPaket,
-                      isSelected: controller.filterPaketId.value == paket.id,
-                      onTap: () => controller.setFilterPaket(paket.id),
-                      accentColor: accentColor,
-                    )),
+                ...controller.voucherPackages.map(
+                  (paket) => _buildFilterTab(
+                    label: paket.namaPaket,
+                    isSelected: controller.filterPaketId.value == paket.id,
+                    onTap: () => controller.setFilterPaket(paket.id),
+                    accentColor: accentColor,
+                  ),
+                ),
               ],
             ),
           ),
@@ -204,10 +241,14 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? accentColor.withValues(alpha: 0.1) : Colors.transparent,
+          color: isSelected
+              ? accentColor.withValues(alpha: 0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? accentColor.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05),
+            color: isSelected
+                ? accentColor.withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.05),
           ),
         ),
         child: Column(
@@ -297,17 +338,29 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                   ],
                 ),
               ),
-              Obx(() => controller.vouchers.isNotEmpty 
-                ? IconButton(
-                    icon: controller.isDeletingAll.value 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.redAccent))
-                      : const Icon(Icons.delete_sweep_outlined, color: Colors.redAccent),
-                    onPressed: controller.isDeletingAll.value 
-                      ? null 
-                      : () => _showBulkDeleteConfirm(context),
-                    tooltip: 'Hapus Semua',
-                  )
-                : const SizedBox.shrink()),
+              Obx(
+                () => controller.vouchers.isNotEmpty
+                    ? IconButton(
+                        icon: controller.isDeletingAll.value
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.redAccent,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.delete_sweep_outlined,
+                                color: Colors.redAccent,
+                              ),
+                        onPressed: controller.isDeletingAll.value
+                            ? null
+                            : () => _showBulkDeleteConfirm(context),
+                        tooltip: 'Hapus Semua',
+                      )
+                    : const SizedBox.shrink(),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -428,6 +481,8 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -439,7 +494,8 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                           letterSpacing: 0.5,
                         ),
                       ),
-                      if (voucher.dnsLogin != null && voucher.dnsLogin!.isNotEmpty)
+                      if (voucher.dnsLogin != null &&
+                          voucher.dnsLogin!.isNotEmpty)
                         Text(
                           'DNS: ${voucher.dnsLogin}',
                           style: GoogleFonts.plusJakartaSans(
@@ -494,11 +550,24 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: TextButton.icon(
-                          onPressed: () => controller.sellVoucher(voucher, 'cash'),
-                          icon: const Icon(Icons.sell_outlined, size: 18, color: Color(0xFF4ADE80)),
-                          label: const Text('Jual', style: TextStyle(color: Color(0xFF4ADE80), fontWeight: FontWeight.bold)),
+                          onPressed: () =>
+                              controller.sellVoucher(voucher, 'cash'),
+                          icon: const Icon(
+                            Icons.sell_outlined,
+                            size: 18,
+                            color: Color(0xFF4ADE80),
+                          ),
+                          label: const Text(
+                            'Jual',
+                            style: TextStyle(
+                              color: Color(0xFF4ADE80),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           style: TextButton.styleFrom(
-                            backgroundColor: const Color(0xFF4ADE80).withValues(alpha: 0.1),
+                            backgroundColor: const Color(
+                              0xFF4ADE80,
+                            ).withValues(alpha: 0.1),
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                           ),
                         ),
@@ -524,7 +593,10 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                             actions: [
                               TextButton(
                                 onPressed: () => Get.back(),
-                                child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+                                child: const Text(
+                                  'Batal',
+                                  style: TextStyle(color: Colors.white54),
+                                ),
                               ),
                               TextButton(
                                 onPressed: () {
@@ -563,52 +635,78 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
     final Rx<VoucherStatus?> selectedStatus = Rx<VoucherStatus?>(null);
 
     Get.dialog(
-      Obx(() => AlertDialog(
-            backgroundColor: const Color(0xFF131E29),
-            title: Text(
-              'Hapus Voucher',
-              style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white, fontWeight: FontWeight.bold),
+      Obx(
+        () => AlertDialog(
+          backgroundColor: const Color(0xFF131E29),
+          title: Text(
+            'Hapus Voucher',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Pilih kategori voucher yang ingin dihapus:',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 16),
-                _buildDeleteOption(null, 'Semua Voucher', selectedStatus),
-                _buildDeleteOption(VoucherStatus.stok, 'Voucher Stok', selectedStatus),
-                _buildDeleteOption(VoucherStatus.terjual, 'Voucher Terjual', selectedStatus),
-                _buildDeleteOption(VoucherStatus.aktif, 'Voucher Aktif', selectedStatus),
-                _buildDeleteOption(VoucherStatus.expired, 'Voucher Expired', selectedStatus),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Get.back(),
-                child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Pilih kategori voucher yang ingin dihapus:',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  Get.back();
-                  controller.deleteAllVouchers(status: selectedStatus.value);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Hapus Sekarang'),
+              const SizedBox(height: 16),
+              _buildDeleteOption(null, 'Semua Voucher', selectedStatus),
+              _buildDeleteOption(
+                VoucherStatus.stok,
+                'Voucher Stok',
+                selectedStatus,
+              ),
+              _buildDeleteOption(
+                VoucherStatus.terjual,
+                'Voucher Terjual',
+                selectedStatus,
+              ),
+              _buildDeleteOption(
+                VoucherStatus.aktif,
+                'Voucher Aktif',
+                selectedStatus,
+              ),
+              _buildDeleteOption(
+                VoucherStatus.expired,
+                'Voucher Expired',
+                selectedStatus,
               ),
             ],
-          )),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text(
+                'Batal',
+                style: TextStyle(color: Colors.white54),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Get.back();
+                controller.deleteAllVouchers(status: selectedStatus.value);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Hapus Sekarang'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildDeleteOption(
-      VoucherStatus? status, String label, Rx<VoucherStatus?> selectedStatus) {
+    VoucherStatus? status,
+    String label,
+    Rx<VoucherStatus?> selectedStatus,
+  ) {
     final isSelected = selectedStatus.value == status;
     return GestureDetector(
       onTap: () => selectedStatus.value = status,
