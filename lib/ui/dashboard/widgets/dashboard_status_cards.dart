@@ -54,7 +54,7 @@ class DashboardStatusCards extends StatelessWidget {
                 () => _buildInfoCard(
                   title: 'Router Online',
                   value:
-                      '${controller.onlineRouterCount.value} / ${controller.totalRouterCount.value}',
+                      '${controller.totalRouterCount.value} / ${controller.onlineRouterCount.value}',
                   icon: Icons.dns_rounded,
                   color: const Color(0xFF00C2FF),
                 ),

@@ -26,6 +26,7 @@ class RouterViewModel extends GetxController {
 
   final RxBool isEditing = false.obs;
   final RxString editingId = ''.obs;
+  final RxString editingStatus = 'aktif'.obs;
 
   StreamSubscription? _refreshSub;
 
@@ -83,7 +84,7 @@ class RouterViewModel extends GetxController {
         usernameApi: usernameController.text,
         passwordApi: passwordController.text,
         keterangan: keteranganController.text,
-        statusRouter: 'aktif',
+        statusRouter: isEditing.value ? editingStatus.value : 'aktif',
       );
 
       if (isEditing.value) {
@@ -125,6 +126,7 @@ class RouterViewModel extends GetxController {
     usernameController.text = router.usernameApi;
     passwordController.text = router.passwordApi;
     keteranganController.text = router.keterangan;
+    editingStatus.value = router.statusRouter;
   }
 
   void prepareCreate() {
@@ -134,6 +136,7 @@ class RouterViewModel extends GetxController {
   void clearForm() {
     isEditing.value = false;
     editingId.value = '';
+    editingStatus.value = 'aktif';
     namaController.clear();
     ipController.clear();
     portController.clear();

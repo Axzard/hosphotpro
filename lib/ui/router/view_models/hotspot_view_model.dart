@@ -209,9 +209,17 @@ class HotspotViewModel extends GetxController {
       if (Get.isDialogOpen ?? false) Get.back();
 
       print('[HotspotVM] Sync Error: $e');
+      
+      String friendlyMessage = 'Gagal sinkronisasi. Pastikan router online dan coba lagi.';
+      if (e.toString().contains('500')) {
+        friendlyMessage = 'Oops! Terjadi gangguan pada server (500). Silakan hubungi admin.';
+      } else if (e.toString().contains('timeout')) {
+        friendlyMessage = 'Koneksi ke router melampaui batas waktu. Pastikan router stabil.';
+      }
+
       SnackbarUtils.showError(
         'Sinkronisasi Gagal',
-        'Terjadi kesalahan: $e. Pastikan router aktif dan terhubung ke API.',
+        friendlyMessage,
       );
     } finally {
       isLoading.value = false;

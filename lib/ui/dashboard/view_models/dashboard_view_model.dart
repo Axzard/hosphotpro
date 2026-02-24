@@ -167,7 +167,13 @@ class DashboardViewModel extends GetxController {
       if (status.containsKey('online_count')) {
         onlineRouterCount.value = status['online_count'] as int;
       } else if (status.containsKey('router_count')) {
+        // Assume 'router_count' here refers to online ones based on emitting logic
         onlineRouterCount.value = status['router_count'] as int;
+      }
+      
+      // If we have total routers but online count is missing, we might want a fallback or refresh
+      if (totalRouterCount.value > 0 && !status.containsKey('online_count')) {
+        _throttledFetch();
       }
     });
   }
@@ -256,35 +262,37 @@ class DashboardViewModel extends GetxController {
       }
 
       reportSummary.value = reports;
+      
+      // Fallback: If dailyReport is missing or zero, try to find today's data in the reportSummary (perHari)
+      double income = dailyReport?.totalPendapatan ?? 0;
+      int transactions = dailyReport?.totalTransaksi ?? 0;
 
-      if (dailyReport != null) {
-        totalIncomeToday.value = dailyReport.totalPendapatan;
-        totalTransactionsToday.value = dailyReport.totalTransaksi;
-
-        if (activeVouchers != null) {
-          final now = DateTime.now();
-          final activatedToday = activeVouchers.where((v) {
-            final tgl = v.tanggalAktif;
-            return v.statusVoucher == VoucherStatus.aktif &&
-                tgl != null &&
-                tgl.year == now.year &&
-                tgl.month == now.month &&
-                tgl.day == now.day;
-          }).toList();
-
-          if (activatedToday.isNotEmpty) {}
+      if (income == 0 && transactions == 0 && reports != null) {
+        final today = DateTime.now();
+        final match = reports.perHari.firstWhereOrNull(
+          (e) => e.tanggal.year == today.year && 
+                 e.tanggal.month == today.month && 
+                 e.tanggal.day == today.day
+        );
+        if (match != null) {
+          income = match.totalPendapatan;
+          transactions = match.totalTransaksi;
         }
       }
+
+      totalIncomeToday.value = income;
+      totalTransactionsToday.value = transactions;
 
       if (activeVouchers != null && activeVouchers.isNotEmpty) {
         final filteredAktif = activeVouchers
             .where((v) => v.statusVoucher == VoucherStatus.aktif)
             .toList();
         activeUserCount.value = filteredAktif.length;
-        print('[DashboardVM] Active Users (Global): ${activeUserCount.value}');
+        print('[DashboardVM] Initialized Active Users: ${activeUserCount.value}');
       }
 
       totalRouterCount.value = routers.length;
+      onlineRouterCount.value = routers.where((r) => r.statusRouter == 'aktif').length;
 
       UserSubscriptionModel? activeSub;
       try {
