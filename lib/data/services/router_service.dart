@@ -9,9 +9,9 @@ import 'token_service.dart';
 class RouterService extends GetxService {
   final Dio _dio = Dio(
     BaseOptions(
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 60),
+      sendTimeout: const Duration(seconds: 60),
     ),
   );
   final TokenService _tokenService = Get.find<TokenService>();
@@ -288,7 +288,19 @@ class RouterService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.data['sukses'] == true) {
-        final List<dynamic> resultData = response.data['data'] ?? [];
+        final rawData = response.data['data'];
+        List<dynamic> resultData = [];
+        
+        if (rawData is List) {
+          resultData = rawData;
+        } else if (rawData is Map) {
+          if (rawData['detail'] is List) {
+            resultData = rawData['detail'];
+          } else {
+            resultData = [rawData];
+          }
+        }
+
         return ApiResponse(
           success: true,
           message: response.data['pesan'] ?? 'Sinkronisasi hotspot selesai',

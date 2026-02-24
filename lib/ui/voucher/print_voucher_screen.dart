@@ -364,7 +364,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
             ],
           ),
           const SizedBox(height: 24),
-          // Hotspot Selector
+
           Obx(() {
             if (controller.hotspots.isEmpty) {
               return const SizedBox.shrink();
@@ -431,7 +431,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
         statusLabel = 'STOK';
         break;
       case VoucherStatus.aktif:
-        statusColor = accentColor;
+        statusColor = Colors.greenAccent;
         statusLabel = 'AKTIF';
         break;
       case VoucherStatus.terjual:
@@ -613,14 +613,16 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                         );
                       },
                     ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.print_outlined,
-                        size: 20,
-                        color: Colors.white70,
+                    if (voucher.statusVoucher == VoucherStatus.terjual ||
+                        voucher.statusVoucher == VoucherStatus.aktif)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.print_outlined,
+                          size: 20,
+                          color: Colors.white70,
+                        ),
+                        onPressed: () => controller.printVoucher(voucher),
                       ),
-                      onPressed: () => controller.printVoucher(voucher),
-                    ),
                   ],
                 ),
               ],

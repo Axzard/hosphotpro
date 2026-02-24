@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'view_models/hotspot_view_model.dart';
-import '../../../domain/models/hotspot_model.dart';
 import '../../../domain/models/router_model.dart';
 import 'widgets/hotspot_header.dart';
 import 'widgets/hotspot_item_card.dart';
-import 'widgets/hotspot_form_sheet.dart';
 
 class HotspotManagementScreen extends GetView<HotspotViewModel> {
   const HotspotManagementScreen({super.key});
@@ -115,8 +113,6 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                         hotspot: hotspot,
                         cardColor: cardColor,
                         accentColor: accentColor,
-                        onEdit: (h) => _showEditSheet(h),
-                        onDelete: (h) => _showDeleteConfirm(h),
                       );
                     },
                   ),
@@ -125,47 +121,6 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showEditSheet(HotspotModel hotspot) {
-    controller.prepareEdit(hotspot);
-    Get.bottomSheet(
-      HotspotFormSheet(hotspot: hotspot),
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-    );
-  }
-
-  void _showDeleteConfirm(HotspotModel hotspot) {
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: Text(
-          'Hapus Hotspot',
-          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Apakah Anda yakin ingin menghapus server "${hotspot.namaServer}"?',
-          style: GoogleFonts.plusJakartaSans(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('Batal', style: GoogleFonts.plusJakartaSans(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () {
-              Get.back();
-              controller.deleteHotspot(hotspot.idHotspot);
-            },
-            child: Text(
-              'Hapus',
-              style: GoogleFonts.plusJakartaSans(color: Colors.redAccent, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
       ),
     );
   }

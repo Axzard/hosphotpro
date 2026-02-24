@@ -24,7 +24,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
         child: Column(
           children: [
             const VoucherPackageHeader(accentColor: accentColor),
-            // Hotspot Selector
+
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 24.0,

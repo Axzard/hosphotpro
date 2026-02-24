@@ -217,8 +217,10 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
                 child: Container(
                   width: 10,
                   height: 10,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF4ADE80),
+                  decoration: BoxDecoration(
+                    color: router.statusRouter == 'aktif'
+                        ? const Color(0xFF4ADE80)
+                        : Colors.redAccent,
                     shape: BoxShape.circle,
                   ),
                 ),

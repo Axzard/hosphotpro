@@ -55,7 +55,6 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
     );
   }
 
-  // ── Header ──────────────────────────────────────────────────────────────
   Widget _buildHeader(Color accentColor) {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -110,7 +109,6 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
     );
   }
 
-  // ── Code card (gradient) ────────────────────────────────────────────────
   Widget _buildCodeCard(VoucherModel voucher, Color accentColor) {
     Color statusColor;
     String statusLabel;
@@ -121,7 +119,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
         statusLabel = 'STOK';
         break;
       case VoucherStatus.aktif:
-        statusColor = accentColor;
+        statusColor = Colors.greenAccent;
         statusLabel = 'AKTIF';
         break;
       case VoucherStatus.terjual:
@@ -160,7 +158,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ),
           ),
           const SizedBox(height: 20),
-          // Kode
+
           Text(
             'USERNAME / KODE',
             style: GoogleFonts.plusJakartaSans(
@@ -201,7 +199,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ),
           ),
           const SizedBox(height: 12),
-          // Password
+
           Text(
             'PASSWORD',
             style: GoogleFonts.plusJakartaSans(
@@ -242,7 +240,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ),
           ),
           const SizedBox(height: 18),
-          // Status badge
+
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
             decoration: BoxDecoration(
@@ -270,7 +268,6 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
     );
   }
 
-  // ── Info section ────────────────────────────────────────────────────────
   Widget _buildInfoSection(
     VoucherModel voucher,
     NumberFormat currencyFormat,
@@ -288,7 +285,6 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
       ),
       child: Column(
         children: [
-          // Row 1
           Row(
             children: [
               Expanded(
@@ -310,7 +306,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ],
           ),
           const SizedBox(height: 28),
-          // Row 2
+
           Row(
             children: [
               Expanded(
@@ -383,7 +379,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
           ],
           Divider(color: Colors.white.withValues(alpha: 0.06)),
           const SizedBox(height: 20),
-          // Date info
+
           _buildDateRow(
             Icons.calendar_today_rounded,
             'Dibuat Pada',
@@ -487,7 +483,6 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
     );
   }
 
-  // ── Action buttons ──────────────────────────────────────────────────────
   Widget _buildActionButtons(VoucherModel voucher, Color accentColor) {
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -501,7 +496,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
               child: ElevatedButton.icon(
                 onPressed: () {
                   controller.sellVoucher(voucher, 'cash');
-                  Get.back(); // Return to list after selling
+                  Get.back();
                 },
                 icon: const Icon(Icons.sell_outlined),
                 label: Text(
@@ -524,31 +519,34 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ),
             const SizedBox(height: 14),
           ],
-          SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton.icon(
-              onPressed: () => controller.printVoucher(voucher),
-              icon: const Icon(Icons.print_outlined),
-              label: Text(
-                'Cetak Sekarang',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+          if (voucher.statusVoucher == VoucherStatus.terjual ||
+              voucher.statusVoucher == VoucherStatus.aktif) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton.icon(
+                onPressed: () => controller.printVoucher(voucher),
+                icon: const Icon(Icons.print_outlined),
+                label: Text(
+                  'Cetak Sekarang',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 8,
+                  shadowColor: accentColor.withValues(alpha: 0.4),
                 ),
-                elevation: 8,
-                shadowColor: accentColor.withValues(alpha: 0.4),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
+            const SizedBox(height: 14),
+          ],
           SizedBox(
             width: double.infinity,
             height: 54,
@@ -581,9 +579,9 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  Get.back(); // Close dialog
+                                  Get.back();
                                   controller.deleteVoucher(voucher.idVoucher);
-                                  Get.back(); // Close detail screen
+                                  Get.back();
                                 },
                                 child: const Text(
                                   'Hapus',

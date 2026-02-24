@@ -14,6 +14,7 @@ import '../../../domain/models/router_model.dart';
 import '../../../domain/models/user_subscription_model.dart';
 import '../../../domain/models/auth_model.dart';
 import '../../../domain/models/voucher_model.dart';
+import '../../../domain/models/voucher_package_model.dart';
 import '../../../data/services/token_service.dart';
 
 class DashboardViewModel extends GetxController {
@@ -31,6 +32,8 @@ class DashboardViewModel extends GetxController {
   final subscriptionStatusEnum = SubscriptionStatus.none.obs;
   final totalRouterCount = 0.obs;
   final onlineRouterCount = 0.obs;
+  final hotspotCount = 0.obs;
+  final voucherPackageCount = 0.obs;
   final voucherCount = 0.obs;
   final activeUserCount = 0.obs;
   final username = 'Admin'.obs;
@@ -331,16 +334,31 @@ class DashboardViewModel extends GetxController {
     try {
       final idRouter = int.tryParse(router.id) ?? 0;
       final hotspotsList = await _routerRepository.getHotspots(idRouter);
+      hotspotCount.value = hotspotsList.length;
 
       if (hotspotsList.isNotEmpty) {
+        // Fetch vouchers and packages for all hotspots in parallel
         final voucherFutures = hotspotsList
             .map((h) => _voucherRepository.getVouchersByHotspot(h.idHotspot))
             .toList();
+        
+        final packageFutures = hotspotsList
+            .map((h) => _voucherRepository.getVoucherPackages(h.idHotspot))
+            .toList();
 
-        final voucherGroups = await Future.wait(voucherFutures);
+        final results = await Future.wait([
+          Future.wait(voucherFutures),
+          Future.wait(packageFutures),
+        ]);
+
+        final voucherGroups = results[0] as List<List<VoucherModel>>;
+        final packageGroups = results[1] as List<List<VoucherPackageModel>>;
+
         final allVouchers = voucherGroups.expand((x) => x).toList();
+        final allPackages = packageGroups.expand((x) => x).toList();
 
         voucherCount.value = allVouchers.length;
+        voucherPackageCount.value = allPackages.length;
 
         final filteredAktif = allVouchers
             .where((v) => v.statusVoucher == VoucherStatus.aktif)
@@ -353,6 +371,7 @@ class DashboardViewModel extends GetxController {
         }
       } else {
         voucherCount.value = 0;
+        voucherPackageCount.value = 0;
       }
     } catch (e) {
       print('[DashboardVM] Error background fetch: $e');

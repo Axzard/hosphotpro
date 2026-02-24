@@ -17,7 +17,6 @@ class RouterViewModel extends GetxController {
   final RxList<RouterModel> routers = <RouterModel>[].obs;
   final RxBool isLoading = false.obs;
 
-  // Form Controllers
   final namaController = TextEditingController();
   final ipController = TextEditingController();
   final portController = TextEditingController();
@@ -38,10 +37,10 @@ class RouterViewModel extends GetxController {
   }
 
   void _initRealtimeListeners() {
-    print('🚀 [RouterVM] Realtime listeners initialized');
+    print('[RouterVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
       final event = eventData['event'] ?? '';
-      print('📟 [RouterVM] Refreshing due to Event: $event');
+      print('[RouterVM] Refreshing due to Event: $event');
       loadRouters();
     });
   }
@@ -65,7 +64,10 @@ class RouterViewModel extends GetxController {
   Future<void> saveRouter() async {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) {
-      SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.');
+      SnackbarUtils.showInfo(
+        'Premium Only',
+        'Fitur ini hanya tersedia untuk pengguna Premium.',
+      );
       return;
     }
 
@@ -157,7 +159,7 @@ class RouterViewModel extends GetxController {
       isLoading.value = true;
       final int routerId = int.tryParse(id) ?? 0;
       final result = await _routerRepository.pingRouter(routerId);
-      
+
       final isOnline = result['status'] == 'ONLINE';
       final detail = result['detail'] ?? {};
       final output = detail['output'] ?? 'No output';
@@ -173,7 +175,10 @@ class RouterViewModel extends GetxController {
                 color: isOnline ? Colors.green : Colors.red,
               ),
               const SizedBox(width: 12),
-              const Text('Router Ping Status', style: TextStyle(color: Colors.white)),
+              const Text(
+                'Router Ping Status',
+                style: TextStyle(color: Colors.white),
+              ),
             ],
           ),
           content: SingleChildScrollView(
@@ -181,10 +186,21 @@ class RouterViewModel extends GetxController {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildStatusRow('Status', result['status'] ?? 'UNKNOWN', isOnline ? Colors.green : Colors.red),
+                _buildStatusRow(
+                  'Status',
+                  result['status'] ?? 'UNKNOWN',
+                  isOnline ? Colors.green : Colors.red,
+                ),
                 _buildStatusRow('Response Time', '$time ms', Colors.white70),
                 const SizedBox(height: 16),
-                const Text('Console Output:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                const Text(
+                  'Console Output:',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -195,7 +211,10 @@ class RouterViewModel extends GetxController {
                   ),
                   child: Text(
                     output,
-                    style: GoogleFonts.firaCode(color: Colors.greenAccent, fontSize: 10),
+                    style: GoogleFonts.firaCode(
+                      color: Colors.greenAccent,
+                      fontSize: 10,
+                    ),
                   ),
                 ),
               ],
@@ -204,7 +223,10 @@ class RouterViewModel extends GetxController {
           actions: [
             TextButton(
               onPressed: () => Get.back(),
-              child: const Text('Tutup', style: TextStyle(color: Color(0xFF00C2FF))),
+              child: const Text(
+                'Tutup',
+                style: TextStyle(color: Color(0xFF00C2FF)),
+              ),
             ),
           ],
         ),
@@ -222,8 +244,18 @@ class RouterViewModel extends GetxController {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white60, fontSize: 13)),
-          Text(value, style: TextStyle(color: valueColor, fontWeight: FontWeight.bold, fontSize: 13)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white60, fontSize: 13),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: valueColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     );

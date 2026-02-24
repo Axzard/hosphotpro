@@ -16,11 +16,10 @@ class HotspotViewModel extends GetxController {
 
   final RxList<HotspotModel> hotspots = <HotspotModel>[].obs;
   final RxList<RouterModel> routers = <RouterModel>[].obs;
-  
+
   Rxn<RouterModel> get selectedRouter => _selectionService.selectedRouter;
   final RxBool isLoading = false.obs;
 
-  // Form Controllers for Editing
   final namaServerController = TextEditingController();
   final interfaceController = TextEditingController();
 
@@ -32,21 +31,24 @@ class HotspotViewModel extends GetxController {
     loadRouters();
     _initRealtimeListeners();
 
-    // Listen to global changes
     ever(selectedRouter, (router) {
       if (router != null) {
-        loadHotspots(); // Reverted to just loading, no auto-sync
+        loadHotspots();
       }
     });
   }
 
   void _initRealtimeListeners() {
-    print('🚀 [HotspotVM] Realtime listeners initialized');
+    print(' [HotspotVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
       final event = (eventData['event'] ?? '').toString().toLowerCase();
-      
-      // Filter: Only refresh on relevant events
-      const relevantEvents = ['hotspot_updated', 'router_updated', 'hotspot_created', 'hotspot_deleted'];
+
+      const relevantEvents = [
+        'hotspot_updated',
+        'router_updated',
+        'hotspot_created',
+        'hotspot_deleted',
+      ];
       if (!relevantEvents.contains(event)) return;
 
       print('📡 [HotspotVM] Refreshing due to Event: $event');
@@ -59,15 +61,19 @@ class HotspotViewModel extends GetxController {
       isLoading.value = true;
       final result = await _routerRepository.getRouters();
       routers.assignAll(result);
-      
+
       if (result.isNotEmpty && selectedRouter.value == null) {
         _selectionService.updateRouter(result.first);
-        loadHotspots(); // Reverted to just loading
+        loadHotspots();
       } else if (selectedRouter.value != null) {
-        loadHotspots(); // Reverted to just loading
+        loadHotspots();
       }
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat router: $e');
+      print('[HotspotVM] Load Routers Error: $e');
+      SnackbarUtils.showError(
+        'Error',
+        'Gagal memuat daftar router. Pastikan koneksi internet stabil atau coba lagi nanti.',
+      );
     } finally {
       isLoading.value = false;
     }
@@ -81,14 +87,18 @@ class HotspotViewModel extends GetxController {
     }
 
     if (selectedRouter.value == null) return;
-    
+
     try {
       if (hotspots.isEmpty) isLoading.value = true;
       final idRouter = int.tryParse(selectedRouter.value!.id) ?? 0;
       final result = await _routerRepository.getHotspots(idRouter);
       hotspots.assignAll(result);
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat hotspot: $e');
+      print('[HotspotVM] Load Hotspots Error: $e');
+      SnackbarUtils.showError(
+        'Error',
+        'Gagal memuat daftar hotspot. Silakan cek status router Mikrotik Anda.',
+      );
     } finally {
       isLoading.value = false;
     }
@@ -97,7 +107,6 @@ class HotspotViewModel extends GetxController {
   void onRouterChanged(RouterModel? router) {
     if (router == null) return;
     _selectionService.updateRouter(router);
-    // syncHotspots will be triggered by the 'ever' listener on selectedRouter
   }
 
   Future<void> updateHotspot(int idHotspot) async {
@@ -115,9 +124,13 @@ class HotspotViewModel extends GetxController {
       await _routerRepository.updateHotspot(idHotspot, data);
       SnackbarUtils.showSuccess('Berhasil', 'Hotspot berhasil diperbarui');
       loadHotspots();
-      Get.back(); // Close dialog/sheet
+      Get.back();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memperbarui hotspot: $e');
+      print('[HotspotVM] Update Hotspot Error: $e');
+      SnackbarUtils.showError(
+        'Error',
+        'Gagal memperbarui data hotspot. Terjadi gangguan pada server atau router.',
+      );
     } finally {
       isLoading.value = false;
     }
@@ -130,7 +143,11 @@ class HotspotViewModel extends GetxController {
       SnackbarUtils.showSuccess('Berhasil', 'Hotspot berhasil dihapus');
       loadHotspots();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal menghapus hotspot: $e');
+      print('[HotspotVM] Delete Hotspot Error: $e');
+      SnackbarUtils.showError(
+        'Error',
+        'Gagal menghapus hotspot. Silakan coba lagi beberapa saat lagi.',
+      );
     } finally {
       isLoading.value = false;
     }
@@ -139,7 +156,10 @@ class HotspotViewModel extends GetxController {
   Future<void> syncHotspots() async {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) {
-      SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.');
+      SnackbarUtils.showInfo(
+        'Premium Only',
+        'Fitur ini hanya tersedia untuk pengguna Premium.',
+      );
       return;
     }
 
@@ -148,7 +168,7 @@ class HotspotViewModel extends GetxController {
       SnackbarUtils.showError('Error', 'Pilih router terlebih dahulu');
       return;
     }
- 
+
     try {
       isLoading.value = true;
       final idRouter = int.tryParse(router.id) ?? 0;
@@ -156,10 +176,9 @@ class HotspotViewModel extends GetxController {
         SnackbarUtils.showError('Error', 'ID Router tidak valid: ${router.id}');
         return;
       }
-      
-      print('🔄 [HotspotVM] Syncing hotspots for Router ID: $idRouter');
-      
-      // Show loading dialog
+
+      print('[HotspotVM] Syncing hotspots for Router ID: $idRouter');
+
       Get.dialog(
         const Center(
           child: CircularProgressIndicator(color: Color(0xFF00C2FF)),
@@ -168,32 +187,32 @@ class HotspotViewModel extends GetxController {
       );
 
       final results = await _routerRepository.syncHotspots(idRouter);
-      
-      // Close dialog
+
       if (Get.isDialogOpen ?? false) Get.back();
 
       if (results.isEmpty) {
         SnackbarUtils.showSuccess('Berhasil', 'Sinkronisasi hotspot selesai');
       } else {
-        // Build message from results: "nama_server: status"
         final StringBuffer message = StringBuffer();
         for (var i = 0; i < results.length; i++) {
-          final res = results[i];
-          final nama = res['nama_server'] ?? 'Unknown';
-          final status = res['status'] ?? 'OK';
+          final res = results[i] is Map ? results[i] : {};
+          final nama = res['nama_server'] ?? 'Hotspot';
+          final status = res['status'] ?? 'sudah ada';
           message.write('$nama: $status');
           if (i < results.length - 1) message.write('\n');
         }
         SnackbarUtils.showSuccess('Sinkronisasi Selesai', message.toString());
       }
-      
+
       await loadHotspots();
     } catch (e) {
-      // Close dialog if still open
       if (Get.isDialogOpen ?? false) Get.back();
 
-      print('❌ [HotspotVM] Sync Error: $e');
-      SnackbarUtils.showError('Error', 'Gagal sinkronisasi: $e');
+      print('[HotspotVM] Sync Error: $e');
+      SnackbarUtils.showError(
+        'Sinkronisasi Gagal',
+        'Terjadi kesalahan: $e. Pastikan router aktif dan terhubung ke API.',
+      );
     } finally {
       isLoading.value = false;
     }

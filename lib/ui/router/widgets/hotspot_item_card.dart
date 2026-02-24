@@ -6,16 +6,12 @@ class HotspotItemCard extends StatelessWidget {
   final HotspotModel hotspot;
   final Color cardColor;
   final Color accentColor;
-  final Function(HotspotModel) onEdit;
-  final Function(HotspotModel) onDelete;
 
   const HotspotItemCard({
     super.key,
     required this.hotspot,
     required this.cardColor,
     required this.accentColor,
-    required this.onEdit,
-    required this.onDelete,
   });
 
   static TextStyle _titleStyle(Color color) => GoogleFonts.plusJakartaSans(
@@ -84,29 +80,6 @@ class HotspotItemCard extends StatelessWidget {
               Text(
                 'Interface: ${hotspot.interface}',
                 style: _interfaceStyle(secondaryTextColor),
-              ),
-            ],
-          ),
-          const Divider(height: 32, color: Colors.white10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Flexible(
-                child: TextButton.icon(
-                  onPressed: () => onEdit(hotspot),
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('Edit'),
-                  style: TextButton.styleFrom(foregroundColor: accentColor),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: TextButton.icon(
-                  onPressed: () => onDelete(hotspot),
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Hapus'),
-                  style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-                ),
               ),
             ],
           ),

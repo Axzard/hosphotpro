@@ -6,13 +6,12 @@ class ApiConfig {
   static const String register = '$baseUrl/api/daftar-admin';
   static const String login = '$baseUrl/api/login';
 
-  // Subscription endpoints
+  // Langganan endpoints
   static const String packages = '$baseUrl/api/langganan/paket';
   static String packageDetail(int id) => '$baseUrl/api/langganan/paket/$id';
   static const String createSubscription = '$baseUrl/api/langganan';
   static const String mySubscriptions = '$baseUrl/api/langganan/saya';
-  static String updateSubscriptionStatus(int id) =>
-      '$baseUrl/api/langganan/$id/status';
+  static String updateSubscriptionStatus(int id) => '$baseUrl/api/langganan/$id/status';
   static const String checkout = '$baseUrl/api/transaksi/checkout';
   static const String perpanjang = '$baseUrl/api/transaksi/perpanjang';
   static const String callback = '$baseUrl/api/transaksi/callback';
@@ -20,8 +19,7 @@ class ApiConfig {
   // Router endpoints
   static const String routers = '$baseUrl/api/router';
   static String routerPing(int id) => '$baseUrl/api/router/$id/ping';
-  static String hotspots(int idRouter) =>
-      '$baseUrl/api/hotspot?id_router=$idRouter';
+  static String hotspots(int idRouter) => '$baseUrl/api/hotspot?id_router=$idRouter';
   static String hotspotDetail(int id) => '$baseUrl/api/hotspot/$id';
   static String updateHotspot(int id) => '$baseUrl/api/hotspot/$id';
   static String deleteHotspot(int id) => '$baseUrl/api/hotspot/$id';
@@ -31,18 +29,12 @@ class ApiConfig {
   static const String createVoucher = '$baseUrl/api/voucher';
   static const String createVoucherBulk = '$baseUrl/api/voucher/bulk';
   static const String voucherPackages = '$baseUrl/api/paket-voucher';
-  static String packagesByHotspot(int idHotspot) =>
-      '$baseUrl/api/paket-voucher?id_hotspot=$idHotspot';
-  static String voucherPackageDetail(int id) =>
-      '$baseUrl/api/paket-voucher/$id';
-  static String updateVoucherPackage(int id) =>
-      '$baseUrl/api/paket-voucher/$id';
-  static String deleteVoucherPackage(int id) =>
-      '$baseUrl/api/paket-voucher/$id';
-  static String vouchersByPackage(int idPaket) =>
-      '$baseUrl/api/voucher/paket/$idPaket';
-  static String vouchersByHotspot(int idHotspot) =>
-      '$baseUrl/api/voucher/hotspot/$idHotspot'; // Keeping as a guess if package-based is too slow
+  static String packagesByHotspot(int idHotspot) => '$baseUrl/api/paket-voucher?id_hotspot=$idHotspot';
+  static String voucherPackageDetail(int id) => '$baseUrl/api/paket-voucher/$id';
+  static String updateVoucherPackage(int id) => '$baseUrl/api/paket-voucher/$id';
+  static String deleteVoucherPackage(int id) => '$baseUrl/api/paket-voucher/$id';
+  static String vouchersByPackage(int idPaket) => '$baseUrl/api/voucher/paket/$idPaket';
+  static String vouchersByHotspot(int idHotspot) => '$baseUrl/api/voucher/hotspot/$idHotspot';
   static String voucherDetail(int id) => '$baseUrl/api/voucher/$id';
   static String deleteVoucher(int id) => '$baseUrl/api/voucher/$id';
   static const String vouchersAktif = '$baseUrl/api/voucher/aktif';

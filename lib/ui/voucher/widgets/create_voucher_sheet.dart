@@ -34,16 +34,15 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
   void initState() {
     super.initState();
     voucherCountController.text = controller.count.value.toString();
-    // Refresh packages when sheet is opened
+
     if (controller.voucherPackages.isEmpty) {
       controller.loadVoucherPackages();
     }
-    
-    // Listen to count changes to update controller
+
     _countWorker = ever(controller.count, (int val) {
       if (voucherCountController.text != val.toString()) {
         voucherCountController.text = val.toString();
-        // Keep cursor at the end
+
         if (voucherCountController.text.isNotEmpty) {
           voucherCountController.selection = TextSelection.fromPosition(
             TextPosition(offset: voucherCountController.text.length),
@@ -130,7 +129,6 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
             const SizedBox(height: 24),
 
             if (!isAddingPackage) ...[
-              // Hotspot Selection
               _buildLabel('Hotspot'),
               const SizedBox(height: 8),
               Obx(
@@ -149,7 +147,6 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
 
               const SizedBox(height: 16),
 
-              // Package Selection
               _buildLabel('Paket'),
               const SizedBox(height: 8),
               Obx(
@@ -174,24 +171,34 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B), // Explicit dark background
+                      color: const Color(0xFF1E293B),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 6,
+                    ),
                     child: Row(
                       children: [
                         IconButton(
                           onPressed: () {
-                            // Ensure we have a valid number even if input is empty
-                            int current = int.tryParse(voucherCountController.text) ?? controller.count.value;
+                            int current =
+                                int.tryParse(voucherCountController.text) ??
+                                controller.count.value;
                             if (current > 1) {
                               controller.count.value = current - 1;
                             } else {
                               controller.count.value = 1;
                             }
                           },
-                          icon: const Icon(Icons.remove_circle_outline, color: accentColor, size: 28),
+                          icon: const Icon(
+                            Icons.remove_circle_outline,
+                            color: accentColor,
+                            size: 28,
+                          ),
                         ),
                         SizedBox(
                           width: 80,
@@ -204,15 +211,17 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
                             },
                             controller: voucherCountController,
                             keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white, // Absolute white
+                              color: Colors.white,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
                             decoration: const InputDecoration(
                               isDense: true,
-                              filled: false, // Ensure no background from theme
+                              filled: false,
                               contentPadding: EdgeInsets.zero,
                               border: InputBorder.none,
                             ),
@@ -220,49 +229,65 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
                         ),
                         IconButton(
                           onPressed: () {
-                            int current = int.tryParse(voucherCountController.text) ?? controller.count.value;
+                            int current =
+                                int.tryParse(voucherCountController.text) ??
+                                controller.count.value;
                             if (current < 500) {
                               controller.count.value = current + 1;
                             }
                           },
-                          icon: const Icon(Icons.add_circle_outline, color: accentColor, size: 28),
+                          icon: const Icon(
+                            Icons.add_circle_outline,
+                            color: accentColor,
+                            size: 28,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Obx(() => controller.count.value > 1
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.auto_awesome, color: Colors.orange, size: 14),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'MODE BULK AKTIF',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.orange,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 10,
-                                  ),
+                    child: Obx(
+                      () => controller.count.value > 1
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.orange.withValues(alpha: 0.3),
                                 ),
-                              ],
-                            ),
-                          )
-                        : const SizedBox.shrink()),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.auto_awesome,
+                                    color: Colors.orange,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'MODE BULK AKTIF',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
                   ),
                 ],
               ),
 
               const SizedBox(height: 32),
 
-              // Action Button
               Obx(
                 () => _buildPrimaryButton(
                   onPressed: controller.isGenerating.value
@@ -281,7 +306,6 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
                 ),
               ),
             ] else ...[
-              // Add Package Form
               _buildLabel('Nama Paket'),
               _buildTextField(namaPaketController, 'Contoh: Paket 1 Jam'),
               const SizedBox(height: 16),
@@ -338,8 +362,11 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
               _buildDropdown<String>(
                 value: selectedFormatKarakter,
                 hint: 'Pilih Tipe',
-                items: ['huruf_kecil', 'huruf_besar', 'angka', 'mix'].map((opt) {
-                  final label = {
+                items: ['huruf_kecil', 'huruf_besar', 'angka', 'mix'].map((
+                  opt,
+                ) {
+                  final label =
+                      {
                         'huruf_kecil': 'Random abcd',
                         'huruf_besar': 'Random ABCD',
                         'angka': 'Random 1234',
@@ -513,7 +540,9 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
       prefix: prefixController.text,
       panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
       formatKarakter: selectedFormatKarakter,
-      dataLimitMb: (int.tryParse(dataLimitMbController.text) ?? 0) * (selectedDataUnit == 'GB' ? 1024 : 1),
+      dataLimitMb:
+          (int.tryParse(dataLimitMbController.text) ?? 0) *
+          (selectedDataUnit == 'GB' ? 1024 : 1),
     );
 
     if (newPackage.namaPaket.isEmpty ||
@@ -549,11 +578,15 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
                 fillColor: Colors.white.withValues(alpha: 0.05),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
                 ),
               ),
             ),
@@ -565,12 +598,10 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
               value: selectedDataUnit,
               hint: 'MB',
               items: ['MB', 'GB'].map((unit) {
-                return DropdownMenuItem<String>(
-                  value: unit,
-                  child: Text(unit),
-                );
+                return DropdownMenuItem<String>(value: unit, child: Text(unit));
               }).toList(),
-              onChanged: (val) => setState(() => selectedDataUnit = val ?? 'MB'),
+              onChanged: (val) =>
+                  setState(() => selectedDataUnit = val ?? 'MB'),
             ),
           ),
         ],

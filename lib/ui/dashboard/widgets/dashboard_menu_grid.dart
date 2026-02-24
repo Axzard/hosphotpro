@@ -57,7 +57,9 @@ class DashboardMenuGrid extends StatelessWidget {
                   return _buildMenuCard(
                     icon: Icons.wifi_tethering_rounded,
                     title: 'Hotspot',
-                    subtitle: isRestricted ? 'Butuh Langganan' : 'Manajemen Server',
+                    subtitle: isRestricted 
+                        ? 'Butuh Langganan' 
+                        : (controller.selectedRouter.value != null ? '${controller.hotspotCount.value} Unit' : 'Manajemen Server'),
                     color: isRestricted ? Colors.grey : const Color(0xFF00C2FF),
                     onTap: isRestricted 
                         ? controller.navigateToPackageList
@@ -74,7 +76,7 @@ class DashboardMenuGrid extends StatelessWidget {
                     title: 'Paket Voucher',
                     subtitle: isRestricted 
                         ? 'Butuh Langganan' 
-                        : (controller.selectedRouter.value != null ? 'Kelola Paket' : 'Pilih Router Dahulu'),
+                        : (controller.selectedRouter.value != null ? '${controller.voucherPackageCount.value} Paket' : 'Kelola Paket'),
                     color: isRestricted ? Colors.grey : const Color(0xFF94A3B8),
                     onTap: isRestricted 
                         ? controller.navigateToPackageList
