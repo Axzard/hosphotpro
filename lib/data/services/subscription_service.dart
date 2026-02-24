@@ -17,7 +17,6 @@ class SubscriptionService extends GetxService {
   );
   final TokenService _tokenService = Get.find<TokenService>();
 
-  // Get packages from backend API
   Future<ApiResponse<List<SubscriptionPackageApiModel>>> getPackages() async {
     try {
       final token = _tokenService.getToken();
@@ -63,7 +62,6 @@ class SubscriptionService extends GetxService {
     }
   }
 
-  // Get package detail by ID
   Future<ApiResponse<SubscriptionPackageApiModel?>> getPackageDetail(
     int id,
   ) async {
@@ -109,7 +107,6 @@ class SubscriptionService extends GetxService {
     }
   }
 
-  // Create subscription record
   Future<ApiResponse<Map<String, dynamic>>> createSubscription(
     int packageId,
     int jumlahBulan,
@@ -155,7 +152,6 @@ class SubscriptionService extends GetxService {
     }
   }
 
-  // Get my subscriptions
   Future<ApiResponse<List<UserSubscriptionApiModel>>>
   getMySubscriptions() async {
     try {
@@ -202,7 +198,6 @@ class SubscriptionService extends GetxService {
     }
   }
 
-  // Update subscription status (e.g., perpanjang)
   Future<ApiResponse<Map<String, dynamic>>> updateSubscriptionStatus(
     int id,
     String status,
@@ -248,7 +243,6 @@ class SubscriptionService extends GetxService {
     }
   }
 
-  // Create checkout transaction
   Future<ApiResponse<TransactionApiModel>> createTransaction({
     required int idLangganan,
     required int idPaketLangganan,
@@ -274,7 +268,6 @@ class SubscriptionService extends GetxService {
     );
   }
 
-  // Create renewal transaction
   Future<ApiResponse<TransactionApiModel>> renewTransaction({
     required int jumlahBulan,
     int? idLangganan,
@@ -300,7 +293,6 @@ class SubscriptionService extends GetxService {
     );
   }
 
-  // Shared helper for transaction processing
   Future<ApiResponse<TransactionApiModel>> _processTransaction({
     required String url,
     required Map<String, dynamic> data,

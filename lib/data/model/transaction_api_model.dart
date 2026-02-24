@@ -1,6 +1,5 @@
 import '../../domain/models/transaction_model.dart';
 
-// Data Model with JSON serialization
 class TransactionApiModel {
   final String id;
   final String packageId;
@@ -31,7 +30,6 @@ class TransactionApiModel {
   });
 
   factory TransactionApiModel.fromJson(Map<String, dynamic> json) {
-    // Higher-level heuristic to find the "real" data object
     final Map<String, dynamic> dataObj =
         (json['data'] is Map ? json['data'] : null) ??
         (json['transaction'] is Map ? json['transaction'] : null) ??
@@ -41,14 +39,12 @@ class TransactionApiModel {
     String? va;
     String? bank;
 
-    // 1. Array check (Midtrans standard)
     if (dataObj['va_numbers'] is List &&
         (dataObj['va_numbers'] as List).isNotEmpty) {
       va = dataObj['va_numbers'][0]['va_number'];
       bank = dataObj['va_numbers'][0]['bank'];
     }
 
-    // 2. Recursive Search for VA/Payment Code if not found
     if (va == null) {
       va = _findValueRecursive(json, [
         'va_number',
@@ -63,7 +59,6 @@ class TransactionApiModel {
         'id_langganan_va',
       ]);
 
-      // Special case: Mandiri Bill Key needs Biller Code prefix
       if (va != null && (_findKeyRecursive(json, 'bill_key') != null)) {
         final billerCode = _findValueRecursive(json, ['biller_code']) ?? "";
         if (!va.startsWith(billerCode)) {
@@ -73,7 +68,6 @@ class TransactionApiModel {
       }
     }
 
-    // 3. Fallback for Bank Name
     if (bank == null) {
       bank = _findValueRecursive(json, [
         'bank',
@@ -129,7 +123,6 @@ class TransactionApiModel {
     };
   }
 
-  // Convert to Domain Model
   TransactionModel toDomain() {
     return TransactionModel(
       id: id,

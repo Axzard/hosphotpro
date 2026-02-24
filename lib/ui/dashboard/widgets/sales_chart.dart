@@ -28,7 +28,7 @@ class SalesChart extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Pendapatan Hari Ini',
+                'Total Pendapatan',
                 style: GoogleFonts.plusJakartaSans(
                   color: Colors.white70,
                   fontSize: 12,
@@ -49,8 +49,9 @@ class SalesChart extends StatelessWidget {
               symbol: 'Rp ',
               decimalDigits: 0,
             );
+            final totalIncome = controller.reportSummary.value?.totalIncome ?? 0.0;
             return Text(
-              currencyFormat.format(controller.totalIncomeToday.value),
+              currencyFormat.format(totalIncome),
               style: GoogleFonts.plusJakartaSans(
                 color: Colors.white,
                 fontSize: 20,
@@ -60,7 +61,7 @@ class SalesChart extends StatelessWidget {
           }),
           const SizedBox(height: 24),
           Expanded(
-            child: Obx(() => _buildLineChart(controller.dailyIncomeData)),
+            child: Obx(() => _buildLineChart(controller.cumulativeIncomeData)),
           ),
         ],
       ),
@@ -71,7 +72,7 @@ class SalesChart extends StatelessWidget {
     if (data.isEmpty) {
       return const Center(
         child: Text(
-          'No data available',
+          'Tidak ada data penjualan',
           style: TextStyle(color: Colors.white24),
         ),
       );

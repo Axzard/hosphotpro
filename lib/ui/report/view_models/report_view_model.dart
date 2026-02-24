@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:get/get.dart';
-import '../../../domain/models/report_repository.dart';
+import '../../../domain/repositories/report_repository.dart';
 import '../../../domain/models/report_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/services/websocket_service.dart';
@@ -16,7 +16,6 @@ class ReportViewModel extends GetxController {
   final yearlyReports = <YearlyReportModel>[].obs;
   final isLoading = false.obs;
 
-  // Selection filters
   final selectedDate = Rxn<DateTime>();
   final selectedYear = DateTime.now().year.obs;
 
@@ -32,11 +31,10 @@ class ReportViewModel extends GetxController {
   void _initRealtimeListeners() {
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
       final event = (eventData['event'] ?? '').toString().toLowerCase();
-      
-      // Match backend events: voucher:sold, voucher:updated, voucher:created
-      if (event == 'voucher:sold' || 
-          event == 'voucher:updated' || 
-          event == 'voucher:created' || 
+
+      if (event == 'voucher:sold' ||
+          event == 'voucher:updated' ||
+          event == 'voucher:created' ||
           event == 'voucher:bulkcreated') {
         fetchAllReports(isSilent: true);
       }
@@ -49,7 +47,6 @@ class ReportViewModel extends GetxController {
     super.onClose();
   }
 
-  // --- Chart Helpers ---
   List<double> get dailyIncomeData {
     if (dailyReports.isEmpty) return [];
 
@@ -57,7 +54,6 @@ class ReportViewModel extends GetxController {
     final year = selectedDate.value?.year ?? now.year;
     final month = selectedDate.value?.month ?? now.month;
 
-    // Number of days in that month
     final daysInMonth = DateTime(year, month + 1, 0).day;
 
     return List.generate(daysInMonth, (index) {
@@ -85,18 +81,19 @@ class ReportViewModel extends GetxController {
   }
 
   Future<void> fetchAllReports({bool isSilent = false}) async {
-    // Skip loader if we already have data
-    final hasData = dailyReports.isNotEmpty || monthlyReports.isNotEmpty || yearlyReports.isNotEmpty;
+    final hasData =
+        dailyReports.isNotEmpty ||
+        monthlyReports.isNotEmpty ||
+        yearlyReports.isNotEmpty;
     if (!isSilent && !hasData) isLoading.value = true;
     try {
       final now = DateTime.now();
       final year = selectedDate.value?.year ?? now.year;
       final month = selectedDate.value?.month ?? now.month;
 
-      // Calculate start and end of month for range/grouped queries
       final firstDay = DateTime(year, month, 1);
       final lastDay = DateTime(year, month + 1, 0);
-      
+
       final startDateStr = DateFormat('yyyy-MM-dd').format(firstDay);
       final endDateStr = DateFormat('yyyy-MM-dd').format(lastDay);
 
@@ -115,7 +112,10 @@ class ReportViewModel extends GetxController {
       yearlyReports.assignAll(results[2] as List<YearlyReportModel>);
     } catch (e) {
       if (!isSilent) {
-        Get.toNamed(app_routes.Routes.ERROR, arguments: 'Gagal memuat laporan, terjadi gangguan pada server.');
+        Get.toNamed(
+          app_routes.Routes.ERROR,
+          arguments: 'Gagal memuat laporan, terjadi gangguan pada server.',
+        );
       }
     } finally {
       if (!isSilent) isLoading.value = false;
@@ -132,7 +132,7 @@ class ReportViewModel extends GetxController {
 
   void setYear(int year) {
     selectedYear.value = year;
-    // Keep daily reports in sync with the selected year
+
     if (selectedDate.value != null) {
       selectedDate.value = DateTime(year, selectedDate.value!.month, 1);
     } else {

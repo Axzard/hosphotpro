@@ -3,13 +3,12 @@ import 'package:get/get.dart';
 import '../../../config/routing/app_routes.dart';
 import '../../../domain/models/voucher_model.dart';
 import '../../../domain/models/voucher_package_model.dart';
-import '../../../domain/models/voucher_repository.dart';
-import '../../../domain/models/router_repository.dart';
+import '../../../domain/repositories/voucher_repository.dart';
+import '../../../domain/repositories/router_repository.dart';
 import '../../../domain/models/router_model.dart';
 import '../../../domain/models/hotspot_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
-// import '../../../domain/models/subscription_package_model.dart'; // No longer used for hotspot vouchers
-// import '../../../domain/models/subscription_repository.dart'; // No longer used for hotspot vouchers
+
 import '../../../ui/voucher/widgets/voucher_print_preview.dart';
 import '../../../core/services/websocket_service.dart';
 import '../../../core/services/selection_service.dart';
@@ -23,13 +22,13 @@ class VoucherViewModel extends GetxController {
   final _selectionService = Get.find<SelectionService>();
 
   final vouchers = <VoucherModel>[].obs;
-  final filterPaketId = Rxn<int>(); // Package filter ID
+  final filterPaketId = Rxn<int>();
 
-  // Filtered lists for TabView (respecting both status and package filter)
   List<VoucherModel> get stockVouchers => _applyFilters(VoucherStatus.stok);
   List<VoucherModel> get soldVouchers => _applyFilters(VoucherStatus.terjual);
   List<VoucherModel> get activeVouchers => _applyFilters(VoucherStatus.aktif);
-  List<VoucherModel> get expiredVouchers => _applyFilters(VoucherStatus.expired);
+  List<VoucherModel> get expiredVouchers =>
+      _applyFilters(VoucherStatus.expired);
 
   List<VoucherModel> _applyFilters(VoucherStatus status) {
     return vouchers.where((v) {
@@ -48,14 +47,13 @@ class VoucherViewModel extends GetxController {
   final hotspots = <HotspotModel>[].obs;
 
   final isLoading = false.obs;
-  // State management for optimization
+
   final _isInitialLoad = true.obs;
   final isGenerating = false.obs;
   final isDeletingAll = false.obs;
-  final deletingVoucherIds = <int>{}.obs; // Track IDs being deleted
+  final deletingVoucherIds = <int>{}.obs;
   final count = 1.obs;
 
-  // Link selection to SelectionService
   Rxn<RouterModel> get selectedRouter => _selectionService.selectedRouter;
   Rxn<HotspotModel> get selectedHotspot => _selectionService.selectedHotspot;
   final selectedPaketId = Rxn<int>();
@@ -68,11 +66,10 @@ class VoucherViewModel extends GetxController {
     loadRouters();
     _initRealtimeListeners();
 
-    // Listen to global changes to reload data - Skip if initial load to prevent double load
     ever(selectedRouter, (router) {
       if (_isInitialLoad.value) return;
       if (router != null) {
-        loadRouters(); // This will refresh hotspots for the new router
+        loadRouters();
       }
     });
 
@@ -85,24 +82,25 @@ class VoucherViewModel extends GetxController {
   }
 
   void _initRealtimeListeners() {
-    print('🚀 [VoucherVM] Realtime listeners initialized');
+    print('[VoucherVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
       final event = (eventData['event'] ?? '').toString().toLowerCase();
       final data = eventData['data'];
-      
-      print('🎟️ [VoucherVM] Event Received: $event');
 
-      // 1. Created (Single)
+      print('[VoucherVM] Event Received: $event');
+
       if (event == 'voucher:created' && data != null) {
         try {
           final idPaket = int.tryParse(data['id_paket']?.toString() ?? '') ?? 0;
-          // Check if this package belongs to our current hotspot packages
-          final package = voucherPackages.firstWhereOrNull((p) => p.id == idPaket);
+
+          final package = voucherPackages.firstWhereOrNull(
+            (p) => p.id == idPaket,
+          );
 
           if (package != null) {
-            final newVoucher = VoucherApiModel.fromJson(data).toDomain().copyWith(
-              namaPaket: package.namaPaket,
-            );
+            final newVoucher = VoucherApiModel.fromJson(
+              data,
+            ).toDomain().copyWith(namaPaket: package.namaPaket);
             vouchers.insert(0, newVoucher);
           }
         } catch (e) {
@@ -111,19 +109,22 @@ class VoucherViewModel extends GetxController {
         return;
       }
 
-      // 2. Created (Bulk)
       if (event == 'voucher:bulkcreated' && data != null) {
         try {
           final idPaket = int.tryParse(data['id_paket']?.toString() ?? '') ?? 0;
-          final package = voucherPackages.firstWhereOrNull((p) => p.id == idPaket);
+          final package = voucherPackages.firstWhereOrNull(
+            (p) => p.id == idPaket,
+          );
 
           if (package != null) {
             final listData = data['data'] as List?;
             if (listData != null) {
               final newVouchers = listData
-                  .map((e) => VoucherApiModel.fromJson(e).toDomain().copyWith(
-                        namaPaket: package.namaPaket,
-                      ))
+                  .map(
+                    (e) => VoucherApiModel.fromJson(
+                      e,
+                    ).toDomain().copyWith(namaPaket: package.namaPaket),
+                  )
                   .toList();
               vouchers.insertAll(0, newVouchers);
             }
@@ -134,7 +135,6 @@ class VoucherViewModel extends GetxController {
         return;
       }
 
-      // 3. Deleted
       if (event == 'voucher:deleted' && data != null) {
         final id = data['id_voucher'] as int?;
         if (id != null) {
@@ -143,8 +143,8 @@ class VoucherViewModel extends GetxController {
         return;
       }
 
-      // 4. Updated / Sold
-      if ((event == 'voucher:updated' || event == 'voucher:sold') && data != null) {
+      if ((event == 'voucher:updated' || event == 'voucher:sold') &&
+          data != null) {
         final id = data['id_voucher'] as int?;
         final statusStr = data['status_voucher']?.toString();
         if (id != null && statusStr != null) {
@@ -158,7 +158,6 @@ class VoucherViewModel extends GetxController {
         return;
       }
 
-      // Fallback for other relevant structural changes
       const relevantEvents = ['hotspot_updated', 'router_updated'];
       if (relevantEvents.contains(event)) {
         loadVoucherPackages();
@@ -183,33 +182,33 @@ class VoucherViewModel extends GetxController {
     }
 
     try {
-      // Only show full loader if we have no routers yet
       if (routers.isEmpty) isLoading.value = true;
-      
+
       final result = await _routerRepository.getRouters();
       routers.assignAll(result);
 
-      // We no longer aggregate all hotspots.
-      // Instead, we load hotspots ONLY for the selected router.
       if (selectedRouter.value != null) {
         final idRouter = int.tryParse(selectedRouter.value!.id) ?? 0;
         final hotspotResult = await _routerRepository.getHotspots(idRouter);
         hotspots.assignAll(hotspotResult);
 
-        // PERSISTENCE FIX: Only auto-select first hotspot if none is currently selected
-        // OR if the current selected hotspot doesn't belong to the results
         if (hotspots.isNotEmpty) {
           final currentHotspot = selectedHotspot.value;
-          bool currentStillValid = hotspots.any((h) => h.idHotspot == currentHotspot?.idHotspot);
-          print('🔍 [VoucherVM] loadRouters - Current: ${currentHotspot?.namaServer}, Valid: $currentStillValid');
-          
+          bool currentStillValid = hotspots.any(
+            (h) => h.idHotspot == currentHotspot?.idHotspot,
+          );
+          print(
+            '[VoucherVM] loadRouters - Current: ${currentHotspot?.namaServer}, Valid: $currentStillValid',
+          );
+
           if (currentHotspot == null || !currentStillValid) {
-            print('🔄 [VoucherVM] Selection invalid or null, auto-selecting: ${hotspots.first.namaServer}');
+            print(
+              '[VoucherVM] Selection invalid or null, auto-selecting: ${hotspots.first.namaServer}',
+            );
             selectedHotspot.value = hotspots.first;
           }
         }
       } else if (result.isNotEmpty) {
-        // Fallback: select first router if none selected
         _selectionService.updateRouter(result.first);
       }
 
@@ -235,13 +234,14 @@ class VoucherViewModel extends GetxController {
       print('Loaded ${result.length} voucher packages for hotspot $idHotspot');
     } catch (e) {
       print('Error loading voucher packages: $e');
-      Get.toNamed(Routes.ERROR, arguments: 'Gagal memuat daftar paket, terjadi gangguan pada server.');
+      Get.toNamed(
+        Routes.ERROR,
+        arguments: 'Gagal memuat daftar paket, terjadi gangguan pada server.',
+      );
       voucherPackages.clear();
     }
   }
-  // Hotspots are now loaded during loadRouters (aggregation)
 
-  /// Load vouchers for the selected hotspot
   Future<void> loadVouchers() async {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) return;
@@ -255,17 +255,22 @@ class VoucherViewModel extends GetxController {
       final result = await _voucherRepository.getVouchersByHotspot(idHotspot);
       vouchers.value = result;
     } catch (e) {
-      Get.toNamed(Routes.ERROR, arguments: 'Gagal memuat daftar voucher, terjadi gangguan pada server.');
+      Get.toNamed(
+        Routes.ERROR,
+        arguments: 'Gagal memuat daftar voucher, terjadi gangguan pada server.',
+      );
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Create a single voucher
   Future<void> createVoucher() async {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) {
-      SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.');
+      SnackbarUtils.showInfo(
+        'Premium Only',
+        'Fitur ini hanya tersedia untuk pengguna Premium.',
+      );
       return;
     }
 
@@ -279,7 +284,7 @@ class VoucherViewModel extends GetxController {
     isGenerating.value = true;
     try {
       await _voucherRepository.createVoucher(idPaket);
-      Get.back(); // Close bottom sheet if open
+      Get.back();
       SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dibuat');
       await loadVouchers();
     } catch (e) {
@@ -289,7 +294,6 @@ class VoucherViewModel extends GetxController {
     }
   }
 
-  /// Create bulk vouchers
   Future<void> createBulkVoucher() async {
     final idPaket = selectedPaketId.value;
 
@@ -310,7 +314,7 @@ class VoucherViewModel extends GetxController {
         count.value,
       );
 
-      Get.back(); // Close bottom sheet
+      Get.back();
       SnackbarUtils.showSuccess(
         'Berhasil',
         '${count.value} voucher berhasil dibuat',
@@ -318,10 +322,10 @@ class VoucherViewModel extends GetxController {
 
       await loadVouchers();
 
-      // Navigate to print preview if we got vouchers back
       if (result.isNotEmpty) {
-        // Fix: Ensure price is populated from the selected package if missing in response
-        final selectedPackage = voucherPackages.firstWhereOrNull((p) => p.id == idPaket);
+        final selectedPackage = voucherPackages.firstWhereOrNull(
+          (p) => p.id == idPaket,
+        );
         if (selectedPackage != null) {
           final fixedVouchers = result.map((v) {
             if (v.harga == 0) {
@@ -336,7 +340,7 @@ class VoucherViewModel extends GetxController {
                 tanggalExpired: v.tanggalExpired,
                 dibuatPada: v.dibuatPada,
                 namaPaket: v.namaPaket,
-                harga: selectedPackage.harga, // Use package price
+                harga: selectedPackage.harga,
                 namaProfileMikrotik: v.namaProfileMikrotik,
                 idHotspot: v.idHotspot,
                 namaServer: v.namaServer,
@@ -363,7 +367,10 @@ class VoucherViewModel extends GetxController {
   Future<void> createVoucherPackage(VoucherPackageModel package) async {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) {
-      SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.');
+      SnackbarUtils.showInfo(
+        'Premium Only',
+        'Fitur ini hanya tersedia untuk pengguna Premium.',
+      );
       return;
     }
 
@@ -379,7 +386,6 @@ class VoucherViewModel extends GetxController {
     }
   }
 
-  /// Delete a voucher
   Future<void> deleteVoucher(int idVoucher) async {
     if (deletingVoucherIds.contains(idVoucher)) return;
 
@@ -399,57 +405,72 @@ class VoucherViewModel extends GetxController {
     }
   }
 
-  /// Delete vouchers in current list, optionally filtered by status
   Future<void> deleteAllVouchers({VoucherStatus? status}) async {
     if (vouchers.isEmpty) return;
-    
+
     isDeletingAll.value = true;
     try {
       int successCount = 0;
-      // Filter list based on status if provided, otherwise all in current list
-      final listToDelete = status != null 
+
+      final listToDelete = status != null
           ? vouchers.where((v) => v.statusVoucher == status).toList()
           : List<VoucherModel>.from(vouchers);
-      
+
       if (listToDelete.isEmpty) {
-        SnackbarUtils.showInfo('Informasi', 'Tidak ada voucher dengan status ${status?.displayName.toUpperCase() ?? "tersebut"} untuk dihapus');
+        SnackbarUtils.showInfo(
+          'Informasi',
+          'Tidak ada voucher dengan status ${status?.displayName.toUpperCase() ?? "tersebut"} untuk dihapus',
+        );
         return;
       }
 
       for (var voucher in listToDelete) {
-        final success = await _voucherRepository.deleteVoucher(voucher.idVoucher);
+        final success = await _voucherRepository.deleteVoucher(
+          voucher.idVoucher,
+        );
         if (success) {
           vouchers.removeWhere((v) => v.idVoucher == voucher.idVoucher);
           successCount++;
         }
       }
-      
+
       if (successCount > 0) {
-        SnackbarUtils.showSuccess('Berhasil', '$successCount voucher ${status?.displayName.toUpperCase() ?? ""} berhasil dihapus');
+        SnackbarUtils.showSuccess(
+          'Berhasil',
+          '$successCount voucher ${status?.displayName.toUpperCase() ?? ""} berhasil dihapus',
+        );
       }
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal menghapus beberapa voucher: $e');
     } finally {
       isDeletingAll.value = false;
-      await loadVouchers(); // Final sync
+      await loadVouchers();
     }
   }
 
-  /// Sell a voucher
   Future<void> sellVoucher(VoucherModel voucher, String paymentMethod) async {
     try {
       isLoading.value = true;
-      final price = await _voucherRepository.sellVoucher(voucher.idVoucher, paymentMethod);
-      
-      SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dijual dengan harga Rp${price.toStringAsFixed(0)}');
-      
-      // Update local status to avoid full refresh if possible
-      final index = vouchers.indexWhere((v) => v.idVoucher == voucher.idVoucher);
+      final price = await _voucherRepository.sellVoucher(
+        voucher.idVoucher,
+        paymentMethod,
+      );
+
+      SnackbarUtils.showSuccess(
+        'Berhasil',
+        'Voucher berhasil dijual dengan harga Rp${price.toStringAsFixed(0)}',
+      );
+
+      final index = vouchers.indexWhere(
+        (v) => v.idVoucher == voucher.idVoucher,
+      );
       if (index != -1) {
-        vouchers[index] = voucher.copyWith(statusVoucher: VoucherStatus.terjual);
+        vouchers[index] = voucher.copyWith(
+          statusVoucher: VoucherStatus.terjual,
+        );
       }
-      
-      await loadVouchers(); // Refresh list to be sure
+
+      await loadVouchers();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal menjual voucher: $e');
     } finally {
@@ -457,12 +478,10 @@ class VoucherViewModel extends GetxController {
     }
   }
 
-  /// Load global active vouchers
   Future<void> loadActiveVouchers() async {
     try {
       isLoading.value = true;
       await _voucherRepository.getActiveVouchers();
-      // ...
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal memuat voucher aktif: $e');
     } finally {
@@ -470,28 +489,21 @@ class VoucherViewModel extends GetxController {
     }
   }
 
-  /// Navigate to detail screen
   void navigateToDetail(VoucherModel voucher) {
     Get.toNamed(Routes.VOUCHER_DETAIL, arguments: voucher);
   }
 
-  /// Switch selected hotspot and reload vouchers
   Future<void> onHotspotChanged(HotspotModel? hotspot) async {
     if (hotspot == null) return;
     _selectionService.updateHotspot(hotspot);
-    selectedPaketId.value = null; // Clear selected package when hotspot changes
-    await Future.wait([
-      loadVouchers(),
-      loadVoucherPackages(),
-    ]);
+    selectedPaketId.value = null;
+    await Future.wait([loadVouchers(), loadVoucherPackages()]);
   }
 
-  /// Print single voucher
   void printVoucher(VoucherModel voucher) {
     _openPrintPreview([voucher]);
   }
 
-  /// Print all vouchers
   void printAllVouchers() {
     if (vouchers.isEmpty) {
       SnackbarUtils.showError('Error', 'Tidak ada voucher untuk dicetak');

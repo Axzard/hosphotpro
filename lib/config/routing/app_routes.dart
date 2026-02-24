@@ -1,5 +1,3 @@
-// part of 'app_pages.dart'; // Removed to fix build errors
-
 abstract class _Paths {
   _Paths._();
   static const HOME = '/';

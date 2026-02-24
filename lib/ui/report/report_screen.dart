@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'view_models/report_view_model.dart';
 import '../../../domain/models/report_model.dart';
-import '../dashboard/view_models/dashboard_view_model.dart';
 
 class ReportScreen extends GetView<ReportViewModel> {
   const ReportScreen({super.key});
@@ -184,16 +183,8 @@ class ReportScreen extends GetView<ReportViewModel> {
                     : TabBarView(
                         children: [
                           _buildDailyTab(controller),
-                          _buildPremiumRestrictedTab(
-                            context: context,
-                            title: 'Laporan Bulanan',
-                            child: _buildMonthlyTab(controller),
-                          ),
-                          _buildPremiumRestrictedTab(
-                            context: context,
-                            title: 'Laporan Tahunan',
-                            child: _buildYearlyTab(controller),
-                          ),
+                          _buildMonthlyTab(controller),
+                          _buildYearlyTab(controller),
                         ],
                       ),
               ),
@@ -587,72 +578,6 @@ class ReportScreen extends GetView<ReportViewModel> {
     );
   }
 
-  Widget _buildPremiumRestrictedTab({
-    required BuildContext context,
-    required String title,
-    required Widget child,
-  }) {
-    return Obx(() {
-      final isPremium =
-          Get.find<DashboardViewModel>().isActiveSubscription.value;
-      if (isPremium) return child;
-
-      return Container(
-        color: const Color(0xFF0A1118),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.lock_person_outlined,
-                color: Colors.white24,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Fitur Premium Only',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Silakan berlangganan untuk melihat\n$title secara lengkap.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => Get.toNamed('/subscription-status'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00C2FF),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Langganan Sekarang',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    });
-  }
 
   Widget _buildEmptyState() {
     return Center(

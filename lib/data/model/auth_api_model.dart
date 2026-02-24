@@ -1,6 +1,5 @@
 import '../../domain/models/auth_model.dart';
 
-// Data Model - API response model with JSON serialization
 class AuthApiModel {
   final String id;
   final String username;
@@ -36,7 +35,6 @@ class AuthApiModel {
     };
   }
 
-  // Convert to Domain Model
   AuthModel toDomain() {
     return AuthModel(
       id: id,
@@ -47,7 +45,6 @@ class AuthApiModel {
     );
   }
 
-  // Create from Domain Model
   factory AuthApiModel.fromDomain(AuthModel model) {
     return AuthApiModel(
       id: model.id,

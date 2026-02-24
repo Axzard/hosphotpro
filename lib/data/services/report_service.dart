@@ -6,11 +6,13 @@ import '../model/report_api_model.dart';
 import 'token_service.dart';
 
 class ReportService extends GetxService {
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-    sendTimeout: const Duration(seconds: 30),
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+    ),
+  );
   final TokenService _tokenService = Get.find<TokenService>();
 
   Future<ApiResponse<ReportDashboardApiModel?>> getDashboardReport({
@@ -58,14 +60,8 @@ class ReportService extends GetxService {
       final token = _tokenService.getToken();
       final response = await _dio.get(
         ApiConfig.reportHarian,
-        queryParameters: {
-          'tahun': tahun,
-          'bulan': bulan,
-          'tgl': tgl,
-        },
-        options: Options(
-          headers: ApiConfig.headers(token: token),
-        ),
+        queryParameters: {'tahun': tahun, 'bulan': bulan, 'tgl': tgl},
+        options: Options(headers: ApiConfig.headers(token: token)),
       );
 
       if (response.statusCode == 200) {
@@ -90,14 +86,8 @@ class ReportService extends GetxService {
       final token = _tokenService.getToken();
       final response = await _dio.get(
         ApiConfig.reportGrouped,
-        queryParameters: {
-          'type': type,
-          'start': start,
-          'end': end,
-        },
-        options: Options(
-          headers: ApiConfig.headers(token: token),
-        ),
+        queryParameters: {'type': type, 'start': start, 'end': end},
+        options: Options(headers: ApiConfig.headers(token: token)),
       );
 
       if (response.statusCode == 200) {
@@ -122,13 +112,8 @@ class ReportService extends GetxService {
       final token = _tokenService.getToken();
       final response = await _dio.get(
         ApiConfig.reportRange,
-        queryParameters: {
-          'start': start,
-          'end': end,
-        },
-        options: Options(
-          headers: ApiConfig.headers(token: token),
-        ),
+        queryParameters: {'start': start, 'end': end},
+        options: Options(headers: ApiConfig.headers(token: token)),
       );
 
       if (response.statusCode == 200) {
@@ -153,13 +138,8 @@ class ReportService extends GetxService {
       final token = _tokenService.getToken();
       final response = await _dio.get(
         ApiConfig.reportSummary,
-        queryParameters: {
-          'start': start,
-          'end': end,
-        },
-        options: Options(
-          headers: ApiConfig.headers(token: token),
-        ),
+        queryParameters: {'start': start, 'end': end},
+        options: Options(headers: ApiConfig.headers(token: token)),
       );
 
       if (response.statusCode == 200) {
@@ -195,7 +175,6 @@ class ReportService extends GetxService {
           validateStatus: (status) => status! < 600,
         ),
       );
-// ... keeps rest for compatibility
 
       if (response.statusCode == 200) {
         final data = response.data['data'] as List? ?? [];
@@ -234,7 +213,9 @@ class ReportService extends GetxService {
         return ApiResponse(
           success: true,
           message: 'Success',
-          data: data.map((json) => MonthlyReportApiModel.fromJson(json)).toList(),
+          data: data
+              .map((json) => MonthlyReportApiModel.fromJson(json))
+              .toList(),
         );
       } else {
         return ApiResponse(success: false, message: 'Failed');
@@ -260,7 +241,9 @@ class ReportService extends GetxService {
         return ApiResponse(
           success: true,
           message: 'Success',
-          data: data.map((json) => YearlyReportApiModel.fromJson(json)).toList(),
+          data: data
+              .map((json) => YearlyReportApiModel.fromJson(json))
+              .toList(),
         );
       } else {
         return ApiResponse(success: false, message: 'Failed');
@@ -275,9 +258,7 @@ class ReportService extends GetxService {
       final token = _tokenService.getToken();
       final response = await _dio.post(
         ApiConfig.reportRefresh,
-        options: Options(
-          headers: ApiConfig.headers(token: token),
-        ),
+        options: Options(headers: ApiConfig.headers(token: token)),
       );
 
       return ApiResponse(

@@ -7,11 +7,13 @@ import '../../config/api_config.dart';
 import 'token_service.dart';
 
 class RouterService extends GetxService {
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-    sendTimeout: const Duration(seconds: 30),
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+    ),
+  );
   final TokenService _tokenService = Get.find<TokenService>();
 
   Future<ApiResponse<List<RouterApiModel>>> getRouters() async {
@@ -47,7 +49,9 @@ class RouterService extends GetxService {
     }
   }
 
-  Future<ApiResponse<RouterApiModel>> createRouter(RouterApiModel router) async {
+  Future<ApiResponse<RouterApiModel>> createRouter(
+    RouterApiModel router,
+  ) async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.post(
@@ -60,15 +64,13 @@ class RouterService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Handle case where backend returns success but no data
         RouterApiModel? createdRouter;
         if (response.data['data'] != null) {
           createdRouter = RouterApiModel.fromJson(response.data['data']);
         } else {
-          // If no data returned, use the router we sent
           createdRouter = router;
         }
-        
+
         return ApiResponse(
           success: true,
           message: response.data['pesan'] ?? 'Router created successfully',
@@ -85,7 +87,10 @@ class RouterService extends GetxService {
     }
   }
 
-  Future<ApiResponse<RouterApiModel>> updateRouter(int id, RouterApiModel router) async {
+  Future<ApiResponse<RouterApiModel>> updateRouter(
+    int id,
+    RouterApiModel router,
+  ) async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.put(
@@ -98,15 +103,13 @@ class RouterService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Handle case where backend returns success but no data
         RouterApiModel? updatedRouter;
         if (response.data['data'] != null) {
           updatedRouter = RouterApiModel.fromJson(response.data['data']);
         } else {
-          // If no data returned, use the router we sent
           updatedRouter = router;
         }
-        
+
         return ApiResponse(
           success: true,
           message: response.data['pesan'] ?? 'Router updated successfully',
@@ -272,17 +275,11 @@ class RouterService extends GetxService {
   Future<ApiResponse<List<dynamic>>> syncHotspots(int idRouter) async {
     try {
       final token = _tokenService.getToken();
-      
-      // We'll send id_router both in query parameters and body to be safe,
-      // as some backends are picky about where they look for it.
+
       final response = await _dio.post(
         ApiConfig.syncHotspots,
-        queryParameters: {
-          'id_router': idRouter,
-        },
-        data: {
-          'id_router': idRouter,
-        },
+        queryParameters: {'id_router': idRouter},
+        data: {'id_router': idRouter},
         options: Options(
           headers: ApiConfig.headers(token: token),
           contentType: 'application/x-www-form-urlencoded',
@@ -300,7 +297,10 @@ class RouterService extends GetxService {
       } else {
         return ApiResponse(
           success: false,
-          message: response.data['pesan'] ?? response.data['message'] ?? 'Gagal sinkronisasi hotspot',
+          message:
+              response.data['pesan'] ??
+              response.data['message'] ??
+              'Gagal sinkronisasi hotspot',
         );
       }
     } catch (e) {
@@ -320,8 +320,12 @@ class RouterService extends GetxService {
       );
 
       return ApiResponse(
-        success: response.statusCode == 200 && (response.data['sukses'] == true),
-        message: response.data['pesan'] ?? response.data['message'] ?? 'Ping complete',
+        success:
+            response.statusCode == 200 && (response.data['sukses'] == true),
+        message:
+            response.data['pesan'] ??
+            response.data['message'] ??
+            'Ping complete',
         data: response.data,
       );
     } catch (e) {

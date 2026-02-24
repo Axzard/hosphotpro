@@ -112,11 +112,7 @@ class DashboardStatusCards extends StatelessWidget {
                 ),
                 child: Icon(icon, color: color, size: 22),
               ),
-              Icon(
-                Icons.trending_up_rounded,
-                color: color.withValues(alpha: 0.3),
-                size: 16,
-              ),
+
             ],
           ),
           const SizedBox(height: 20),

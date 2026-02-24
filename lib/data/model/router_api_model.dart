@@ -22,7 +22,6 @@ class RouterApiModel {
   });
 
   factory RouterApiModel.fromJson(Map<String, dynamic> json) {
-    // Handle potential ID field names (id, id_router, etc.)
     final rawId = json['id'] ?? json['id_router'] ?? json['id_langganan'];
     int? parsedId;
     if (rawId != null) {
@@ -37,7 +36,9 @@ class RouterApiModel {
       id: parsedId,
       namaRouter: json['nama_router'] ?? '',
       alamatIp: json['alamat_ip'] ?? '',
-      portApi: json['port_api'] is int ? json['port_api'] : (int.tryParse(json['port_api']?.toString() ?? '0') ?? 0),
+      portApi: json['port_api'] is int
+          ? json['port_api']
+          : (int.tryParse(json['port_api']?.toString() ?? '0') ?? 0),
       usernameApi: json['username_api'] ?? '',
       passwordApi: json['password_api'] ?? '',
       keterangan: json['keterangan'] ?? '',

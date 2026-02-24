@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import '../../domain/models/subscription_package_model.dart';
-import '../../domain/models/subscription_repository.dart';
+import '../../domain/repositories/subscription_repository.dart';
 import '../../domain/models/transaction_model.dart';
 import '../../domain/models/user_subscription_model.dart';
 import '../services/subscription_service.dart';

@@ -1,6 +1,5 @@
 import '../../domain/models/subscription_package_model.dart';
 
-// Data Model with JSON serialization
 class SubscriptionPackageApiModel {
   final String id;
   final String name;
@@ -24,7 +23,7 @@ class SubscriptionPackageApiModel {
     return SubscriptionPackageApiModel(
       id: json['id_paket_langganan']?.toString() ?? '',
       name: json['nama_paket'] ?? '',
-      description: '', // Backend doesn't provide description
+      description: '',
       price: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
       durationDays: json['durasi_hari'] ?? 0,
       maxRouters: json['batas_router'] ?? 0,
@@ -44,7 +43,6 @@ class SubscriptionPackageApiModel {
     };
   }
 
-  // Convert to Domain Model
   SubscriptionPackageModel toDomain() {
     return SubscriptionPackageModel(
       id: id,

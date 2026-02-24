@@ -1,6 +1,6 @@
 import '../../domain/models/router_model.dart';
 import '../../domain/models/hotspot_model.dart';
-import '../../domain/models/router_repository.dart';
+import '../../domain/repositories/router_repository.dart';
 import '../services/router_service.dart';
 import '../model/router_api_model.dart';
 

@@ -1,4 +1,4 @@
-// Domain Model - Pure business entity for subscription package
+
 class SubscriptionPackageModel {
   final String id;
   final String name;

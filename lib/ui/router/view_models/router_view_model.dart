@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'package:get/get.dart';
 import '../../../../domain/models/router_model.dart';
-import '../../../../domain/models/router_repository.dart';
+import '../../../domain/repositories/router_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';

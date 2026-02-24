@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:get/get.dart';
 import '../../../domain/models/subscription_package_model.dart';
-import '../../../domain/models/subscription_repository.dart';
+import '../../../domain/repositories/subscription_repository.dart';
 import '../../../domain/models/transaction_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/utils/error_utils.dart';
@@ -27,11 +27,9 @@ class SubscriptionViewModel extends GetxController {
   final isLoading = false.obs;
   bool _isLoadingSubscriptions = false;
 
-  // For new package purchases (Package List -> Detail -> Payment)
   final errorMessage = ''.obs;
   final isProcessingPayment = false.obs;
 
-  // For renewals (Subscription Status Screen) - tracks specific subscription ID
   final processingSubscriptionId = RxnInt(null);
 
   final selectedDuration = 1.obs;
@@ -42,7 +40,7 @@ class SubscriptionViewModel extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Use parallel fetching to speed up initial load
+
     Future.wait([loadPackages(), loadMySubscriptions()]);
     _initRealtimeListeners();
   }
@@ -51,7 +49,6 @@ class SubscriptionViewModel extends GetxController {
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
       final event = (eventData['event'] ?? '').toString().toLowerCase();
 
-      // Filter: Only refresh on payment/subscription related events
       const relevantEvents = [
         'payment_success',
         'payment_failed',
@@ -77,7 +74,6 @@ class SubscriptionViewModel extends GetxController {
   }
 
   Future<void> loadMySubscriptions() async {
-    // Guard: prevent duplicate/concurrent loads
     if (_isLoadingSubscriptions) return;
     _isLoadingSubscriptions = true;
     isLoading.value = true;
@@ -85,7 +81,6 @@ class SubscriptionViewModel extends GetxController {
       final result = await _subscriptionRepository.getMySubscriptions();
       mySubscriptions.value = result;
 
-      // Set current subscription to the active one, or the most recent one
       final activeSubscription = result.where((s) => s.isActive).toList();
       if (activeSubscription.isNotEmpty) {
         currentSubscription.value = activeSubscription.first;
@@ -123,7 +118,6 @@ class SubscriptionViewModel extends GetxController {
     try {
       isProcessingPayment.value = true;
 
-      // Step 1: Create Subscription
       final int packageId = int.tryParse(package.id) ?? 0;
       final subscriptionData = await _subscriptionRepository.createSubscription(
         packageId,
@@ -146,7 +140,6 @@ class SubscriptionViewModel extends GetxController {
         throw Exception('ID Langganan tidak ditemukan dalam respon server');
       }
 
-      // Step 2: Create Transaction (Checkout)
       final transaction = await _subscriptionRepository.createTransaction(
         idLangganan: idLangganan,
         idPaketLangganan: packageId,
@@ -183,26 +176,21 @@ class SubscriptionViewModel extends GetxController {
     }
   }
 
-  /// Perpanjang langganan — checkout new transaction for same package without creating a new subscription row
   Future<void> renewSubscription(UserSubscriptionModel subscription) async {
     try {
       processingSubscriptionId.value = subscription.idLangganan;
 
-      // CLEAR STALE DATA: remove any old pending payment url for this ID
       await clearPendingPayment(subscription.idLangganan);
 
-      // DO NOT create new subscription!
-      // Step 1: Checkout
       final transaction = await _subscriptionRepository.renewTransaction(
         jumlahBulan: 1,
         idLangganan: subscription.idLangganan,
         idPaketLangganan: subscription.idPaketLangganan,
         metodePembayaran: selectedPaymentMethod.value.isNotEmpty
             ? selectedPaymentMethod.value
-            : 'qris', // Default to qris for quick renewal if not selected
+            : 'qris',
       );
 
-      // Step 2: Open Midtrans payment page
       String? paymentUrl =
           transaction.redirectUrl ??
           (transaction.snapToken != null
@@ -214,7 +202,6 @@ class SubscriptionViewModel extends GetxController {
           transaction.vaNumber != null && transaction.vaNumber!.isNotEmpty;
 
       if (hasPaymentLink || hasVaInfo) {
-        // SAVE LOCALLY (If we have a URL)
         if (hasPaymentLink) {
           await _paymentPersistenceService.savePendingPayment(
             subscription.idLangganan,
@@ -222,7 +209,6 @@ class SubscriptionViewModel extends GetxController {
           );
         }
 
-        // Refresh local UI
         mySubscriptions.refresh();
 
         _navigateToPaymentResult(transaction, subscription.idLangganan, true);
@@ -243,19 +229,15 @@ class SubscriptionViewModel extends GetxController {
     }
   }
 
-  /// Helper to check if purely local pending payment exists
   bool hasPendingUrl(int idLangganan) {
     final url = _paymentPersistenceService.getPendingUrl(idLangganan);
     return url != null && url.isNotEmpty;
   }
 
-  /// Resume an existing pending payment using its saved payment URL
-  /// Does NOT create new transactions — only reopens existing payment URL
   Future<void> resumePayment(
     UserSubscriptionModel subscription, {
     bool forceNew = false,
   }) async {
-    // Priority: Native VA Info
     if (subscription.vaNumber != null && subscription.vaNumber!.isNotEmpty) {
       Get.toNamed(
         Routes.PAYMENT_DETAIL,
@@ -277,9 +259,8 @@ class SubscriptionViewModel extends GetxController {
     String? url;
 
     if (!forceNew) {
-      // Priority 1: Persistent Local Storage
       url = _paymentPersistenceService.getPendingUrl(subscription.idLangganan);
-      // Priority 2: API Model URL
+
       url ??= subscription.paymentUrl;
     }
 
@@ -294,14 +275,12 @@ class SubscriptionViewModel extends GetxController {
         },
       );
     } else {
-      // Auto-generate new transaction or resume from server if URL is missing
       try {
         SnackbarUtils.showInfo(
           'Memuat',
           'Sedang mengambil detail pembayaran terbaru...',
         );
 
-        // Use renewTransaction instead of createTransaction to resume existing pending state correctly
         final transaction = await _subscriptionRepository.renewTransaction(
           idLangganan: subscription.idLangganan,
           idPaketLangganan: subscription.idPaketLangganan,
@@ -315,7 +294,6 @@ class SubscriptionViewModel extends GetxController {
           !subscription.isPending,
         );
       } catch (e) {
-        // Fallback: clear and tell user to try again
         await clearPendingPayment(subscription.idLangganan);
         SnackbarUtils.showError(
           'Gagal Memuat Pembayaran',
@@ -325,30 +303,25 @@ class SubscriptionViewModel extends GetxController {
     }
   }
 
-  /// Clear local pending payment
   Future<void> clearPendingPayment(int idLangganan) async {
     await _paymentPersistenceService.clearPendingPayment(idLangganan);
     mySubscriptions.refresh();
   }
 
-  /// Cancel renewal (only clear local pending payment, do not touch backend)
   Future<void> cancelRenewal(int idLangganan) async {
     await clearPendingPayment(idLangganan);
     SnackbarUtils.showInfo('Dibatalkan', 'Pembayaran perpanjangan dibatalkan.');
   }
 
-  /// Cancel subscription (Explicitly by user or on expiry detect)
   Future<void> cancelSubscription(int idLangganan) async {
     await changeSubscriptionStatus(idLangganan, 'batal');
   }
 
-  /// Update subscription status generically
   Future<void> changeSubscriptionStatus(
     int idLangganan,
     String newStatus,
   ) async {
     try {
-      // Show loading indicator usually handled by ui or silently update
       SnackbarUtils.showInfo('Memperbarui', 'Sedang memperbarui status...');
 
       final success = await _subscriptionRepository.updateSubscriptionStatus(
@@ -381,13 +354,11 @@ class SubscriptionViewModel extends GetxController {
     int idLangganan,
     bool isRenewal,
   ) {
-    // If we have native VA info, show native detail screen
     if (transaction.vaNumber != null && transaction.vaNumber!.isNotEmpty) {
       Get.toNamed(Routes.PAYMENT_DETAIL, arguments: transaction);
       return;
     }
 
-    // Default: Show Midtrans WebView
     String? paymentUrl =
         transaction.redirectUrl ??
         (transaction.snapToken != null

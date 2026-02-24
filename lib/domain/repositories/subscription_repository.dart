@@ -1,6 +1,6 @@
-import 'subscription_package_model.dart';
-import 'transaction_model.dart';
-import 'user_subscription_model.dart';
+import '../models/subscription_package_model.dart';
+import '../models/transaction_model.dart';
+import '../models/user_subscription_model.dart';
 
 abstract class SubscriptionRepository {
   Future<List<SubscriptionPackageModel>> getPackages();

@@ -5,25 +5,20 @@ import '../model/api_response.dart';
 import '../../config/api_config.dart';
 
 class AuthService extends GetxService {
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-    sendTimeout: const Duration(seconds: 30),
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+    ),
+  );
 
-  // Login - Real API Integration
-  Future<ApiResponse<AuthApiModel>> login(String username, String password) async {
+  Future<ApiResponse<AuthApiModel>> login(
+    String username,
+    String password,
+  ) async {
     try {
-      print('=== LOGIN DEBUG ===');
-      print('URL: ${ApiConfig.login}');
-      print('Username: $username');
-      print('Password length: ${password.length}');
-      
-      final requestData = {
-        'username': username,
-        'password': password,
-      };
-      print('Request data: $requestData');
+      final requestData = {'username': username, 'password': password};
 
       final response = await _dio.post(
         ApiConfig.login,
@@ -38,19 +33,16 @@ class AuthService extends GetxService {
       print('Response data: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('✅ Login SUCCESS');
-        
+        print('Login SUCCESS');
+
         final responseData = response.data['data'];
-        
-        // Parse response to AuthApiModel
-        // Note: ID and Email are not in the login response, using placeholders or extracted from token if needed later.
-        // The response structure is: { "pesan": "...", "data": { "token": "...", "peran": "...", "username": "..." } }
+
         final authData = AuthApiModel(
-          id: '0', // Not provided in login response
+          id: '0',
           username: responseData['username'] ?? username,
-          email: '', // Not provided in login response
+          email: '',
           token: responseData['token'] ?? '',
-          subscriptionActive: false, // Default to false, will be updated by profile/subscription check
+          subscriptionActive: false,
         );
 
         return ApiResponse(
@@ -59,17 +51,16 @@ class AuthService extends GetxService {
           data: authData,
         );
       } else {
-        print('❌ Login FAILED - Status: ${response.statusCode}');
-        final errorMessage = response.data['pesan'] ?? response.data['message'] ?? 'Invalid credentials';
+        print('Login FAILED - Status: ${response.statusCode}');
+        final errorMessage =
+            response.data['pesan'] ??
+            response.data['message'] ??
+            'Invalid credentials';
         print('Error message from API: $errorMessage');
-        return ApiResponse(
-          success: false,
-          message: errorMessage,
-          data: null,
-        );
+        return ApiResponse(success: false, message: errorMessage, data: null);
       }
     } on DioException catch (e) {
-      print('❌ DioException occurred:');
+      print('DioException occurred:');
       print('Type: ${e.type}');
       print('Message: ${e.message}');
       print('Response: ${e.response?.data}');
@@ -78,7 +69,10 @@ class AuthService extends GetxService {
       String errorMessage = 'Login Failed';
 
       if (e.response != null) {
-        errorMessage = e.response?.data['message'] ?? e.response?.data['error'] ?? errorMessage;
+        errorMessage =
+            e.response?.data['message'] ??
+            e.response?.data['error'] ??
+            errorMessage;
       } else if (e.type == DioExceptionType.connectionTimeout) {
         errorMessage = 'Connection timeout';
       } else if (e.type == DioExceptionType.receiveTimeout) {
@@ -87,13 +81,9 @@ class AuthService extends GetxService {
         errorMessage = 'No internet connection';
       }
 
-      return ApiResponse(
-        success: false,
-        message: errorMessage,
-        data: null,
-      );
+      return ApiResponse(success: false, message: errorMessage, data: null);
     } catch (e) {
-      print('❌ Unexpected error: $e');
+      print('Unexpected error: $e');
       return ApiResponse(
         success: false,
         message: 'Unexpected error: $e',
@@ -102,23 +92,17 @@ class AuthService extends GetxService {
     }
   }
 
-  // Register - Real API Integration
   Future<ApiResponse<bool>> register(
-      String username, String email, String password) async {
+    String username,
+    String email,
+    String password,
+  ) async {
     try {
-      print('=== REGISTRATION DEBUG ===');
-      print('URL: ${ApiConfig.register}');
-      print('Username: $username');
-      print('Email: $email');
-      print('Password length: ${password.length}');
-      
       final requestData = {
         'username': username,
         'email': email,
         'password': password,
       };
-      print('Request data: $requestData');
-      
       final response = await _dio.post(
         ApiConfig.register,
         data: requestData,
@@ -130,17 +114,15 @@ class AuthService extends GetxService {
 
       print('Response status code: ${response.statusCode}');
       print('Response data: ${response.data}');
-      print('Response headers: ${response.headers}');
-
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('✅ Registration SUCCESS');
+        print('Registration SUCCESS');
         return ApiResponse(
           success: true,
           message: response.data['message'] ?? 'Registration Successful',
           data: true,
         );
       } else {
-        print('❌ Registration FAILED - Status: ${response.statusCode}');
+        print('Registration FAILED - Status: ${response.statusCode}');
         return ApiResponse(
           success: false,
           message: response.data['message'] ?? 'Registration Failed',
@@ -148,17 +130,20 @@ class AuthService extends GetxService {
         );
       }
     } on DioException catch (e) {
-      print('❌ DioException occurred:');
+      print('DioException occurred:');
       print('Type: ${e.type}');
       print('Message: ${e.message}');
       print('Response: ${e.response?.data}');
       print('Status Code: ${e.response?.statusCode}');
-      
+
       String errorMessage = 'Registration Failed';
-      
+
       if (e.response != null) {
         print('Error response data: ${e.response?.data}');
-        errorMessage = e.response?.data['message'] ?? e.response?.data['error'] ?? errorMessage;
+        errorMessage =
+            e.response?.data['message'] ??
+            e.response?.data['error'] ??
+            errorMessage;
       } else if (e.type == DioExceptionType.connectionTimeout) {
         errorMessage = 'Connection timeout';
       } else if (e.type == DioExceptionType.receiveTimeout) {
@@ -167,13 +152,9 @@ class AuthService extends GetxService {
         errorMessage = 'No internet connection';
       }
 
-      return ApiResponse(
-        success: false,
-        message: errorMessage,
-        data: false,
-      );
+      return ApiResponse(success: false, message: errorMessage, data: false);
     } catch (e) {
-      print('❌ Unexpected error: $e');
+      print('Unexpected error: $e');
       return ApiResponse(
         success: false,
         message: 'Unexpected error: $e',
@@ -182,7 +163,6 @@ class AuthService extends GetxService {
     }
   }
 
-  // Get Profile (still mock for now)
   Future<ApiResponse<AuthApiModel>> getProfile() async {
     await Future.delayed(const Duration(seconds: 1));
     return ApiResponse(

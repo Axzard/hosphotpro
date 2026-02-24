@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../view_models/dashboard_view_model.dart';
+import '../../../domain/models/user_subscription_model.dart';
 
 class SubscriptionCard extends StatelessWidget {
   final DashboardViewModel controller;
@@ -41,7 +42,7 @@ class SubscriptionCard extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: _getStatusColor(controller.subscriptionStatusEnum.value),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -53,12 +54,13 @@ class SubscriptionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.verified, color: Colors.white, size: 24),
+              if (controller.isActiveSubscription.value)
+                const Icon(Icons.verified, color: Colors.white, size: 24),
             ],
           ),
           const SizedBox(height: 20),
           Text(
-            'Paket Premium',
+            controller.packageName.value,
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white,
               fontSize: 20,
@@ -69,7 +71,7 @@ class SubscriptionCard extends StatelessWidget {
           Text(
             controller.expiryDate.value != null
                 ? 'Berakhir pada ${DateFormat('d MMM yyyy').format(controller.expiryDate.value!)}'
-                : 'Belum berlangganan',
+                : 'lihat paket langganan untuk informasi lebih lanjut',
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white.withValues(alpha: 0.8),
               fontSize: 14,
@@ -97,5 +99,19 @@ class SubscriptionCard extends StatelessWidget {
         ],
       ),
     ));
+  }
+
+  Color _getStatusColor(SubscriptionStatus status) {
+    switch (status) {
+      case SubscriptionStatus.active:
+        return Colors.greenAccent; 
+      case SubscriptionStatus.pending:
+        return Colors.amberAccent; 
+      case SubscriptionStatus.expired:
+        return Colors.redAccent; 
+      case SubscriptionStatus.canceled:
+      case SubscriptionStatus.none:
+      return Colors.white.withValues(alpha: 0.2); 
+    }
   }
 }
