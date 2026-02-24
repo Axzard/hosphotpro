@@ -52,7 +52,13 @@ class UserSubscriptionApiModel {
       namaPaket: json['nama_paket'] ?? '',
       harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
       totalBayar: double.tryParse(json['total_bayar']?.toString() ?? '0') ?? 0,
-      paymentUrl: json['payment_url'] ?? json['redirect_url'],
+      paymentUrl:
+          json['payment_url'] ??
+          json['redirect_url'] ??
+          json['checkout_url'] ??
+          json['url_pembayaran'] ??
+          json['data']?['payment_url'] ??
+          json['data']?['redirect_url'],
       vaNumber:
           json['va_number'] ??
           (json['va_numbers'] is List && (json['va_numbers'] as List).isNotEmpty

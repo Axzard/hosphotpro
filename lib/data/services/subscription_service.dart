@@ -256,11 +256,11 @@ class SubscriptionService extends GetxService {
     String? metodePembayaran,
   }) async {
     final Map<String, dynamic> data = {
-      'id_langganan': idLangganan,
-      'id_subscription': idLangganan, // Redundant key for compatibility
-      'id_paket_langganan': idPaketLangganan,
-      'id_paket': idPaketLangganan, // Redundant key for compatibility
-      'jumlah_bulan': jumlahBulan,
+      'id_langganan': idLangganan.toString(),
+      'id_subscription': idLangganan.toString(),
+      'id_paket_langganan': idPaketLangganan.toString(),
+      'id_paket': idPaketLangganan.toString(),
+      'jumlah_bulan': jumlahBulan.toString(),
     };
 
     if (metodePembayaran != null && metodePembayaran.isNotEmpty) {
@@ -281,19 +281,16 @@ class SubscriptionService extends GetxService {
     int? idPaketLangganan,
     String? metodePembayaran,
   }) async {
-    final Map<String, dynamic> data = {'jumlah_bulan': jumlahBulan};
+    final Map<String, dynamic> data = {
+      'jumlah_bulan': jumlahBulan.toString(),
+      'id_langganan': idLangganan?.toString(),
+      'id_subscription': idLangganan?.toString(),
+      'id_paket_langganan': idPaketLangganan?.toString(),
+      'id_paket': idPaketLangganan?.toString(),
+    };
 
     if (metodePembayaran != null && metodePembayaran.isNotEmpty) {
       data['metode_pembayaran'] = metodePembayaran;
-    }
-
-    if (idLangganan != null && idLangganan > 0) {
-      data['id_langganan'] = idLangganan;
-      data['id_subscription'] = idLangganan;
-    }
-    if (idPaketLangganan != null && idPaketLangganan > 0) {
-      data['id_paket_langganan'] = idPaketLangganan;
-      data['id_paket'] = idPaketLangganan;
     }
 
     return _processTransaction(

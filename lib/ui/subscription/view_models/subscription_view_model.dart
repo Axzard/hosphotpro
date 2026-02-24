@@ -188,6 +188,9 @@ class SubscriptionViewModel extends GetxController {
     try {
       processingSubscriptionId.value = subscription.idLangganan;
 
+      // CLEAR STALE DATA: remove any old pending payment url for this ID
+      await clearPendingPayment(subscription.idLangganan);
+
       // DO NOT create new subscription!
       // Step 1: Checkout
       final transaction = await _subscriptionRepository.renewTransaction(
@@ -291,11 +294,34 @@ class SubscriptionViewModel extends GetxController {
         },
       );
     } else {
-      // No saved URL available — inform user instead of creating new transaction
-      SnackbarUtils.showError(
-        'Pembayaran Tidak Ditemukan',
-        'Link pembayaran tidak tersedia. Silakan hubungi support atau buat langganan baru.',
-      );
+      // Auto-generate new transaction or resume from server if URL is missing
+      try {
+        SnackbarUtils.showInfo(
+          'Memuat',
+          'Sedang mengambil detail pembayaran terbaru...',
+        );
+
+        // Use renewTransaction instead of createTransaction to resume existing pending state correctly
+        final transaction = await _subscriptionRepository.renewTransaction(
+          idLangganan: subscription.idLangganan,
+          idPaketLangganan: subscription.idPaketLangganan,
+          jumlahBulan: subscription.jumlahBulan,
+          metodePembayaran: selectedPaymentMethod.value,
+        );
+
+        _navigateToPaymentResult(
+          transaction,
+          subscription.idLangganan,
+          !subscription.isPending,
+        );
+      } catch (e) {
+        // Fallback: clear and tell user to try again
+        await clearPendingPayment(subscription.idLangganan);
+        SnackbarUtils.showError(
+          'Gagal Memuat Pembayaran',
+          'Silakan klik kembali tombol perpanjang atau pilih paket baru.',
+        );
+      }
     }
   }
 
