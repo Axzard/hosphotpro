@@ -32,7 +32,7 @@ class DailyReportApiModel {
 }
 
 class MonthlyReportApiModel {
-  final dynamic periode; // can be int or string
+  final dynamic periode;
   final int? bulan;
   final String totalPendapatan;
   final int totalTransaksi;
@@ -59,7 +59,7 @@ class MonthlyReportApiModel {
       m = bulan!;
     } else if (periode != null) {
       if (periode is int) {
-        m = 1; // Actually if periode is int in perBulan context? user example shows 2026 for perTahun
+        m = 1;
       } else if (periode is String && periode.contains('-')) {
         m = int.tryParse(periode.split('-').last) ?? 1;
       }
@@ -97,7 +97,11 @@ class YearlyReportApiModel {
 
   YearlyReportModel toDomain() {
     return YearlyReportModel(
-      tahun: tahun ?? (periode is int ? periode : (int.tryParse(periode?.toString() ?? '') ?? 2024)),
+      tahun:
+          tahun ??
+          (periode is int
+              ? periode
+              : (int.tryParse(periode?.toString() ?? '') ?? 2024)),
       totalPendapatan: double.tryParse(totalPendapatan) ?? 0,
       totalTransaksi: totalTransaksi,
     );
@@ -136,7 +140,7 @@ class ReportDashboardApiModel {
 
   factory ReportDashboardApiModel.fromJson(Map<String, dynamic> json) {
     final data = json['data'] ?? json;
-    
+
     return ReportDashboardApiModel(
       perHari: (data['perHari'] as List? ?? [])
           .map((i) => DailyReportApiModel.fromJson(i))
@@ -147,7 +151,9 @@ class ReportDashboardApiModel {
       perTahun: (data['perTahun'] as List? ?? [])
           .map((i) => YearlyReportApiModel.fromJson(i))
           .toList(),
-      summary: data['summary'] != null ? ReportSummaryApiModel.fromJson(data['summary']) : null,
+      summary: data['summary'] != null
+          ? ReportSummaryApiModel.fromJson(data['summary'])
+          : null,
     );
   }
 

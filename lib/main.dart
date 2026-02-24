@@ -4,11 +4,14 @@ import 'config/routing/app_pages.dart';
 import 'config/routing/global_binding.dart';
 import 'ui/core/themes/app_theme.dart';
 
+import 'package:intl/date_symbol_data_local.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('id_ID', null);
   final binding = GlobalBinding();
   await binding.dependencies();
-  
+
   runApp(const MyApp());
 }
 

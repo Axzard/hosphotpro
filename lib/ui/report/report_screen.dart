@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'view_models/report_view_model.dart';
 import '../../../domain/models/report_model.dart';
-import '../dashboard/view_models/dashboard_view_model.dart';
 
 class ReportScreen extends GetView<ReportViewModel> {
   const ReportScreen({super.key});
@@ -74,8 +73,9 @@ class ReportScreen extends GetView<ReportViewModel> {
             indicatorColor: accentColor,
             labelColor: accentColor,
             unselectedLabelColor: Colors.white54,
-            labelStyle:
-                GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+            labelStyle: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.bold,
+            ),
             tabs: const [
               Tab(text: 'Harian'),
               Tab(text: 'Bulanan'),
@@ -123,66 +123,71 @@ class ReportScreen extends GetView<ReportViewModel> {
                 },
               ),
             ),
-            Obx(() => (controller.selectedDate.value != null ||
-                    controller.selectedYear.value != DateTime.now().year)
-                ? IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () {
-                      controller.selectedDate.value = null;
-                      controller.selectedYear.value = DateTime.now().year;
-                      controller.fetchAllReports();
-                    },
-                  )
-                : const SizedBox.shrink()),
+            Obx(
+              () =>
+                  (controller.selectedDate.value != null ||
+                      controller.selectedYear.value != DateTime.now().year)
+                  ? IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () {
+                        controller.selectedDate.value = null;
+                        controller.selectedYear.value = DateTime.now().year;
+                        controller.fetchAllReports();
+                      },
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
         body: Column(
           children: [
             // Date filter banner
-            Obx(() => controller.selectedDate.value != null
-                ? Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    width: double.infinity,
-                    color: accentColor.withValues(alpha: 0.1),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.filter_list,
-                            color: accentColor, size: 16),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Filter: ${DateFormat('dd MMM yyyy').format(controller.selectedDate.value!)}',
-                          style: GoogleFonts.plusJakartaSans(
+            Obx(
+              () => controller.selectedDate.value != null
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      width: double.infinity,
+                      color: accentColor.withValues(alpha: 0.1),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.filter_list,
                             color: accentColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                            size: 16,
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : const SizedBox.shrink()),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Filter: ${DateFormat('dd MMM yyyy').format(controller.selectedDate.value!)}',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: accentColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
 
             // Tab content
             Expanded(
-              child: Obx(() => controller.isLoading.value
-                  ? const Center(
-                      child: CircularProgressIndicator(color: accentColor))
-                  : TabBarView(
-                      children: [
-                        _buildDailyTab(controller),
-                        _buildPremiumRestrictedTab(
-                          context: context,
-                          title: 'Laporan Bulanan',
-                          child: _buildMonthlyTab(controller),
-                        ),
-                        _buildPremiumRestrictedTab(
-                          context: context,
-                          title: 'Laporan Tahunan',
-                          child: _buildYearlyTab(controller),
-                        ),
-                      ],
-                    )),
+              child: Obx(
+                () => controller.isLoading.value
+                    ? const Center(
+                        child: CircularProgressIndicator(color: accentColor),
+                      )
+                    : TabBarView(
+                        children: [
+                          _buildDailyTab(controller),
+                          _buildMonthlyTab(controller),
+                          _buildYearlyTab(controller),
+                        ],
+                      ),
+              ),
             ),
           ],
         ),
@@ -241,7 +246,12 @@ class ReportScreen extends GetView<ReportViewModel> {
     );
   }
 
-  Widget _buildChartSection(String title, List<double> data, Color color, String type) {
+  Widget _buildChartSection(
+    String title,
+    List<double> data,
+    Color color,
+    String type,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -295,14 +305,16 @@ class ReportScreen extends GetView<ReportViewModel> {
                 if (type == 'daily') {
                   label = 'H${spot.x.toInt() + 1}';
                 } else if (type == 'monthly') {
-                  label = DateFormat('MMM').format(DateTime(2024, spot.x.toInt() + 1));
+                  label = DateFormat(
+                    'MMM',
+                  ).format(DateTime(2024, spot.x.toInt() + 1));
                 } else {
                   label = '${DateTime.now().year - 4 + spot.x.toInt()}';
                 }
 
                 final currencyFormat = NumberFormat.currency(
                   locale: 'id_ID',
-                  symbol: 'Rp',
+                  symbol: 'Rp ',
                   decimalDigits: 0,
                 );
                 return LineTooltipItem(
@@ -327,8 +339,12 @@ class ReportScreen extends GetView<ReportViewModel> {
         ),
         titlesData: FlTitlesData(
           show: true,
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -337,7 +353,7 @@ class ReportScreen extends GetView<ReportViewModel> {
               getTitlesWidget: (value, meta) {
                 // Defensive label logic to prevent overlapping white blob
                 if (value == 0) return const SizedBox.shrink();
-                
+
                 // Show a label every 2 intervals or at least at the top
                 final isTop = (value - chartMaxY).abs() < (interval / 2);
                 final isInterval = (value % (interval * 2)) < 0.1;
@@ -374,8 +390,9 @@ class ReportScreen extends GetView<ReportViewModel> {
               interval: type == 'daily' ? 5 : 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index < 0 || index >= data.length) return const SizedBox.shrink();
-                
+                if (index < 0 || index >= data.length)
+                  return const SizedBox.shrink();
+
                 String text = '';
                 if (type == 'daily') {
                   if (index % 5 != 0) return const SizedBox.shrink();
@@ -401,19 +418,23 @@ class ReportScreen extends GetView<ReportViewModel> {
         borderData: FlBorderData(show: false),
         lineBarsData: [
           LineChartBarData(
-            spots: List.generate(data.length, (i) => FlSpot(i.toDouble(), data[i])),
+            spots: List.generate(
+              data.length,
+              (i) => FlSpot(i.toDouble(), data[i]),
+            ),
             isCurved: type != 'yearly', // Less curved for fewer points
             color: color,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
               show: true,
-              getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                radius: 3,
-                color: color,
-                strokeWidth: 1,
-                strokeColor: Colors.white,
-              ),
+              getDotPainter: (spot, percent, barData, index) =>
+                  FlDotCirclePainter(
+                    radius: 3,
+                    color: color,
+                    strokeWidth: 1,
+                    strokeColor: Colors.white,
+                  ),
             ),
             belowBarData: BarAreaData(
               show: true,
@@ -457,7 +478,9 @@ class ReportScreen extends GetView<ReportViewModel> {
       itemCount: reports.length,
       itemBuilder: (context, index) {
         final report = reports[index];
-        final monthName = DateFormat('MMMM').format(DateTime(2024, report.bulan));
+        final monthName = DateFormat(
+          'MMMM',
+        ).format(DateTime(2024, report.bulan));
         return _buildReportCard(
           title: monthName,
           income: report.totalPendapatan,
@@ -555,74 +578,17 @@ class ReportScreen extends GetView<ReportViewModel> {
     );
   }
 
-  Widget _buildPremiumRestrictedTab({
-    required BuildContext context,
-    required String title,
-    required Widget child,
-  }) {
-    return Obx(() {
-      final isPremium = Get.find<DashboardViewModel>().isActiveSubscription.value;
-      if (isPremium) return child;
-
-      return Container(
-        color: const Color(0xFF0A1118),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.lock_person_outlined,
-                color: Colors.white24,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Fitur Premium Only',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Silakan berlangganan untuk melihat\n$title secara lengkap.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => Get.toNamed('/subscription-status'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00C2FF),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Langganan Sekarang',
-                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    });
-  }
 
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.analytics_outlined,
-              size: 64, color: Colors.white.withValues(alpha: 0.1)),
+          Icon(
+            Icons.analytics_outlined,
+            size: 64,
+            color: Colors.white.withValues(alpha: 0.1),
+          ),
           const SizedBox(height: 16),
           Text(
             'Belum ada data laporan',

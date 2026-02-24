@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import '../../domain/models/report_model.dart';
-import '../../domain/models/report_repository.dart';
+import '../../domain/repositories/report_repository.dart';
 import '../services/report_service.dart';
 
 class ReportRepositoryImpl implements ReportRepository {

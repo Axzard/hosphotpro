@@ -28,25 +28,30 @@ class SalesChart extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Pendapatan Hari Ini',
+                'Total Pendapatan',
                 style: GoogleFonts.plusJakartaSans(
                   color: Colors.white70,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const Icon(Icons.show_chart_rounded, color: Color(0xFF00C2FF), size: 18),
+              const Icon(
+                Icons.show_chart_rounded,
+                color: Color(0xFF00C2FF),
+                size: 18,
+              ),
             ],
           ),
           const SizedBox(height: 4),
           Obx(() {
             final currencyFormat = NumberFormat.currency(
               locale: 'id_ID',
-              symbol: 'Rp',
+              symbol: 'Rp ',
               decimalDigits: 0,
             );
+            final totalIncome = controller.reportSummary.value?.totalIncome ?? 0.0;
             return Text(
-              currencyFormat.format(controller.totalIncomeToday.value),
+              currencyFormat.format(totalIncome),
               style: GoogleFonts.plusJakartaSans(
                 color: Colors.white,
                 fontSize: 20,
@@ -56,7 +61,7 @@ class SalesChart extends StatelessWidget {
           }),
           const SizedBox(height: 24),
           Expanded(
-            child: Obx(() => _buildLineChart(controller.dailyIncomeData)),
+            child: Obx(() => _buildLineChart(controller.cumulativeIncomeData)),
           ),
         ],
       ),
@@ -65,11 +70,18 @@ class SalesChart extends StatelessWidget {
 
   Widget _buildLineChart(List<double> data) {
     if (data.isEmpty) {
-      return const Center(child: Text('No data available', style: TextStyle(color: Colors.white24)));
+      return const Center(
+        child: Text(
+          'Tidak ada data penjualan',
+          style: TextStyle(color: Colors.white24),
+        ),
+      );
     }
 
-    final maxVal = data.isNotEmpty ? data.reduce((a, b) => a > b ? a : b) : 100.0;
-    
+    final maxVal = data.isNotEmpty
+        ? data.reduce((a, b) => a > b ? a : b)
+        : 100.0;
+
     return LineChart(
       LineChartData(
         minY: 0,
@@ -90,7 +102,7 @@ class SalesChart extends StatelessWidget {
               return touchedSpots.map((spot) {
                 final currencyFormat = NumberFormat.currency(
                   locale: 'id_ID',
-                  symbol: 'Rp',
+                  symbol: 'Rp ',
                   decimalDigits: 0,
                 );
                 return LineTooltipItem(
@@ -107,8 +119,12 @@ class SalesChart extends StatelessWidget {
         ),
         titlesData: FlTitlesData(
           show: true,
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -154,7 +170,10 @@ class SalesChart extends StatelessWidget {
         borderData: FlBorderData(show: false),
         lineBarsData: [
           LineChartBarData(
-            spots: List.generate(data.length, (i) => FlSpot(i.toDouble(), data[i])),
+            spots: List.generate(
+              data.length,
+              (i) => FlSpot(i.toDouble(), data[i]),
+            ),
             isCurved: true,
             color: const Color(0xFF00C2FF),
             barWidth: 3,

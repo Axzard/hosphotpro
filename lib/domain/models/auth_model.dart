@@ -1,4 +1,3 @@
-// Domain Model - Pure business entity without JSON serialization
 class AuthModel {
   final String id;
   final String username;

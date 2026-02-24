@@ -182,13 +182,17 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  voucher.kodeVoucher,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 4,
+                Flexible(
+                  child: Text(
+                    voucher.kodeVoucher,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 4,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -219,13 +223,17 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  voucher.passwordVoucher,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white.withValues(alpha: 0.9),
-                    letterSpacing: 3,
+                Flexible(
+                  child: Text(
+                    voucher.passwordVoucher,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      letterSpacing: 3,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -364,7 +372,9 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
                     'SSL',
                     voucher.gunakanSsl ? 'AKTIF' : 'NON-AKTIF',
                     Icons.security_outlined,
-                    voucher.gunakanSsl ? const Color(0xFF4ADE80) : Colors.white24,
+                    voucher.gunakanSsl
+                        ? const Color(0xFF4ADE80)
+                        : Colors.white24,
                   ),
                 ),
               ],
@@ -543,7 +553,9 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             width: double.infinity,
             height: 54,
             child: Obx(() {
-              final isDeleting = controller.deletingVoucherIds.contains(voucher.idVoucher);
+              final isDeleting = controller.deletingVoucherIds.contains(
+                voucher.idVoucher,
+              );
               return OutlinedButton.icon(
                 onPressed: isDeleting
                     ? null
@@ -562,7 +574,10 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
                             actions: [
                               TextButton(
                                 onPressed: () => Get.back(),
-                                child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+                                child: const Text(
+                                  'Batal',
+                                  style: TextStyle(color: Colors.white54),
+                                ),
                               ),
                               TextButton(
                                 onPressed: () {
@@ -583,7 +598,10 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.redAccent),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.redAccent,
+                        ),
                       )
                     : const Icon(Icons.delete_outline),
                 label: Text(

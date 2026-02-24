@@ -27,8 +27,12 @@ class SubscriptionItemCard extends StatelessWidget {
     );
     final dateFormat = DateFormat('dd MMM yyyy');
 
+    final hasPending =
+        subscription.isPending ||
+        controller.hasPendingUrl(subscription.idLangganan);
+
     return GestureDetector(
-      onTap: subscription.isPending ? () => controller.resumePayment(subscription) : null,
+      onTap: hasPending ? () => controller.resumePayment(subscription) : null,
       child: Container(
         // margin handled by parent listview
         padding: const EdgeInsets.all(20),
@@ -36,17 +40,19 @@ class SubscriptionItemCard extends StatelessWidget {
           color: cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: subscription.isPending 
-              ? Colors.orange.withValues(alpha: 0.3) 
-              : Colors.white.withValues(alpha: 0.05)
+            color: hasPending
+                ? Colors.orange.withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.05),
           ),
-          boxShadow: subscription.isPending ? [
-            BoxShadow(
-              color: Colors.orange.withValues(alpha: 0.05),
-              blurRadius: 10,
-              spreadRadius: 0,
-            )
-          ] : null,
+          boxShadow: hasPending
+              ? [
+                  BoxShadow(
+                    color: Colors.orange.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    spreadRadius: 0,
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           children: [
@@ -55,17 +61,23 @@ class SubscriptionItemCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: subscription.isPending 
-                      ? Colors.orange.withValues(alpha: 0.1)
-                      : Colors.white.withValues(alpha: 0.05),
+                    color: hasPending
+                        ? (subscription.vaNumber != null
+                              ? Colors.blue.withValues(alpha: 0.1)
+                              : Colors.orange.withValues(alpha: 0.1))
+                        : Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    subscription.isPending
-                        ? Icons.payment_rounded
+                    hasPending
+                        ? (subscription.vaNumber != null
+                              ? Icons.account_balance_wallet_rounded
+                              : Icons.payment_rounded)
                         : Icons.history,
-                    color: subscription.isPending
-                        ? Colors.orange
+                    color: hasPending
+                        ? (subscription.vaNumber != null
+                              ? Colors.blue
+                              : Colors.orange)
                         : Colors.white54,
                     size: 22,
                   ),
@@ -82,6 +94,8 @@ class SubscriptionItemCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -90,6 +104,8 @@ class SubscriptionItemCard extends StatelessWidget {
                           fontSize: 11,
                           color: Colors.white.withValues(alpha: 0.4),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -115,26 +131,42 @@ class SubscriptionItemCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (subscription.isPending) ...[
+            if (hasPending) ...[
               const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.touch_app_rounded, size: 14, color: Colors.orange.withValues(alpha: 0.7)),
+                  Icon(
+                    subscription.vaNumber != null
+                        ? Icons.info_outline_rounded
+                        : Icons.touch_app_rounded,
+                    size: 14,
+                    color:
+                        (subscription.vaNumber != null
+                                ? Colors.blue
+                                : Colors.orange)
+                            .withValues(alpha: 0.7),
+                  ),
                   const SizedBox(width: 6),
                   Text(
-                    'Klik untuk selesaikan pembayaran',
+                    subscription.vaNumber != null
+                        ? 'Klik untuk lihat detail pembayaran VA'
+                        : 'Klik untuk selesaikan pembayaran',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: Colors.orange.withValues(alpha: 0.7),
+                      color:
+                          (subscription.vaNumber != null
+                                  ? Colors.blue
+                                  : Colors.orange)
+                              .withValues(alpha: 0.7),
                     ),
                   ),
                 ],
               ),
             ],
-            // Show perpanjang button for expired subscriptions
-            if (subscription.isExpired) ...[
+            // Show perpanjang button for expired subscriptions (only if not currently renewing)
+            if (subscription.isExpired && !hasPending) ...[
               const SizedBox(height: 14),
               Obx(
                 () => SizedBox(

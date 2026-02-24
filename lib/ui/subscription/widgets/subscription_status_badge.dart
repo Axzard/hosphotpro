@@ -29,6 +29,11 @@ class SubscriptionStatusBadge extends StatelessWidget {
         textColor = Colors.redAccent;
         label = 'EXPIRED';
         break;
+      case SubscriptionStatus.canceled:
+        bgColor = Colors.red.withValues(alpha: 0.15);
+        textColor = Colors.red;
+        label = 'DIBATALKAN';
+        break;
       case SubscriptionStatus.none:
         bgColor = Colors.grey.withValues(alpha: 0.15);
         textColor = Colors.grey;

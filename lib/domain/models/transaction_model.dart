@@ -34,6 +34,8 @@ class TransactionModel {
   final DateTime? paidAt;
   final String? snapToken;
   final String? redirectUrl;
+  final String? vaNumber;
+  final String? bankName;
 
   TransactionModel({
     required this.id,
@@ -46,5 +48,37 @@ class TransactionModel {
     this.paidAt,
     this.snapToken,
     this.redirectUrl,
+    this.vaNumber,
+    this.bankName,
   });
+
+  TransactionModel copyWith({
+    String? id,
+    String? packageId,
+    String? packageName,
+    String? userId,
+    double? amount,
+    TransactionStatus? status,
+    DateTime? createdAt,
+    DateTime? paidAt,
+    String? snapToken,
+    String? redirectUrl,
+    String? vaNumber,
+    String? bankName,
+  }) {
+    return TransactionModel(
+      id: id ?? this.id,
+      packageId: packageId ?? this.packageId,
+      packageName: packageName ?? this.packageName,
+      userId: userId ?? this.userId,
+      amount: amount ?? this.amount,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      paidAt: paidAt ?? this.paidAt,
+      snapToken: snapToken ?? this.snapToken,
+      redirectUrl: redirectUrl ?? this.redirectUrl,
+      vaNumber: vaNumber ?? this.vaNumber,
+      bankName: bankName ?? this.bankName,
+    );
+  }
 }

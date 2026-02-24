@@ -10,8 +10,6 @@ class TransactionHistoryScreen extends GetView<SubscriptionViewModel> {
 
   @override
   Widget build(BuildContext context) {
-    controller.loadMySubscriptions();
-
     const bgColor = Color(0xFF0A1118);
     const cardColor = Color(0xFF131E29);
     const accentColor = Color(0xFF00C2FF);
@@ -147,6 +145,11 @@ class TransactionHistoryScreen extends GetView<SubscriptionViewModel> {
         statusLabel = 'EXPIRED';
         statusIcon = Icons.cancel_outlined;
         break;
+      case SubscriptionStatus.canceled:
+        statusColor = Colors.red;
+        statusLabel = 'DIBATALKAN';
+        statusIcon = Icons.block;
+        break;
       case SubscriptionStatus.none:
         statusColor = Colors.grey;
         statusLabel = 'NONE';
@@ -184,6 +187,8 @@ class TransactionHistoryScreen extends GetView<SubscriptionViewModel> {
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -227,6 +232,29 @@ class TransactionHistoryScreen extends GetView<SubscriptionViewModel> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(width: 8),
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert,
+              color: Colors.white.withValues(alpha: 0.6),
+            ),
+            onSelected: (value) {
+              controller.changeSubscriptionStatus(
+                subscription.idLangganan,
+                value,
+              );
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'active', child: Text('Set Aktif')),
+              const PopupMenuItem(value: 'pending', child: Text('Set Pending')),
+              const PopupMenuItem(value: 'expired', child: Text('Set Expired')),
+              const PopupMenuItem(value: 'canceled', child: Text('Set Batal')),
+            ],
+            color: const Color(0xFF1E293B),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         ],
       ),

@@ -15,10 +15,11 @@ class PackageDetailScreen extends GetView<SubscriptionViewModel> {
   @override
   Widget build(BuildContext context) {
     final package = Get.arguments as SubscriptionPackageModel;
+
     final currencyFormat = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
-      decimalDigits: 2,
+      decimalDigits: 0,
     );
 
     const bgColor = Color(0xFF0A1118);

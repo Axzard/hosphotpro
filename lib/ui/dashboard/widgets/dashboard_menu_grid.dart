@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../view_models/dashboard_view_model.dart';
-import '../../../../core/utils/snackbar_utils.dart';
 
 class DashboardMenuGrid extends StatelessWidget {
   final DashboardViewModel controller;
@@ -39,7 +38,7 @@ class DashboardMenuGrid extends StatelessWidget {
                     subtitle: isRestricted ? 'Butuh Langganan' : '${controller.totalRouterCount.value} Unit',
                     color: isRestricted ? Colors.grey : const Color(0xFF4ADE80),
                     onTap: isRestricted 
-                        ? () => SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.')
+                        ? controller.navigateToPackageList
                         : controller.navigateToRouters,
                   );
                 }),
@@ -61,7 +60,7 @@ class DashboardMenuGrid extends StatelessWidget {
                     subtitle: isRestricted ? 'Butuh Langganan' : 'Manajemen Server',
                     color: isRestricted ? Colors.grey : const Color(0xFF00C2FF),
                     onTap: isRestricted 
-                        ? () => SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.')
+                        ? controller.navigateToPackageList
                         : controller.navigateToHotspots,
                   );
                 }),
@@ -78,7 +77,7 @@ class DashboardMenuGrid extends StatelessWidget {
                         : (controller.selectedRouter.value != null ? 'Kelola Paket' : 'Pilih Router Dahulu'),
                     color: isRestricted ? Colors.grey : const Color(0xFF94A3B8),
                     onTap: isRestricted 
-                        ? () => SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.')
+                        ? controller.navigateToPackageList
                         : controller.navigateToVoucherPackages,
                   );
                 }),
@@ -92,25 +91,37 @@ class DashboardMenuGrid extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: Obx(() => _buildMenuCard(
-                  icon: Icons.confirmation_number_outlined,
-                  title: 'Voucher',
-                  subtitle: controller.selectedRouter.value != null
-                      ? '${controller.voucherCount.value} Pcs'
-                      : 'Pilih Router Dahulu',
-                  color: const Color(0xFFFFB547),
-                  onTap: controller.navigateToVouchers,
-                )),
+                child: Obx(() {
+                  final isRestricted = !controller.isActiveSubscription.value;
+                  return _buildMenuCard(
+                    icon: Icons.confirmation_number_outlined,
+                    title: 'Voucher',
+                    subtitle: isRestricted
+                        ? 'Butuh Langganan'
+                        : (controller.selectedRouter.value != null
+                            ? '${controller.voucherCount.value} Pcs'
+                            : 'Pilih Router Dahulu'),
+                    color: isRestricted ? Colors.grey : const Color(0xFFFFB547),
+                    onTap: isRestricted
+                        ? controller.navigateToPackageList
+                        : controller.navigateToVouchers,
+                  );
+                }),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: _buildMenuCard(
-                  icon: Icons.receipt_long_rounded,
-                  title: 'Transaksi',
-                  subtitle: 'Riwayat Penjualan',
-                  color: const Color(0xFFFF6B81),
-                  onTap: controller.navigateToTransactions,
-                ),
+                child: Obx(() {
+                  final isRestricted = !controller.isActiveSubscription.value;
+                  return _buildMenuCard(
+                    icon: Icons.receipt_long_rounded,
+                    title: 'Transaksi',
+                    subtitle: isRestricted ? 'Butuh Langganan' : 'Riwayat Penjualan',
+                    color: isRestricted ? Colors.grey : const Color(0xFFFF6B81),
+                    onTap: isRestricted
+                        ? controller.navigateToPackageList
+                        : controller.navigateToTransactions,
+                  );
+                }),
               ),
             ],
           ),

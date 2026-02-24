@@ -200,7 +200,10 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                         const SizedBox(height: 4),
                         Obx(() {
                           final deviceName =
-                              printerService.selectedDevice.value?.platformName ??
+                              printerService
+                                  .selectedDevice
+                                  .value
+                                  ?.platformName ??
                               'Pilih Printer';
                           return Text(
                             deviceName,
@@ -286,31 +289,26 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: SizedBox(
-              height: 54,
-              child: OutlinedButton.icon(
-                onPressed: () => _sharePdf(context),
-                icon: const Icon(Icons.download),
-                label: Text(
-                  'PDF',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.bold,
-                  ),
+          // Download icon-only button
+          SizedBox(
+            height: 54,
+            width: 54,
+            child: OutlinedButton(
+              onPressed: () => _downloadPdf(context),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white24),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white24),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
+                padding: EdgeInsets.zero,
               ),
+              child: const Icon(Icons.download, size: 24),
             ),
           ),
           const SizedBox(width: 12),
+          // Print button
           Expanded(
-            flex: 2,
             child: SizedBox(
               height: 54,
               child: ElevatedButton.icon(
@@ -331,7 +329,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                       : 'Cetak ($selectedQuantity)',
                   style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 14,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -405,7 +403,9 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                       ),
                       leading: const Icon(Icons.print, color: Colors.white),
                       title: Text(
-                        device.platformName.isEmpty ? 'Unknown Device' : device.platformName,
+                        device.platformName.isEmpty
+                            ? 'Unknown Device'
+                            : device.platformName,
                         style: GoogleFonts.plusJakartaSans(color: Colors.white),
                       ),
                       trailing:
@@ -527,81 +527,129 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
     );
   }
 
+  Future<void> _downloadPdf(BuildContext context) async {
+    final pdfDetails = await _generatePdf();
+    await Printing.layoutPdf(
+      onLayout: (_) => pdfDetails,
+      name: 'vouchers_${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
+  }
+
   Future<void> _sharePdf(BuildContext context) async {
-    final pdfDetails = await _generatePdf(PdfPageFormat.a4);
+    final pdfDetails = await _generatePdf();
     await Printing.sharePdf(
       bytes: pdfDetails,
       filename: 'vouchers_${DateTime.now().millisecondsSinceEpoch}.pdf',
     );
   }
 
-  Future<Uint8List> _generatePdf(PdfPageFormat format) async {
+  Future<Uint8List> _generatePdf() async {
     final pdf = pw.Document();
 
-    // Load font to support unicode/fixes Helvetica issue
     final font = await PdfGoogleFonts.openSansRegular();
     final fontBold = await PdfGoogleFonts.openSansBold();
 
-    const vouchersPerPage = 21;
-    final listToPrint = _vouchersToPrint; // Respect selected quantity
-    final pages = (listToPrint.length / vouchersPerPage).ceil();
+    // Thermal receipt style: ~58mm width single column
+    final receiptWidth = 58 * PdfPageFormat.mm;
+    final listToPrint = _vouchersToPrint;
+    final dateStr = DateFormat('dd MMM yyyy HH:mm').format(DateTime.now());
 
-    for (var i = 0; i < pages; i++) {
-      final start = i * vouchersPerPage;
-      final end = (start + vouchersPerPage < listToPrint.length)
-          ? start + vouchersPerPage
-          : listToPrint.length;
-      final pageVouchers = listToPrint.sublist(start, end);
-
+    // Each voucher gets its own receipt page with header + footer
+    for (final voucher in listToPrint) {
       pdf.addPage(
         pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(20),
+          pageFormat: PdfPageFormat(
+            receiptWidth,
+            double.infinity,
+            marginAll: 8 * PdfPageFormat.mm,
+          ),
           build: (pw.Context context) {
             return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
               children: [
-                pw.Header(
-                  level: 0,
-                  child: pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text(
-                        'HosphotPro Vouchers',
-                        style: pw.TextStyle(
-                          font: fontBold,
-                          fontSize: 18,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      pw.Text(
-                        'Router: ${widget.routerName}',
-                        style: pw.TextStyle(font: font, fontSize: 14),
-                      ),
-                    ],
+                // Header
+                pw.Text(
+                  'HosphotPro',
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 16,
+                    fontWeight: pw.FontWeight.bold,
                   ),
                 ),
-                pw.SizedBox(height: 10),
-                pw.GridView(
-                  crossAxisCount: 3,
-                  childAspectRatio: 2.0,
-                  children: pageVouchers
-                      .map(
-                        (voucher) =>
-                            _buildPdfVoucherItem(voucher, font, fontBold),
-                      )
-                      .toList(),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  widget.routerName,
+                  style: pw.TextStyle(font: font, fontSize: 10),
+                  textAlign: pw.TextAlign.center,
                 ),
-                pw.Spacer(),
-                pw.Footer(
-                  leading: pw.Text(
-                    'Generated by HosphotPro',
-                    style: pw.TextStyle(font: font),
-                  ),
-                  trailing: pw.Text(
-                    'Page ${i + 1} of $pages',
-                    style: pw.TextStyle(font: font),
+                pw.Divider(thickness: 1.5),
+                pw.SizedBox(height: 4),
+
+                // Body — voucher data
+                pw.Text(
+                  'DATA LOGIN VOUCHER',
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 8,
+                    fontWeight: pw.FontWeight.bold,
                   ),
                 ),
+                pw.SizedBox(height: 6),
+                pw.Text(
+                  'USERNAME / KODE',
+                  style: pw.TextStyle(
+                    font: font,
+                    fontSize: 7,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  voucher.kodeVoucher,
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                ),
+                if (voucher.passwordVoucher.isNotEmpty &&
+                    voucher.passwordVoucher != voucher.kodeVoucher) ...[
+                  pw.SizedBox(height: 4),
+                  pw.Text(
+                    'PASSWORD',
+                    style: pw.TextStyle(
+                      font: font,
+                      fontSize: 7,
+                      color: PdfColors.grey600,
+                    ),
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    voucher.passwordVoucher,
+                    style: pw.TextStyle(
+                      font: fontBold,
+                      fontSize: 14,
+                      fontWeight: pw.FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+
+                // Footer
+                pw.SizedBox(height: 12),
+                pw.Divider(thickness: 0.5),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  'Terima Kasih',
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(dateStr, style: pw.TextStyle(font: font, fontSize: 8)),
               ],
             );
           },
@@ -609,40 +657,5 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
       );
     }
     return pdf.save();
-  }
-
-  pw.Widget _buildPdfVoucherItem(
-    VoucherModel voucher,
-    pw.Font font,
-    pw.Font fontBold,
-  ) {
-    return pw.Container(
-      margin: const pw.EdgeInsets.all(4),
-      padding: const pw.EdgeInsets.all(8),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey),
-        borderRadius: pw.BorderRadius.circular(4),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        mainAxisAlignment: pw.MainAxisAlignment.center,
-        children: [
-          pw.Text(
-            voucher.kodeVoucher,
-            style: pw.TextStyle(
-              font: fontBold,
-              fontSize: 12, // Reduced size for better fit
-              fontWeight: pw.FontWeight.bold,
-            ),
-          ),
-          if (voucher.passwordVoucher.isNotEmpty &&
-              voucher.passwordVoucher != voucher.kodeVoucher)
-            pw.Text(
-              'Pass: ${voucher.passwordVoucher}',
-              style: pw.TextStyle(font: font, fontSize: 9),
-            ),
-        ],
-      ),
-    );
   }
 }

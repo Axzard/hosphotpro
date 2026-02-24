@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../domain/models/auth_model.dart';
-import '../../../domain/models/auth_repository.dart';
+import '../../../domain/repositories/auth_repository.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../config/routing/app_pages.dart';
 import '../../../core/services/websocket_service.dart';
@@ -36,13 +36,11 @@ class AuthViewModel extends GetxController {
         return;
       }
 
-      // Try to fetch profile to verify token
       final profile = await _authRepository.getProfile();
       if (profile != null) {
         user.value = profile;
         Get.find<WebSocketService>().connect();
-        
-        // Use a small delay to ensure navigation happens after the first frame
+
         Future.delayed(Duration.zero, () {
           Get.offAllNamed(Routes.DASHBOARD);
         });
@@ -56,12 +54,10 @@ class AuthViewModel extends GetxController {
     }
   }
 
-  // Text Controllers
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final usernameController = TextEditingController();
 
-  // Login
   Future<void> login() async {
     if (usernameController.text.isEmpty || passwordController.text.isEmpty) {
       Get.snackbar(
@@ -84,7 +80,7 @@ class AuthViewModel extends GetxController {
 
       if (response.success && response.data != null) {
         user.value = response.data;
-        // Trigger WebSocket connection after login
+
         Get.find<WebSocketService>().connect();
         Get.offAllNamed(Routes.DASHBOARD);
       } else {
@@ -103,7 +99,6 @@ class AuthViewModel extends GetxController {
     }
   }
 
-  // Register
   Future<void> register() async {
     if (emailController.text.isEmpty ||
         passwordController.text.isEmpty ||
@@ -146,7 +141,6 @@ class AuthViewModel extends GetxController {
     }
   }
 
-  // Logout
   Future<void> logout() async {
     await _authRepository.logout();
     user.value = null;

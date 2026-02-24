@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import '../../../../domain/models/hotspot_model.dart';
 import '../../../../domain/models/router_model.dart';
-import '../../../../domain/models/router_repository.dart';
+import '../../../domain/repositories/router_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../../../core/services/selection_service.dart';

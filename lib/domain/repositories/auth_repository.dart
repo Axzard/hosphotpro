@@ -1,6 +1,6 @@
 
 import 'package:hosphotpro/data/model/api_response.dart';
-import 'auth_model.dart';
+import '../models/auth_model.dart';
 
 abstract class AuthRepository {
   Future<ApiResponse<AuthModel>> login(String username, String password);

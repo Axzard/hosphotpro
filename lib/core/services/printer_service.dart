@@ -64,36 +64,30 @@ class PrinterService extends GetxService {
 
     try {
       devices.clear();
-      
-      // Get bonded/connected devices first
-      final List<fbp.BluetoothDevice> bonded = await fbp.FlutterBluePlus.bondedDevices;
+
+      final List<fbp.BluetoothDevice> bonded =
+          await fbp.FlutterBluePlus.bondedDevices;
       for (var device in bonded) {
         if (!devices.any((d) => d.remoteId == device.remoteId)) {
           devices.add(device);
         }
       }
 
-      // Also get currently connected system devices (very important!)
-      // Some printers might be connected but not bonded
-      final List<fbp.BluetoothDevice> system = await fbp.FlutterBluePlus.systemDevices([]);
+      final List<fbp.BluetoothDevice> system =
+          await fbp.FlutterBluePlus.systemDevices([]);
       for (var device in system) {
         if (!devices.any((d) => d.remoteId == device.remoteId)) {
           devices.add(device);
         }
       }
 
-      // Start scan
-      await fbp.FlutterBluePlus.startScan(
-        timeout: const Duration(seconds: 10),
-      );
+      await fbp.FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
 
       _scanSubscription?.cancel();
       _scanSubscription = fbp.FlutterBluePlus.scanResults.listen((results) {
         for (fbp.ScanResult r in results) {
-          // Filter for likely printers or just show all for now
-          // Thermal printers often have 'Printer' in name or specific UUIDs
           if (r.device.platformName.isNotEmpty) {
-             if (!devices.any((d) => d.remoteId == r.device.remoteId)) {
+            if (!devices.any((d) => d.remoteId == r.device.remoteId)) {
               devices.add(r.device);
             }
           }
@@ -123,8 +117,7 @@ class PrinterService extends GetxService {
           selectedDevice.value = null;
         }
       });
-      
-      // Request larger MTU for faster printing
+
       if (Platform.isAndroid) {
         try {
           await device.requestMtu(512);
@@ -157,7 +150,6 @@ class PrinterService extends GetxService {
     final generator = Generator(PaperSize.mm58, profile);
     List<int> bytes = [];
 
-    // Header
     bytes += generator.text(
       'HosphotPro',
       styles: const PosStyles(
@@ -167,19 +159,18 @@ class PrinterService extends GetxService {
         width: PosTextSize.size2,
       ),
     );
-    bytes += generator.feed(1); // Jarak kecil antara HosphotPro dengan nama hotspot
+    bytes += generator.feed(1);
     bytes += generator.text(
       voucher.namaServer,
       styles: const PosStyles(align: PosAlign.center),
     );
     bytes += generator.hr();
 
-    // Body - Grouped Login Info
     bytes += generator.text(
       'DATA LOGIN VOUCHER',
       styles: const PosStyles(align: PosAlign.center, bold: true),
     );
-    bytes += generator.feed(1); // Jarak sedikit dengan USERNAME / KODE
+    bytes += generator.feed(1);
 
     bytes += generator.text(
       'USERNAME / KODE',
@@ -219,7 +210,6 @@ class PrinterService extends GetxService {
       styles: const PosStyles(align: PosAlign.center, bold: true),
     );
 
-    // Potong tepat setelah "Terima Kasih"
     bytes += generator.feed(1);
     bytes += generator.cut();
 
@@ -235,7 +225,8 @@ class PrinterService extends GetxService {
 
     for (var service in services) {
       for (var characteristic in service.characteristics) {
-        if (characteristic.properties.write || characteristic.properties.writeWithoutResponse) {
+        if (characteristic.properties.write ||
+            characteristic.properties.writeWithoutResponse) {
           writeCharacteristic = characteristic;
           break;
         }
@@ -244,18 +235,20 @@ class PrinterService extends GetxService {
     }
 
     if (writeCharacteristic != null) {
-      // Split into chunks if necessary (typical BLE MTU is 20-512 bytes)
-      int actualMtu = 23; 
+      int actualMtu = 23;
       try {
         actualMtu = await device.mtu.first;
-      } catch(_) {}
-      
+      } catch (_) {}
+
       int chunkSize = actualMtu - 3;
-      if (chunkSize < 20) chunkSize = 20; // Ensure a sane minimum
-      
+      if (chunkSize < 20) chunkSize = 20;
+
       for (int i = 0; i < bytes.length; i += chunkSize) {
         int end = (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
-        await writeCharacteristic.write(bytes.sublist(i, end), withoutResponse: writeCharacteristic.properties.writeWithoutResponse);
+        await writeCharacteristic.write(
+          bytes.sublist(i, end),
+          withoutResponse: writeCharacteristic.properties.writeWithoutResponse,
+        );
       }
     } else {
       throw Exception("Could not find a writable characteristic on the device");

@@ -12,8 +12,6 @@ class SubscriptionStatusScreen extends GetView<SubscriptionViewModel> {
 
   @override
   Widget build(BuildContext context) {
-    controller.loadMySubscriptions();
-
     const bgColor = Color(0xFF0A1118);
     const cardColor = Color(0xFF131E29);
     const accentColor = Color(0xFF00C2FF);

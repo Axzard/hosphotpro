@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../domain/models/subscription_package_model.dart';
 import 'view_models/subscription_view_model.dart';
+import 'widgets/payment_method_selector.dart';
 
 class PaymentScreen extends GetView<SubscriptionViewModel> {
   const PaymentScreen({super.key});
@@ -146,6 +147,16 @@ class PaymentScreen extends GetView<SubscriptionViewModel> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    // Payment Method Selector
+                    Obx(
+                      () => PaymentMethodSelector(
+                        selectedMethod: controller.selectedPaymentMethod.value,
+                        onMethodSelected: (id) =>
+                            controller.selectedPaymentMethod.value = id,
+                        accentColor: accentColor,
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     // Info Banner
                     Container(
@@ -191,7 +202,23 @@ class PaymentScreen extends GetView<SubscriptionViewModel> {
                   child: ElevatedButton(
                     onPressed: controller.isProcessingPayment.value
                         ? null
-                        : () => controller.initiatePayment(package),
+                        : () {
+                            if (controller
+                                .selectedPaymentMethod
+                                .value
+                                .isEmpty) {
+                              Get.snackbar(
+                                'Peringatan',
+                                'Silakan pilih metode pembayaran terlebih dahulu',
+                                backgroundColor: Colors.orange.withValues(
+                                  alpha: 0.1,
+                                ),
+                                colorText: Colors.white,
+                              );
+                              return;
+                            }
+                            controller.initiatePayment(package);
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: accentColor,
                       foregroundColor: Colors.white,

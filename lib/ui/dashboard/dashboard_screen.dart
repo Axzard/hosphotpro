@@ -18,7 +18,6 @@ class DashboardScreen extends GetView<DashboardViewModel> {
       backgroundColor: const Color(0xFF0F172A),
       body: Stack(
         children: [
-          // Background Gradient Blobs
           const BackgroundBlobs(),
 
           SafeArea(
@@ -56,16 +55,18 @@ class DashboardScreen extends GetView<DashboardViewModel> {
               ),
             ),
           ),
-          
-          // Only show full screen loader on VERY FIRST load
-          Obx(() => controller.isLoading.value 
-            ? Container(
-                color: const Color(0xFF0F172A).withValues(alpha: 0.8),
-                child: const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF00C2FF)),
-                ),
-              )
-            : const SizedBox.shrink(),
+
+          Obx(
+            () => controller.isLoading.value
+                ? Container(
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.8),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF00C2FF),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
         ],
       ),

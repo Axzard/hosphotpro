@@ -8,12 +8,11 @@ class SelectionService extends GetxService {
 
   void updateRouter(RouterModel? router) {
     if (selectedRouter.value?.id == router?.id) return;
-    
-    // Only clear selectedHotspot if the router is literally different
+
     if (selectedRouter.value?.id != router?.id) {
       selectedHotspot.value = null;
     }
-    
+
     selectedRouter.value = router;
   }
 
