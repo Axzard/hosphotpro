@@ -67,7 +67,7 @@ class DashboardStatusCards extends StatelessWidget {
                   title: 'User Aktif',
                   value:
                       '${controller.activeUserCount.value < 0 ? 0 : controller.activeUserCount.value}',
-                  icon: Icons.bolt_rounded,
+                  icon: Icons.people_alt_rounded,
                   color: const Color(0xFFF472B6),
                 ),
               ),
