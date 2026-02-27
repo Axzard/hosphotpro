@@ -37,6 +37,15 @@ class VoucherRepositoryImpl implements VoucherRepository {
   }
 
   @override
+  Future<List<VoucherModel>> getAllVouchers() async {
+    final response = await _voucherService.getActiveVouchers();
+    if (response.success && response.data != null) {
+      return response.data!.map((apiModel) => apiModel.toDomain()).toList();
+    }
+    return [];
+  }
+
+  @override
   Future<VoucherModel?> getVoucherDetail(int id) async {
     final response = await _voucherService.getVoucherDetail(id);
     if (response.success) {
@@ -72,6 +81,15 @@ class VoucherRepositoryImpl implements VoucherRepository {
   @override
   Future<List<VoucherPackageModel>> getVoucherPackages(int idHotspot) async {
     final response = await _voucherService.getVoucherPackages(idHotspot);
+    if (response.success && response.data != null) {
+      return response.data!.map((apiModel) => apiModel.toDomain()).toList();
+    }
+    throw Exception(response.message);
+  }
+
+  @override
+  Future<List<VoucherPackageModel>> getAllVoucherPackages() async {
+    final response = await _voucherService.getAllVoucherPackages();
     if (response.success && response.data != null) {
       return response.data!.map((apiModel) => apiModel.toDomain()).toList();
     }

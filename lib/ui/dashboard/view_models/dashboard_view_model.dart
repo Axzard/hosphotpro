@@ -9,7 +9,7 @@ import '../../../domain/repositories/auth_repository.dart';
 import '../../../domain/repositories/report_repository.dart';
 import '../../../domain/models/report_model.dart';
 import '../../../core/services/websocket_service.dart';
-import '../../../core/services/selection_service.dart';
+import '../../../core/services/session_service.dart';
 import '../../../domain/models/router_model.dart';
 import '../../../domain/models/user_subscription_model.dart';
 import '../../../domain/models/auth_model.dart';
@@ -20,14 +20,15 @@ import '../../../data/services/token_service.dart';
 class DashboardViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
   final VoucherRepository _voucherRepository = Get.find<VoucherRepository>();
-  final SubscriptionRepository _subscriptionRepository = Get.find<SubscriptionRepository>();
+  final SubscriptionRepository _subscriptionRepository =
+      Get.find<SubscriptionRepository>();
   final ReportRepository _reportRepository = Get.find<ReportRepository>();
   final WebSocketService _webSocketService = Get.find<WebSocketService>();
   final AuthRepository _authRepository = Get.find<AuthRepository>();
-  final _selectionService = Get.find<SelectionService>();
   final TokenService _tokenService = Get.find<TokenService>();
+  final SessionService _sessionService = Get.find<SessionService>();
 
-  Rxn<RouterModel> get selectedRouter => _selectionService.selectedRouter;
+  final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
   final subscriptionStatus = 'Tidak Ada Langganan'.obs;
   final subscriptionStatusEnum = SubscriptionStatus.none.obs;
   final totalRouterCount = 0.obs;
@@ -67,8 +68,11 @@ class DashboardViewModel extends GetxController {
     fetchDashboardData(isInitial: true);
     _initRealtimeListeners();
 
-    ever(selectedRouter, (_) {
+    ever(selectedRouter, (router) {
       if (_isInitialLoad.value) return;
+      if (router != null) {
+        _sessionService.setRouterId(router.id);
+      }
       _throttledFetch();
     });
   }
@@ -167,11 +171,9 @@ class DashboardViewModel extends GetxController {
       if (status.containsKey('online_count')) {
         onlineRouterCount.value = status['online_count'] as int;
       } else if (status.containsKey('router_count')) {
-        // Assume 'router_count' here refers to online ones based on emitting logic
         onlineRouterCount.value = status['router_count'] as int;
       }
-      
-      // If we have total routers but online count is missing, we might want a fallback or refresh
+
       if (totalRouterCount.value > 0 && !status.containsKey('online_count')) {
         _throttledFetch();
       }
@@ -246,10 +248,10 @@ class DashboardViewModel extends GetxController {
           bulan: now.month,
           tgl: now.day,
         ),
-        _voucherRepository.getActiveVouchers(),
+        _voucherRepository.getAllVouchers(),
       ]);
 
-      final routers = results[0] as List<RouterModel>;
+      final routersList = results[0] as List<RouterModel>;
       final subscriptions = results[1] as List<UserSubscriptionModel>;
       final reports = results[2] as ReportDashboardModel?;
       final profileData = results[3];
@@ -262,17 +264,17 @@ class DashboardViewModel extends GetxController {
       }
 
       reportSummary.value = reports;
-      
-      // Fallback: If dailyReport is missing or zero, try to find today's data in the reportSummary (perHari)
+
       double income = dailyReport?.totalPendapatan ?? 0;
       int transactions = dailyReport?.totalTransaksi ?? 0;
 
       if (income == 0 && transactions == 0 && reports != null) {
         final today = DateTime.now();
         final match = reports.perHari.firstWhereOrNull(
-          (e) => e.tanggal.year == today.year && 
-                 e.tanggal.month == today.month && 
-                 e.tanggal.day == today.day
+          (e) =>
+              e.tanggal.year == today.year &&
+              e.tanggal.month == today.month &&
+              e.tanggal.day == today.day,
         );
         if (match != null) {
           income = match.totalPendapatan;
@@ -288,11 +290,15 @@ class DashboardViewModel extends GetxController {
             .where((v) => v.statusVoucher == VoucherStatus.aktif)
             .toList();
         activeUserCount.value = filteredAktif.length;
-        print('[DashboardVM] Initialized Active Users: ${activeUserCount.value}');
+        print(
+          '[DashboardVM] Initialized Active Users: ${activeUserCount.value}',
+        );
       }
 
-      totalRouterCount.value = routers.length;
-      onlineRouterCount.value = routers.where((r) => r.statusRouter == 'aktif').length;
+      totalRouterCount.value = routersList.length;
+      onlineRouterCount.value = routersList
+          .where((r) => r.statusRouter == 'aktif')
+          .length;
 
       UserSubscriptionModel? activeSub;
       try {
@@ -316,15 +322,19 @@ class DashboardViewModel extends GetxController {
         packageName.value = 'Anda Belum Berlangganan';
       }
 
-      final activeRouter =
-          selectedRouter.value ?? (routers.isNotEmpty ? routers.first : null);
-      if (activeRouter != null) {
-        if (selectedRouter.value == null) {
-          _selectionService.updateRouter(activeRouter);
-        }
 
-        _fetchVoucherCountInBackground(activeRouter);
+      if (selectedRouter.value == null) {
+        final savedRouterId = _sessionService.selectedRouterId.value;
+        if (savedRouterId != null && savedRouterId != 'all') {
+          selectedRouter.value =
+              routersList.firstWhereOrNull((r) => r.id == savedRouterId) ??
+              RouterModel.semua;
+        } else {
+          selectedRouter.value = RouterModel.semua;
+        }
       }
+
+      _fetchVoucherCountInBackground(selectedRouter.value!);
     } catch (e) {
       Get.toNamed(
         Routes.ERROR,
@@ -340,16 +350,32 @@ class DashboardViewModel extends GetxController {
 
   Future<void> _fetchVoucherCountInBackground(RouterModel router) async {
     try {
+      if (router.id == 'all') {
+        final hotspotsList = await _routerRepository.getAllHotspots();
+        hotspotCount.value = hotspotsList.length;
+
+        final voucherPackagesList = await _voucherRepository
+            .getAllVoucherPackages();
+        voucherPackageCount.value = voucherPackagesList.length;
+
+        final vouchersList = await _voucherRepository.getAllVouchers();
+        voucherCount.value = vouchersList.length;
+
+        final activeVouchersList = await _voucherRepository.getActiveVouchers();
+        activeUserCount.value = activeVouchersList.where((v) => v.statusVoucher == VoucherStatus.aktif).length;
+
+        return;
+      }
+
       final idRouter = int.tryParse(router.id) ?? 0;
       final hotspotsList = await _routerRepository.getHotspots(idRouter);
       hotspotCount.value = hotspotsList.length;
 
       if (hotspotsList.isNotEmpty) {
-        // Fetch vouchers and packages for all hotspots in parallel
         final voucherFutures = hotspotsList
             .map((h) => _voucherRepository.getVouchersByHotspot(h.idHotspot))
             .toList();
-        
+
         final packageFutures = hotspotsList
             .map((h) => _voucherRepository.getVoucherPackages(h.idHotspot))
             .toList();
@@ -389,7 +415,8 @@ class DashboardViewModel extends GetxController {
   void navigateToRouters() => Get.toNamed('/mikrotik-routers');
   void navigateToVouchers() => Get.toNamed(Routes.VOUCHERS);
   void navigateToProfile() => Get.toNamed(Routes.PROFILE);
-  void navigateToSubscriptionStatus() => Get.toNamed(Routes.SUBSCRIPTION_STATUS);
+  void navigateToSubscriptionStatus() =>
+      Get.toNamed(Routes.SUBSCRIPTION_STATUS);
   void navigateToPackageList() => Get.toNamed(Routes.PACKAGES);
   void navigateToHotspots() => Get.toNamed(Routes.HOTSPOTS);
 

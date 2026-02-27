@@ -7,6 +7,7 @@ abstract class RouterRepository {
   Future<RouterModel> updateRouter(RouterModel router);
   Future<void> deleteRouter(String id);
   Future<List<HotspotModel>> getHotspots(int idRouter);
+  Future<List<HotspotModel>> getAllHotspots();
   Future<HotspotModel> getHotspotDetail(int idHotspot);
   Future<void> updateHotspot(int idHotspot, Map<String, dynamic> data);
   Future<void> deleteHotspot(int idHotspot);

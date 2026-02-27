@@ -100,4 +100,34 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<bool> updateProfile(String email, String password) {
     throw UnimplementedError();
   }
+
+  @override
+  Future<ApiResponse<bool>> sendOtp(String email) async {
+    try {
+      return await _authService.sendOtp(email);
+    } catch (e) {
+      return ApiResponse<bool>(
+        success: false,
+        message: 'Something went wrong: $e',
+        data: false,
+      );
+    }
+  }
+
+  @override
+  Future<ApiResponse<bool>> resetPassword(
+    String email,
+    String kodeOtp,
+    String passwordBaru,
+  ) async {
+    try {
+      return await _authService.resetPassword(email, kodeOtp, passwordBaru);
+    } catch (e) {
+      return ApiResponse<bool>(
+        success: false,
+        message: 'Something went wrong: $e',
+        data: false,
+      );
+    }
+  }
 }

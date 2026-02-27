@@ -6,6 +6,7 @@ import '../../../domain/models/router_model.dart';
 import 'widgets/hotspot_header.dart';
 import 'widgets/hotspot_item_card.dart';
 
+
 class HotspotManagementScreen extends GetView<HotspotViewModel> {
   const HotspotManagementScreen({super.key});
 
@@ -21,60 +22,81 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
         child: Column(
           children: [
             const HotspotHeader(accentColor: accentColor),
-            // Router Selector
+            
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
               child: Row(
                 children: [
                   Expanded(
-                    child: Obx(() => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<RouterModel>(
-                              value: controller.selectedRouter.value,
-                              hint: const Text('Pilih Router', style: TextStyle(color: Colors.white54)),
-                              dropdownColor: cardColor,
-                              isExpanded: true,
-                              icon: const Icon(Icons.router, color: accentColor),
-                              style: GoogleFonts.plusJakartaSans(color: Colors.white),
-                              items: controller.routers.map((router) {
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: Obx(() {
+                          final currentRouter = controller.selectedRouter.value;
+                          
+                          final dropdownValue = (currentRouter?.id == 'all')
+                              ? RouterModel.semua
+                              : controller.routers.firstWhereOrNull((r) => r.id == currentRouter?.id);
+
+                          final filteredRouters = controller.routers.where((r) => r.id != 'all').toList();
+
+                          return DropdownButton<RouterModel>(
+                            value: dropdownValue,
+                            hint: const Text('Pilih Router', style: TextStyle(color: Colors.white54)),
+                            dropdownColor: cardColor,
+                            isExpanded: true,
+                            icon: const Icon(Icons.router, color: accentColor),
+                            style: GoogleFonts.plusJakartaSans(color: Colors.white),
+                            items: [
+                              DropdownMenuItem<RouterModel>(
+                                value: RouterModel.semua,
+                                child: const Text('Semua Router'),
+                              ),
+                              ...filteredRouters.map((router) {
                                 return DropdownMenuItem<RouterModel>(
                                   value: router,
                                   child: Text(router.namaRouter),
                                 );
-                              }).toList(),
-                              onChanged: controller.onRouterChanged,
-                            ),
-                          ),
-                        )),
+                              }),
+                            ],
+                            onChanged: controller.onRouterChanged,
+                          );
+                        }),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  Obx(() => Container(
-                        decoration: BoxDecoration(
-                          color: accentColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: accentColor.withValues(alpha: 0.2)),
-                        ),
-                        child: IconButton(
-                          onPressed: controller.isLoading.value ? null : () => controller.syncHotspots(),
-                          icon: controller.isLoading.value
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: accentColor,
-                                  ),
-                                )
-                              : const Icon(Icons.sync_rounded, color: accentColor),
-                          tooltip: 'Sinkronkan Hotspot',
-                        ),
-                      )),
+                  Obx(() {
+                    final isAllRouter = controller.selectedRouter.value?.id == 'all';
+                    if (isAllRouter) return const SizedBox.shrink();
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: accentColor.withValues(alpha: 0.2)),
+                      ),
+                      child: IconButton(
+                        onPressed: controller.isLoading.value ? null : () => controller.syncHotspots(),
+                        icon: controller.isLoading.value
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: accentColor,
+                                ),
+                              )
+                            : const Icon(Icons.sync_rounded, color: accentColor),
+                        tooltip: 'Sinkronkan Hotspot',
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),

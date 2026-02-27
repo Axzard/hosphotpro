@@ -11,15 +11,15 @@ import '../../../core/utils/snackbar_utils.dart';
 
 import '../../../ui/voucher/widgets/voucher_print_preview.dart';
 import '../../../core/services/websocket_service.dart';
-import '../../../core/services/selection_service.dart';
+import '../../../core/services/session_service.dart';
 import '../../../data/model/voucher_api_model.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
 
 class VoucherViewModel extends GetxController {
   final VoucherRepository _voucherRepository = Get.find<VoucherRepository>();
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
+  final SessionService _sessionService = Get.find<SessionService>();
   final WebSocketService _webSocketService = Get.find<WebSocketService>();
-  final _selectionService = Get.find<SelectionService>();
 
   final vouchers = <VoucherModel>[].obs;
   final filterPaketId = Rxn<int>();
@@ -54,8 +54,8 @@ class VoucherViewModel extends GetxController {
   final deletingVoucherIds = <int>{}.obs;
   final count = 1.obs;
 
-  Rxn<RouterModel> get selectedRouter => _selectionService.selectedRouter;
-  Rxn<HotspotModel> get selectedHotspot => _selectionService.selectedHotspot;
+  final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
+  final Rxn<HotspotModel> selectedHotspot = Rxn<HotspotModel>();
   final selectedPaketId = Rxn<int>();
 
   StreamSubscription? _refreshSub;
@@ -185,38 +185,57 @@ class VoucherViewModel extends GetxController {
       if (routers.isEmpty) isLoading.value = true;
 
       final result = await _routerRepository.getRouters();
+      
       routers.assignAll(result);
 
-      if (selectedRouter.value != null) {
-        final idRouter = int.tryParse(selectedRouter.value!.id) ?? 0;
-        final hotspotResult = await _routerRepository.getHotspots(idRouter);
-        hotspots.assignAll(hotspotResult);
-
-        if (hotspots.isNotEmpty) {
-          final currentHotspot = selectedHotspot.value;
-          bool currentStillValid = hotspots.any(
-            (h) => h.idHotspot == currentHotspot?.idHotspot,
-          );
-          print(
-            '[VoucherVM] loadRouters - Current: ${currentHotspot?.namaServer}, Valid: $currentStillValid',
-          );
-
-          if (currentHotspot == null || !currentStillValid) {
-            print(
-              '[VoucherVM] Selection invalid or null, auto-selecting: ${hotspots.first.namaServer}',
-            );
-            selectedHotspot.value = hotspots.first;
-          }
+      if (selectedRouter.value == null) {
+        final savedRouterId = _sessionService.selectedRouterId.value;
+        if (savedRouterId != null && savedRouterId != 'all') {
+          selectedRouter.value = result.firstWhereOrNull((r) => r.id == savedRouterId);
         }
-      } else if (result.isNotEmpty) {
-        _selectionService.updateRouter(result.first);
       }
 
+      // If still null, pick first if available
+      if (selectedRouter.value == null && routers.isNotEmpty) {
+        selectedRouter.value = routers.first;
+      }
+      
+      final idRouter = int.tryParse(selectedRouter.value?.id ?? '') ?? 0;
+      List<HotspotModel> hotspotResult = [];
+      if (idRouter != 0) {
+        hotspotResult = await _routerRepository.getHotspots(idRouter);
+      }
+
+      hotspots.assignAll(hotspotResult);
+
+      if (hotspots.isNotEmpty) {
+        final currentHotspot = selectedHotspot.value;
+        bool currentStillValid = hotspots.any(
+          (h) => h.idHotspot == currentHotspot?.idHotspot,
+        );
+
+        if (currentHotspot == null || !currentStillValid) {
+          final savedHotspotId = _sessionService.voucherHotspotId.value;
+          if (savedHotspotId != null) {
+            selectedHotspot.value = hotspots.firstWhereOrNull((h) => h.idHotspot == savedHotspotId);
+          }
+        }
+        
+        // If still null, pick first
+        if (selectedHotspot.value == null && hotspots.isNotEmpty) {
+          selectedHotspot.value = hotspots.first;
+        }
+
+        // Trigger loading data for currently selected hotspot
+        if (selectedHotspot.value != null) {
+          await onHotspotChanged(selectedHotspot.value);
+        }
+      }
+    } catch (e) {
       if (selectedHotspot.value != null) {
         await onHotspotChanged(selectedHotspot.value);
       }
-    } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat daftar hotspot');
+      SnackbarUtils.showError('Error', 'Gagal memuat daftar hotspot: $e');
     } finally {
       isLoading.value = false;
       _isInitialLoad.value = false;
@@ -231,7 +250,6 @@ class VoucherViewModel extends GetxController {
       final idHotspot = hotspot.idHotspot;
       final result = await _voucherRepository.getVoucherPackages(idHotspot);
       voucherPackages.value = result;
-      print('Loaded ${result.length} voucher packages for hotspot $idHotspot');
     } catch (e) {
       print('Error loading voucher packages: $e');
       Get.toNamed(
@@ -495,8 +513,9 @@ class VoucherViewModel extends GetxController {
 
   Future<void> onHotspotChanged(HotspotModel? hotspot) async {
     if (hotspot == null) return;
-    _selectionService.updateHotspot(hotspot);
+    selectedHotspot.value = hotspot;
     selectedPaketId.value = null;
+    _sessionService.setVoucherHotspotId(hotspot.idHotspot);
     await Future.wait([loadVouchers(), loadVoucherPackages()]);
   }
 

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'view_models/voucher_view_model.dart';
 import '../../domain/models/voucher_model.dart';
+import '../../domain/models/hotspot_model.dart';
 import '../../ui/voucher/widgets/create_voucher_sheet.dart';
 
 class PrintVoucherScreen extends GetView<VoucherViewModel> {
@@ -378,8 +379,8 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  value: controller.selectedHotspot.value?.idHotspot,
+                child: DropdownButton<HotspotModel>(
+                  value: controller.selectedHotspot.value,
                   dropdownColor: const Color(0xFF131E29),
                   icon: const Icon(
                     Icons.arrow_drop_down,
@@ -391,16 +392,13 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                   ),
                   style: GoogleFonts.plusJakartaSans(color: Colors.white),
                   items: controller.hotspots.map((hotspot) {
-                    return DropdownMenuItem<int>(
-                      value: hotspot.idHotspot,
-                      child: Text('Hotspot: ${hotspot.namaServer}'),
+                    return DropdownMenuItem<HotspotModel>(
+                      value: hotspot,
+                      child: Text('${hotspot.namaServer}'),
                     );
                   }).toList(),
                   onChanged: (val) {
-                    final hotspot = controller.hotspots.firstWhereOrNull(
-                      (h) => h.idHotspot == val,
-                    );
-                    controller.onHotspotChanged(hotspot);
+                    controller.onHotspotChanged(val);
                   },
                 ),
               ),

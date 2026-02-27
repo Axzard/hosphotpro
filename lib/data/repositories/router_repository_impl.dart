@@ -62,6 +62,15 @@ class RouterRepositoryImpl implements RouterRepository {
   }
 
   @override
+  Future<List<HotspotModel>> getAllHotspots() async {
+    final response = await _routerService.getAllHotspots();
+    if (response.success && response.data != null) {
+      return response.data!.map((apiModel) => apiModel.toDomain()).toList();
+    }
+    throw Exception(response.message);
+  }
+
+  @override
   Future<HotspotModel> getHotspotDetail(int idHotspot) async {
     final response = await _routerService.getHotspotDetail(idHotspot);
     if (response.success && response.data != null) {

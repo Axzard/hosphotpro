@@ -6,18 +6,19 @@ import '../../../../domain/models/router_model.dart';
 import '../../../domain/repositories/router_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/services/websocket_service.dart';
-import '../../../../core/services/selection_service.dart';
+import '../../../../core/services/session_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
+
 
 class HotspotViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
   final _webSocketService = Get.find<WebSocketService>();
-  final _selectionService = Get.find<SelectionService>();
+  final _sessionService = Get.find<SessionService>();
 
   final RxList<HotspotModel> hotspots = <HotspotModel>[].obs;
   final RxList<RouterModel> routers = <RouterModel>[].obs;
 
-  Rxn<RouterModel> get selectedRouter => _selectionService.selectedRouter;
+  final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
   final RxBool isLoading = false.obs;
 
   final namaServerController = TextEditingController();
@@ -51,7 +52,7 @@ class HotspotViewModel extends GetxController {
       ];
       if (!relevantEvents.contains(event)) return;
 
-      print('📡 [HotspotVM] Refreshing due to Event: $event');
+      print('[HotspotVM] Refreshing due to Event: $event');
       loadHotspots();
     });
   }
@@ -60,14 +61,20 @@ class HotspotViewModel extends GetxController {
     try {
       isLoading.value = true;
       final result = await _routerRepository.getRouters();
-      routers.assignAll(result);
+      
+      final routerList = [RouterModel.semua];
+      routerList.addAll(result);
+      routers.assignAll(routerList);
 
-      if (result.isNotEmpty && selectedRouter.value == null) {
-        _selectionService.updateRouter(result.first);
-        loadHotspots();
-      } else if (selectedRouter.value != null) {
-        loadHotspots();
+      if (selectedRouter.value == null) {
+        final savedRouterId = _sessionService.selectedRouterId.value;
+        if (savedRouterId != null && savedRouterId != 'all') {
+          selectedRouter.value = routerList.firstWhereOrNull((r) => r.id == savedRouterId) ?? RouterModel.semua;
+        } else {
+          selectedRouter.value = RouterModel.semua;
+        }
       }
+      loadHotspots();
     } catch (e) {
       print('[HotspotVM] Load Routers Error: $e');
       SnackbarUtils.showError(
@@ -90,9 +97,15 @@ class HotspotViewModel extends GetxController {
 
     try {
       if (hotspots.isEmpty) isLoading.value = true;
-      final idRouter = int.tryParse(selectedRouter.value!.id) ?? 0;
-      final result = await _routerRepository.getHotspots(idRouter);
-      hotspots.assignAll(result);
+
+      if (selectedRouter.value!.id == 'all') {
+        final result = await _routerRepository.getAllHotspots();
+        hotspots.assignAll(result);
+      } else {
+        final idRouter = int.tryParse(selectedRouter.value!.id) ?? 0;
+        final result = await _routerRepository.getHotspots(idRouter);
+        hotspots.assignAll(result);
+      }
     } catch (e) {
       print('[HotspotVM] Load Hotspots Error: $e');
       SnackbarUtils.showError(
@@ -106,7 +119,9 @@ class HotspotViewModel extends GetxController {
 
   void onRouterChanged(RouterModel? router) {
     if (router == null) return;
-    _selectionService.updateRouter(router);
+    selectedRouter.value = router;
+    _sessionService.setRouterId(router.id);
+    loadHotspots();
   }
 
   Future<void> updateHotspot(int idHotspot) async {

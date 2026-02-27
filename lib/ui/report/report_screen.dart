@@ -160,7 +160,7 @@ class ReportScreen extends GetView<ReportViewModel> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Filter: ${DateFormat('dd MMM yyyy').format(controller.selectedDate.value!)}',
+                            'Filter: ${DateFormat('dd MMM yyyy', 'id_ID').format(controller.selectedDate.value!)}',
                             style: GoogleFonts.plusJakartaSans(
                               color: accentColor,
                               fontSize: 12,
@@ -196,7 +196,6 @@ class ReportScreen extends GetView<ReportViewModel> {
   }
 
   Widget _buildDailyTab(ReportViewModel controller) {
-    if (controller.dailyReports.isEmpty) return _buildEmptyState();
     return Column(
       children: [
         _buildChartSection(
@@ -205,7 +204,11 @@ class ReportScreen extends GetView<ReportViewModel> {
           const Color(0xFF4ADE80),
           'daily',
         ),
-        Expanded(child: _buildDailyList(controller.dailyReports)),
+        Expanded(
+          child: controller.dailyReports.isEmpty
+              ? _buildEmptyState()
+              : _buildDailyList(controller.dailyReports),
+        ),
       ],
     );
   }
@@ -306,7 +309,7 @@ class ReportScreen extends GetView<ReportViewModel> {
                   label = 'H${spot.x.toInt() + 1}';
                 } else if (type == 'monthly') {
                   label = DateFormat(
-                    'MMM',
+                    'MMM', 'id_ID',
                   ).format(DateTime(2024, spot.x.toInt() + 1));
                 } else {
                   label = '${DateTime.now().year - 4 + spot.x.toInt()}';
@@ -399,7 +402,7 @@ class ReportScreen extends GetView<ReportViewModel> {
                   text = '${index + 1}';
                 } else if (type == 'monthly') {
                   if (index % 2 != 0) return const SizedBox.shrink();
-                  text = DateFormat('MMM').format(DateTime(2024, index + 1));
+                  text = DateFormat('MMM', 'id_ID').format(DateTime(2024, index + 1));
                 } else {
                   text = '${DateTime.now().year - 4 + index}'.substring(2);
                 }
@@ -461,7 +464,7 @@ class ReportScreen extends GetView<ReportViewModel> {
       itemBuilder: (context, index) {
         final report = reports[index];
         return _buildReportCard(
-          title: DateFormat('EEEE, dd MMM yyyy').format(report.tanggal),
+          title: DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(report.tanggal),
           income: report.totalPendapatan,
           transactions: report.totalTransaksi,
           icon: Icons.calendar_today,
@@ -479,7 +482,7 @@ class ReportScreen extends GetView<ReportViewModel> {
       itemBuilder: (context, index) {
         final report = reports[index];
         final monthName = DateFormat(
-          'MMMM',
+          'MMMM', 'id_ID',
         ).format(DateTime(2024, report.bulan));
         return _buildReportCard(
           title: monthName,

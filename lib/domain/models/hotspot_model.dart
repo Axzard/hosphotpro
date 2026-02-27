@@ -15,6 +15,15 @@ class HotspotModel {
     required this.dibuatPada,
   });
 
+  static HotspotModel get semua => HotspotModel(
+        idHotspot: -1,
+        idRouter: 0,
+        namaServer: 'Semua Hotspot',
+        interface: '',
+        statusHotspot: 'aktif',
+        dibuatPada: DateTime.now(),
+      );
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

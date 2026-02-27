@@ -177,4 +177,76 @@ class AuthService extends GetxService {
       ),
     );
   }
+
+  Future<ApiResponse<bool>> sendOtp(String email) async {
+    try {
+      final requestData = {'email': email};
+      final response = await _dio.post(
+        ApiConfig.sendOtp,
+        data: requestData,
+        options: Options(
+          headers: ApiConfig.headers(),
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'OTP berhasil dikirim',
+          data: true,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Email tidak ditemukan',
+          data: false,
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Gagal mengirim OTP: $e', data: false);
+    }
+  }
+
+  Future<ApiResponse<bool>> resetPassword(
+    String email,
+    String kodeOtp,
+    String passwordBaru,
+  ) async {
+    try {
+      final requestData = {
+        'email': email,
+        'kodeOtp': kodeOtp,
+        'passwordBaru': passwordBaru,
+      };
+      final response = await _dio.post(
+        ApiConfig.resetPassword,
+        data: requestData,
+        options: Options(
+          headers: ApiConfig.headers(),
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Password berhasil diubah',
+          data: true,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'OTP tidak valid atau expired',
+          data: false,
+        );
+      }
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Gagal reset password: $e',
+        data: false,
+      );
+    }
+  }
 }

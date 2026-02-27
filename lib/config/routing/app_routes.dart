@@ -19,6 +19,8 @@ abstract class _Paths {
   static const VOUCHER_PACKAGES = '/voucher-packages';
   static const ERROR = '/error';
   static const PAYMENT_ERROR = '/payment-error';
+  static const FORGOT_PASSWORD = '/forgot-password';
+  static const RESET_PASSWORD = '/reset-password';
 }
 
 abstract class Routes {
@@ -41,4 +43,6 @@ abstract class Routes {
   static const VOUCHER_PACKAGES = _Paths.VOUCHER_PACKAGES;
   static const ERROR = _Paths.ERROR;
   static const PAYMENT_ERROR = _Paths.PAYMENT_ERROR;
+  static const FORGOT_PASSWORD = _Paths.FORGOT_PASSWORD;
+  static const RESET_PASSWORD = _Paths.RESET_PASSWORD;
 }

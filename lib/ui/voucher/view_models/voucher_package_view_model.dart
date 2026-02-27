@@ -9,21 +9,21 @@ import '../../../domain/repositories/voucher_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/services/websocket_service.dart';
-import '../../../../core/services/selection_service.dart';
+import '../../../../core/services/session_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
 
 class VoucherPackageViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
   final VoucherRepository _voucherRepository = Get.find<VoucherRepository>();
   final WebSocketService _webSocketService = Get.find<WebSocketService>();
-  final _selectionService = Get.find<SelectionService>();
+  final SessionService _sessionService = Get.find<SessionService>();
 
   final RxList<VoucherPackageModel> packages = <VoucherPackageModel>[].obs;
   final RxList<RouterModel> routers = <RouterModel>[].obs;
   final RxList<HotspotModel> hotspots = <HotspotModel>[].obs;
 
-  Rxn<RouterModel> get selectedRouter => _selectionService.selectedRouter;
-  Rxn<HotspotModel> get selectedHotspot => _selectionService.selectedHotspot;
+  final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
+  final Rxn<HotspotModel> selectedHotspot = Rxn<HotspotModel>();
   final RxBool isLoading = false.obs;
   final RxSet<int> deletingPackageIds = <int>{}.obs;
 
@@ -66,19 +66,15 @@ class VoucherPackageViewModel extends GetxController {
 
     ever(selectedRouter, (router) {
       if (router != null) {
-        print(
-          '[VoucherPackageVM] Global Router changed: ${router.namaRouter}',
-        );
+        print('[VoucherPackageVM] Global Router changed: ${router.namaRouter}');
         final idRouter = int.tryParse(router.id) ?? 0;
         loadHotspots(idRouter).then((_) {
           if (hotspots.isNotEmpty) {
             final currentHotspot = selectedHotspot.value;
 
             if (currentHotspot == null || currentHotspot.idRouter != idRouter) {
-              print(
-                '[VoucherPackageVM] Resetting hotspot to first in router',
-              );
-              selectedHotspot.value = hotspots.first;
+              print('[VoucherPackageVM] Resetting hotspot to Semua Hotspot');
+              selectedHotspot.value = HotspotModel.semua;
               loadPackages();
             } else {
               print(
@@ -133,28 +129,50 @@ class VoucherPackageViewModel extends GetxController {
     try {
       if (routers.isEmpty) isLoading.value = true;
       final result = await _routerRepository.getRouters();
+      
       routers.assignAll(result);
 
-      if (selectedRouter.value != null) {
-        final idRouter = int.tryParse(selectedRouter.value!.id) ?? 0;
-        await loadHotspots(idRouter);
-
-        if (selectedHotspot.value != null) {
-          await loadPackages();
+      if (selectedRouter.value == null) {
+        final savedRouterId = _sessionService.selectedRouterId.value;
+        if (savedRouterId != null && savedRouterId != 'all') {
+          selectedRouter.value = result.firstWhereOrNull((r) => r.id == savedRouterId);
         }
-      } else if (result.isNotEmpty) {
-        _selectionService.updateRouter(result.first);
       }
+
+      // If still null, pick first if available
+      if (selectedRouter.value == null && routers.isNotEmpty) {
+        selectedRouter.value = routers.first;
+      }
+
+      final idRouter = int.tryParse(selectedRouter.value?.id ?? '') ?? 0;
+      await loadHotspots(idRouter);
+
+      if (selectedHotspot.value == null) {
+        final savedHotspotId = _sessionService.packageHotspotId.value;
+        if (savedHotspotId != null) {
+          selectedHotspot.value = hotspots.firstWhereOrNull((h) => h.idHotspot == savedHotspotId);
+        }
+      }
+
+      // If still null, pick first
+      if (selectedHotspot.value == null && hotspots.isNotEmpty) {
+        selectedHotspot.value = hotspots.first;
+      }
+
+      await loadPackages();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal memuat data: $e');
     } finally {
       isLoading.value = false;
     }
   }
-
   Future<void> loadHotspots(int idRouter) async {
     try {
-      final result = await _routerRepository.getHotspots(idRouter);
+      List<HotspotModel> result = [];
+      if (idRouter != 0) {
+        result = await _routerRepository.getHotspots(idRouter);
+      }
+      
       hotspots.assignAll(result);
 
       final currentHotspot = selectedHotspot.value;
@@ -166,11 +184,12 @@ class VoucherPackageViewModel extends GetxController {
         bool currentStillValid = hotspots.any(
           (h) => h.idHotspot == currentHotspot?.idHotspot,
         );
+
         if (currentHotspot == null || !currentStillValid) {
           print(
-            '[VoucherPackageVM] Selection invalid or null, auto-selecting: ${result.first.namaServer}',
+            '[VoucherPackageVM] Selection invalid or null, auto-selecting first hotspot',
           );
-          selectedHotspot.value = result.first;
+          selectedHotspot.value = hotspots.first;
         } else {
           print(
             '[VoucherPackageVM] Selection still valid: ${currentHotspot.namaServer}',
@@ -193,6 +212,7 @@ class VoucherPackageViewModel extends GetxController {
 
     try {
       if (packages.isEmpty) isLoading.value = true;
+
       final idHotspot = selectedHotspot.value!.idHotspot;
       final result = await _voucherRepository.getVoucherPackages(idHotspot);
       packages.assignAll(result);
@@ -204,17 +224,20 @@ class VoucherPackageViewModel extends GetxController {
   }
 
   void onRouterChanged(RouterModel? router) {
-    _selectionService.updateRouter(router);
+    if (router == null) return;
+    selectedRouter.value = router;
+    _sessionService.setRouterId(router.id);
   }
 
   Future<void> onHotspotFilterChanged(HotspotModel? hotspot) async {
     if (hotspot == null) return;
     selectedHotspot.value = hotspot;
+    _sessionService.setPackageHotspotId(hotspot.idHotspot);
     await loadPackages();
   }
 
   void onHotspotChanged(HotspotModel? hotspot) {
-    _selectionService.updateHotspot(hotspot);
+    selectedHotspot.value = hotspot;
   }
 
   void onFormatKarakterChanged(String? value) {
@@ -361,9 +384,19 @@ class VoucherPackageViewModel extends GetxController {
     }
 
     selectedFormatKarakter.value = package.formatKarakter;
-    selectedHotspot.value = hotspots.firstWhereOrNull(
+
+    final existingHotspot = hotspots.firstWhereOrNull(
       (h) => h.idHotspot == package.idHotspot,
     );
+
+    if (existingHotspot != null) {
+      selectedHotspot.value = existingHotspot;
+    } else {
+      selectedHotspot.value = null;
+      print(
+        '[VoucherForm] Warning: Package hotspot ID ${package.idHotspot} not found in current hotspots list',
+      );
+    }
   }
 
   void _clearForm() {

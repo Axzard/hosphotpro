@@ -19,6 +19,17 @@ class RouterModel {
     this.statusRouter = 'aktif',
   });
 
+  static RouterModel get semua => RouterModel(
+        id: 'all',
+        namaRouter: 'Semua Router',
+        alamatIp: '',
+        portApi: 0,
+        usernameApi: '',
+        passwordApi: '',
+        keterangan: '',
+        statusRouter: 'aktif',
+      );
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

@@ -5,6 +5,8 @@ class ApiConfig {
   // Auth endpoints
   static const String register = '$baseUrl/api/daftar-admin';
   static const String login = '$baseUrl/api/login';
+  static const String sendOtp = '$baseUrl/api/kirim-otp';
+  static const String resetPassword = '$baseUrl/api/reset-password';
 
   // Langganan endpoints
   static const String packages = '$baseUrl/api/langganan/paket';
@@ -20,6 +22,7 @@ class ApiConfig {
   static const String routers = '$baseUrl/api/router';
   static String routerPing(int id) => '$baseUrl/api/router/$id/ping';
   static String hotspots(int idRouter) => '$baseUrl/api/hotspot?id_router=$idRouter';
+  static const String hotspotAll = '$baseUrl/api/hotspot/all';
   static String hotspotDetail(int id) => '$baseUrl/api/hotspot/$id';
   static String updateHotspot(int id) => '$baseUrl/api/hotspot/$id';
   static String deleteHotspot(int id) => '$baseUrl/api/hotspot/$id';
@@ -30,6 +33,7 @@ class ApiConfig {
   static const String createVoucherBulk = '$baseUrl/api/voucher/bulk';
   static const String voucherPackages = '$baseUrl/api/paket-voucher';
   static String packagesByHotspot(int idHotspot) => '$baseUrl/api/paket-voucher?id_hotspot=$idHotspot';
+  static const String paketVoucherUser = '$baseUrl/api/paket-voucher/user';
   static String voucherPackageDetail(int id) => '$baseUrl/api/paket-voucher/$id';
   static String updateVoucherPackage(int id) => '$baseUrl/api/paket-voucher/$id';
   static String deleteVoucherPackage(int id) => '$baseUrl/api/paket-voucher/$id';

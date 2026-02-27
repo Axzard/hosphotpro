@@ -67,6 +67,56 @@ class VoucherService extends GetxService {
     }
   }
 
+  Future<ApiResponse<List<VoucherPackageApiModel>>> getAllVoucherPackages() async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.paketVoucherUser,
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 600,
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final dynamic rawData = response.data;
+        List<dynamic> listData = [];
+        String? message;
+
+        if (rawData is Map<String, dynamic>) {
+          listData = rawData['data'] is List ? rawData['data'] : [];
+          message = rawData['pesan'];
+        } else if (rawData is List) {
+          listData = rawData;
+        }
+
+        final packages = listData
+            .map((json) => VoucherPackageApiModel.fromJson(json))
+            .toList();
+            
+        return ApiResponse(
+          success: true,
+          message: message ?? 'Packages fetched',
+          data: packages,
+        );
+      } else {
+        final errorMsg =
+            response.data?['pesan'] ??
+            response.data?['detail'] ??
+            'Server Error (${response.statusCode}): ${response.data}';
+        return ApiResponse(success: false, message: errorMsg, data: []);
+      }
+    } on DioException catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Network error: ${e.message} ${e.response?.data}',
+        data: [],
+      );
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e', data: []);
+    }
+  }
+
   /// POST /api/paket-voucher
   Future<ApiResponse<VoucherPackageApiModel?>> createVoucherPackage(
     VoucherPackageApiModel package,

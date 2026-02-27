@@ -48,8 +48,6 @@ class ReportViewModel extends GetxController {
   }
 
   List<double> get dailyIncomeData {
-    if (dailyReports.isEmpty) return [];
-
     final now = DateTime.now();
     final year = selectedDate.value?.year ?? now.year;
     final month = selectedDate.value?.month ?? now.month;

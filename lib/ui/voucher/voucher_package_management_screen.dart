@@ -30,19 +30,24 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                 horizontal: 24.0,
                 vertical: 12.0,
               ),
-              child: Obx(
-                () => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<HotspotModel>(
-                      value: controller.selectedHotspot.value,
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: Obx(() {
+                    final currentHotspot = controller.selectedHotspot.value;
+                    final dropdownValue = controller.hotspots.firstWhereOrNull(
+                      (h) => h.idHotspot == currentHotspot?.idHotspot,
+                    );
+
+                    return DropdownButton<HotspotModel>(
+                      value: dropdownValue,
                       hint: const Text(
                         'Pilih Hotspot',
                         style: TextStyle(color: Colors.white54),
@@ -61,8 +66,8 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                         );
                       }).toList(),
                       onChanged: controller.onHotspotFilterChanged,
-                    ),
-                  ),
+                    );
+                  }),
                 ),
               ),
             ),
@@ -144,6 +149,15 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
       controller.durasiController.clear();
       controller.hargaController.clear();
       controller.profileMikrotikController.clear();
+      controller.dnsLoginController.clear();
+      controller.prefixController.clear();
+      controller.panjangUsernameController.clear();
+      controller.dataLimitMbController.clear();
+      controller.gunakanSsl.value = false;
+
+      if (controller.selectedHotspot.value == null && controller.hotspots.isNotEmpty) {
+        controller.selectedHotspot.value = controller.hotspots.first;
+      }
     }
 
     Get.bottomSheet(
@@ -321,8 +335,13 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
   }
 
   Widget _buildHotspotSelector() {
-    return Obx(
-      () => Container(
+    return Obx(() {
+      final currentHotspot = controller.selectedHotspot.value;
+      final dropdownValue = controller.hotspots.firstWhereOrNull(
+        (h) => h.idHotspot == currentHotspot?.idHotspot,
+      );
+
+      return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.05),
@@ -331,7 +350,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<HotspotModel>(
-            value: controller.selectedHotspot.value,
+            value: dropdownValue,
             hint: const Text(
               'Pilih Hotspot Server',
               style: TextStyle(color: Colors.white54),
@@ -346,11 +365,15 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                 child: Text(hotspot.namaServer),
               );
             }).toList(),
-            onChanged: controller.onHotspotChanged,
+            onChanged: (val) {
+              if (val != null) {
+                controller.onHotspotChanged(val);
+              }
+            },
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildFormatKarakterSelector() {
@@ -501,7 +524,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
   }
 
   Widget _buildTextField(
-    TextEditingController controller,
+    TextEditingController textController,
     String label, {
     String? hint,
     TextInputType keyboardType = TextInputType.text,
@@ -520,7 +543,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
         ),
         const SizedBox(height: 8),
         TextField(
-          controller: controller,
+          controller: textController,
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           style: GoogleFonts.plusJakartaSans(color: Colors.white),

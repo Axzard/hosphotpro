@@ -23,6 +23,9 @@ import '../../ui/voucher/voucher_package_management_screen.dart';
 import '../../ui/voucher/view_models/voucher_package_view_model.dart';
 import '../../ui/core/widgets/error_screen.dart';
 import '../../ui/subscription/payment_error_screen.dart';
+import '../../ui/auth/forgot_password_screen.dart';
+import '../../ui/auth/reset_password_screen.dart';
+import '../../ui/auth/view_models/forgot_password_view_model.dart';
 import 'app_routes.dart';
 export 'app_routes.dart';
 
@@ -130,6 +133,17 @@ class AppPages {
           bankName: args['bankName'],
         );
       },
+    ),
+    GetPage(
+      name: Routes.FORGOT_PASSWORD,
+      page: () => const ForgotPasswordScreen(),
+      binding: BindingsBuilder(() {
+        Get.put(ForgotPasswordViewModel());
+      }),
+    ),
+    GetPage(
+      name: Routes.RESET_PASSWORD,
+      page: () => const ResetPasswordScreen(),
     ),
   ];
 }

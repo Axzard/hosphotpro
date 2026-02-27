@@ -19,8 +19,8 @@ import '../../domain/repositories/report_repository.dart';
 import '../../data/repositories/report_repository_impl.dart';
 import '../../core/services/printer_service.dart';
 import '../../core/services/websocket_service.dart';
-import '../../core/services/selection_service.dart';
 import '../../data/services/payment_persistence_service.dart';
+import '../../core/services/session_service.dart';
 
 class GlobalBinding extends Bindings {
   @override
@@ -43,7 +43,7 @@ class GlobalBinding extends Bindings {
     Get.put<RouterService>(RouterService());
     Get.put<VoucherService>(VoucherService());
     Get.put<ReportService>(ReportService());
-    Get.put<SelectionService>(SelectionService());
+    Get.put<SessionService>(SessionService());
 
     // Repositories
     Get.put<AuthRepository>(AuthRepositoryImpl());

@@ -186,6 +186,39 @@ class RouterService extends GetxService {
     }
   }
 
+  Future<ApiResponse<List<HotspotApiModel>>> getAllHotspots() async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.hotspotAll,
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> hotspotsData = response.data['data'] ?? [];
+        final hotspots = hotspotsData
+            .map((json) => HotspotApiModel.fromJson(json))
+            .toList();
+
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Hotspots fetched successfully',
+          data: hotspots,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Failed to fetch all hotspots',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
   Future<ApiResponse<HotspotApiModel>> getHotspotDetail(int idHotspot) async {
     try {
       final token = _tokenService.getToken();

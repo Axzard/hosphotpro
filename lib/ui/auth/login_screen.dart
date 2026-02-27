@@ -73,7 +73,24 @@ class LoginScreen extends GetView<AuthViewModel> {
                     isPassword: true,
                   ),
                   
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 12),
+                  
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () => Get.toNamed(Routes.FORGOT_PASSWORD),
+                      child: const Text(
+                        'Lupa Kata Sandi?',
+                        style: TextStyle(
+                          color: Colors.cyan,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 36),
                   
                   Obx(() => AuthButton(
                     text: 'Masuk',
