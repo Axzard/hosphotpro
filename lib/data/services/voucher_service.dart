@@ -490,8 +490,16 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['data'] ?? [];
-        final vouchers = data.map((json) => VoucherApiModel.fromJson(json)).toList();
+        final dynamic rawData = response.data;
+        List<dynamic> listData = [];
+
+        if (rawData is Map<String, dynamic>) {
+          listData = rawData['data'] is List ? rawData['data'] : [];
+        } else if (rawData is List) {
+          listData = rawData;
+        }
+
+        final vouchers = listData.map((json) => VoucherApiModel.fromJson(json)).toList();
         return ApiResponse(
           success: true,
           message: 'Vouchers fetched',

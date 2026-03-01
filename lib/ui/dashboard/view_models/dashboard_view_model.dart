@@ -84,10 +84,7 @@ class DashboardViewModel extends GetxController {
       try {
         final activeVouchers = await _voucherRepository.getActiveVouchers();
 
-        final filtered = activeVouchers
-            .where((v) => v.statusVoucher == VoucherStatus.aktif)
-            .toList();
-        activeUserCount.value = filtered.length;
+        activeUserCount.value = activeVouchers.length;
       } catch (e) {}
     });
   }
@@ -248,7 +245,7 @@ class DashboardViewModel extends GetxController {
           bulan: now.month,
           tgl: now.day,
         ),
-        _voucherRepository.getAllVouchers(),
+        _voucherRepository.getActiveVouchers(),
       ]);
 
       final routersList = results[0] as List<RouterModel>;
@@ -285,13 +282,12 @@ class DashboardViewModel extends GetxController {
       totalIncomeToday.value = income;
       totalTransactionsToday.value = transactions;
 
-      if (activeVouchers != null && activeVouchers.isNotEmpty) {
-        final filteredAktif = activeVouchers
-            .where((v) => v.statusVoucher == VoucherStatus.aktif)
-            .toList();
-        activeUserCount.value = filteredAktif.length;
+      if (activeVouchers != null) {
+        // The endpoint /api/voucher/aktif should already return only active vouchers.
+        // We set the count directly.
+        activeUserCount.value = activeVouchers.length;
         print(
-          '[DashboardVM] Initialized Active Users: ${activeUserCount.value}',
+          '[DashboardVM] Initialized Active Vouchers: ${activeUserCount.value}',
         );
       }
 
@@ -362,7 +358,7 @@ class DashboardViewModel extends GetxController {
         voucherCount.value = vouchersList.length;
 
         final activeVouchersList = await _voucherRepository.getActiveVouchers();
-        activeUserCount.value = activeVouchersList.where((v) => v.statusVoucher == VoucherStatus.aktif).length;
+        activeUserCount.value = activeVouchersList.length;
 
         return;
       }
@@ -394,15 +390,12 @@ class DashboardViewModel extends GetxController {
         voucherCount.value = allVouchers.length;
         voucherPackageCount.value = allPackages.length;
 
-        final filteredAktif = allVouchers
-            .where((v) => v.statusVoucher == VoucherStatus.aktif)
-            .toList();
-        if (activeUserCount.value == 0 && filteredAktif.isNotEmpty) {
-          activeUserCount.value = filteredAktif.length;
-          print(
-            '[DashboardVM] Active Users (Fallback from Hotspots): ${activeUserCount.value}',
-          );
-        }
+        final activeVouchersList = await _voucherRepository.getActiveVouchers();
+        final filteredByRouter = activeVouchersList.where((v) => v.idRouter == idRouter).toList();
+        activeUserCount.value = filteredByRouter.length;
+        print(
+          '[DashboardVM] Active Vouchers (Filtered by Router $idRouter): ${activeUserCount.value}',
+        );
       } else {
         voucherCount.value = 0;
         voucherPackageCount.value = 0;
