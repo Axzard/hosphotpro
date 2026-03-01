@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'view_models/voucher_view_model.dart';
 import '../../domain/models/voucher_model.dart';
+import '../../domain/models/hotspot_model.dart';
 import '../../ui/voucher/widgets/create_voucher_sheet.dart';
 
 class PrintVoucherScreen extends GetView<VoucherViewModel> {
@@ -351,6 +352,52 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          // Hotspot Selector
+          Obx(() {
+            if (controller.hotspots.isEmpty) return const SizedBox.shrink();
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<HotspotModel>(
+                  value: controller.selectedHotspot.value,
+                  hint: const Text(
+                    'Pilih Hotspot',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                  dropdownColor: const Color(0xFF131E29),
+                  isExpanded: true,
+                  icon: const Icon(
+                    Icons.wifi_tethering,
+                    color: Color(0xFF00C2FF),
+                    size: 20,
+                  ),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  items: controller.hotspots.map((h) {
+                    return DropdownMenuItem<HotspotModel>(
+                      value: h,
+                      child: Text(h.namaServer),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      controller.onHotspotChanged(val);
+                    }
+                  },
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );

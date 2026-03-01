@@ -202,7 +202,7 @@ class VoucherViewModel extends GetxController {
       final idRouter = int.tryParse(selectedRouter.value?.id ?? '') ?? 0;
       List<HotspotModel> hotspotResult = await _routerRepository.getHotspots(idRouter);
 
-      hotspots.assignAll(hotspotResult);
+      hotspots.assignAll([HotspotModel.semua, ...hotspotResult]);
 
       if (hotspots.isNotEmpty) {
         final currentHotspot = selectedHotspot.value;
@@ -217,9 +217,9 @@ class VoucherViewModel extends GetxController {
           }
         }
         
-        // If still null, pick first
+        // If still null, pick "Semua Hotspot" by default
         if (selectedHotspot.value == null && hotspots.isNotEmpty) {
-          selectedHotspot.value = hotspots.first;
+          selectedHotspot.value = HotspotModel.semua;
         }
 
         // Trigger loading data
