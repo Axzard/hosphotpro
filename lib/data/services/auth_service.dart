@@ -171,7 +171,7 @@ class AuthService extends GetxService {
       data: AuthApiModel(
         id: '1',
         username: 'admin',
-        email: 'admin@hosphotpro.com',
+        email: 'admin@hotspotpro.com',
         token: 'dummy_token_12345',
         subscriptionActive: true,
       ),

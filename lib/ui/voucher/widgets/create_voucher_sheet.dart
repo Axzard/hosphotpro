@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../view_models/voucher_view_model.dart';
-import '../../../domain/models/hotspot_model.dart';
 import '../../../domain/models/voucher_package_model.dart';
 import '../../../core/utils/currency_formatter.dart';
 
@@ -27,16 +26,11 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
   final panjangUsernameController = TextEditingController();
   final dataLimitMbController = TextEditingController();
   final voucherCountController = TextEditingController();
-  int? selectedHotspotId;
   String selectedFormatKarakter = 'mix';
 
   @override
   void initState() {
     super.initState();
-    final currentHs = controller.selectedHotspot.value;
-    if (currentHs != null && currentHs.idHotspot != -1) {
-      selectedHotspotId = currentHs.idHotspot;
-    }
     voucherCountController.text = controller.count.value.toString();
 
     if (controller.voucherPackages.isEmpty) {
@@ -130,28 +124,9 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             if (!isAddingPackage) ...[
-              _buildLabel('Hotspot'),
-              const SizedBox(height: 8),
-              Obx(
-                () => _buildDropdown<HotspotModel>(
-                  value: controller.selectedHotspot.value,
-                  hint: 'Pilih Hotspot',
-                  items: controller.hotspots
-                      .where((h) => h.idHotspot != -1)
-                      .map((hotspot) {
-                    return DropdownMenuItem<HotspotModel>(
-                      value: hotspot,
-                      child: Text('Hotspot: ${hotspot.namaServer}'),
-                    );
-                  }).toList(),
-                  onChanged: controller.onHotspotChanged,
-                ),
-              ),
-
-              const SizedBox(height: 16),
 
               _buildLabel('Paket'),
               const SizedBox(height: 8),
@@ -299,10 +274,6 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
                   onPressed: controller.isGenerating.value
                       ? null
                       : () {
-                          if (controller.selectedHotspot.value?.idHotspot == -1) {
-                            Get.snackbar('Error', 'Silakan pilih hotspot terlebih dahulu (bukan Semua)');
-                            return;
-                          }
                           if (controller.count.value > 1) {
                             controller.createBulkVoucher();
                           } else {
@@ -397,23 +368,7 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
               _buildDataLimitField(),
               const SizedBox(height: 16),
 
-              _buildLabel('Hotspot Mikrotik'),
-              const SizedBox(height: 8),
-              Obx(
-                () => _buildDropdown<int>(
-                  value: selectedHotspotId,
-                  hint: 'Pilih Hotspot',
-                  items: controller.hotspots
-                      .where((hs) => hs.idHotspot != -1)
-                      .map((hs) {
-                    return DropdownMenuItem<int>(
-                      value: hs.idHotspot,
-                      child: Text(hs.namaServer),
-                    );
-                  }).toList(),
-                  onChanged: (val) => setState(() => selectedHotspotId = val),
-                ),
-              ),
+              const SizedBox(height: 16),
 
               const SizedBox(height: 32),
 
@@ -535,11 +490,10 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
   }
 
   Future<void> _handleCreatePackage() async {
-    final hotspot = controller.hotspots.firstWhereOrNull(
-      (h) => h.idHotspot == selectedHotspotId,
-    );
+    final hotspot = controller.selectedHotspot.value ?? controller.hotspots.firstWhereOrNull((h) => h.idHotspot != -1);
+    
     if (hotspot == null || hotspot.idHotspot == -1) {
-      Get.snackbar('Error', 'Pilih hotspot terlebih dahulu');
+      Get.snackbar('Error', 'Tidak ada hotspot yang aktif. Silakan buat hotspot terlebih dahulu di menu Router.');
       return;
     }
 

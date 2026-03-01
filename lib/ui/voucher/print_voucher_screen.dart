@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'view_models/voucher_view_model.dart';
 import '../../domain/models/voucher_model.dart';
-import '../../domain/models/hotspot_model.dart';
 import '../../ui/voucher/widgets/create_voucher_sheet.dart';
 
 class PrintVoucherScreen extends GetView<VoucherViewModel> {
@@ -187,18 +186,6 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Text(
-              'FILTER PAKET',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: Colors.white38,
-                letterSpacing: 1.5,
-              ),
-            ),
-          ),
           SizedBox(
             height: 42,
             child: ListView(
@@ -364,46 +351,6 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-
-          Obx(() {
-            if (controller.hotspots.isEmpty) {
-              return const SizedBox.shrink();
-            }
-            return Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<HotspotModel>(
-                  value: controller.selectedHotspot.value,
-                  dropdownColor: const Color(0xFF131E29),
-                  icon: const Icon(
-                    Icons.arrow_drop_down,
-                    color: Colors.white70,
-                  ),
-                  hint: Text(
-                    'Pilih Hotspot',
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white54),
-                  ),
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white),
-                  items: controller.hotspots.map((hotspot) {
-                    return DropdownMenuItem<HotspotModel>(
-                      value: hotspot,
-                      child: Text('${hotspot.namaServer}'),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    controller.onHotspotChanged(val);
-                  },
-                ),
-              ),
-            );
-          }),
         ],
       ),
     );

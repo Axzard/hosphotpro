@@ -34,6 +34,7 @@ class VoucherPackageViewModel extends GetxController {
   final prefixController = TextEditingController();
   final panjangUsernameController = TextEditingController();
   final dataLimitMbController = TextEditingController();
+  final rateLimitController = TextEditingController();
   final dnsLoginController = TextEditingController();
 
   final RxBool gunakanSsl = false.obs;
@@ -113,6 +114,7 @@ class VoucherPackageViewModel extends GetxController {
     prefixController.dispose();
     panjangUsernameController.dispose();
     dataLimitMbController.dispose();
+    rateLimitController.dispose();
     dnsLoginController.dispose();
     super.onClose();
   }
@@ -129,19 +131,18 @@ class VoucherPackageViewModel extends GetxController {
     try {
       if (routers.isEmpty) isLoading.value = true;
       final result = await _routerRepository.getRouters();
-      
-      routers.assignAll(result);
+      routers.assignAll([RouterModel.semua, ...result]);
 
       if (selectedRouter.value == null) {
         final savedRouterId = _sessionService.selectedRouterId.value;
-        if (savedRouterId != null && savedRouterId != 'all') {
-          selectedRouter.value = result.firstWhereOrNull((r) => r.id == savedRouterId);
+        if (savedRouterId != null) {
+          selectedRouter.value = routers.firstWhereOrNull((r) => r.id == savedRouterId);
         }
       }
 
-      // If still null, pick first if available
+      // If still null, pick "Semua Router" by default
       if (selectedRouter.value == null && routers.isNotEmpty) {
-        selectedRouter.value = routers.first;
+        selectedRouter.value = RouterModel.semua;
       }
 
       final idRouter = int.tryParse(selectedRouter.value?.id ?? '') ?? 0;
@@ -168,12 +169,9 @@ class VoucherPackageViewModel extends GetxController {
   }
   Future<void> loadHotspots(int idRouter) async {
     try {
-      List<HotspotModel> result = [];
-      if (idRouter != 0) {
-        result = await _routerRepository.getHotspots(idRouter);
-      }
+      List<HotspotModel> result = await _routerRepository.getHotspots(idRouter);
       
-      hotspots.assignAll(result);
+      hotspots.assignAll([HotspotModel.semua, ...result]);
 
       final currentHotspot = selectedHotspot.value;
       print(
@@ -187,9 +185,9 @@ class VoucherPackageViewModel extends GetxController {
 
         if (currentHotspot == null || !currentStillValid) {
           print(
-            '[VoucherPackageVM] Selection invalid or null, auto-selecting first hotspot',
+            '[VoucherPackageVM] Selection invalid or null, auto-selecting semua hotspot',
           );
-          selectedHotspot.value = hotspots.first;
+          selectedHotspot.value = HotspotModel.semua;
         } else {
           print(
             '[VoucherPackageVM] Selection still valid: ${currentHotspot.namaServer}',
@@ -213,7 +211,7 @@ class VoucherPackageViewModel extends GetxController {
     try {
       if (packages.isEmpty) isLoading.value = true;
 
-      final idHotspot = selectedHotspot.value!.idHotspot;
+      final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
       final result = await _voucherRepository.getVoucherPackages(idHotspot);
       packages.assignAll(result);
     } catch (e) {
@@ -284,6 +282,9 @@ class VoucherPackageViewModel extends GetxController {
         panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
         formatKarakter: selectedFormatKarakter.value,
         dataLimitMb: dataLimit,
+        rateLimit: rateLimitController.text.isNotEmpty
+            ? rateLimitController.text
+            : null,
         dnsLogin: dnsLoginController.text.isNotEmpty
             ? dnsLoginController.text
             : null,
@@ -325,6 +326,9 @@ class VoucherPackageViewModel extends GetxController {
         panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
         formatKarakter: selectedFormatKarakter.value,
         dataLimitMb: dataLimit,
+        rateLimit: rateLimitController.text.isNotEmpty
+            ? rateLimitController.text
+            : null,
         dnsLogin: dnsLoginController.text.isNotEmpty
             ? dnsLoginController.text
             : null,
@@ -370,6 +374,7 @@ class VoucherPackageViewModel extends GetxController {
     profileMikrotikController.text = package.namaProfileMikrotik;
     prefixController.text = package.prefix;
     panjangUsernameController.text = package.panjangUsername.toString();
+    rateLimitController.text = package.rateLimit ?? '';
     dnsLoginController.text = package.dnsLogin ?? '';
     gunakanSsl.value = package.gunakanSsl;
 
@@ -407,6 +412,7 @@ class VoucherPackageViewModel extends GetxController {
     prefixController.clear();
     panjangUsernameController.clear();
     dataLimitMbController.clear();
+    rateLimitController.clear();
     dnsLoginController.clear();
     gunakanSsl.value = false;
     selectedFormatKarakter.value = 'mix';
@@ -414,8 +420,8 @@ class VoucherPackageViewModel extends GetxController {
   }
 
   bool _validateForm() {
-    if (selectedHotspot.value == null) {
-      SnackbarUtils.showError('Error', 'Hotspot harus dipilih');
+    if (selectedHotspot.value == null || selectedHotspot.value?.idHotspot == -1) {
+      SnackbarUtils.showError('Error', 'Hotspot harus dipilih secara spesifik untuk membuat paket');
       return false;
     }
     if (namaPaketController.text.isEmpty ||

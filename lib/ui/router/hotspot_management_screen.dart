@@ -100,7 +100,7 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                 ],
               ),
             ),
-
+            SizedBox(height: 8),
             Expanded(
               child: Obx(() {
                 if (controller.isLoading.value && controller.hotspots.isEmpty) {

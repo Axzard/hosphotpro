@@ -153,6 +153,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
       controller.prefixController.clear();
       controller.panjangUsernameController.clear();
       controller.dataLimitMbController.clear();
+      controller.rateLimitController.clear();
       controller.gunakanSsl.value = false;
 
       if (controller.selectedHotspot.value == null && controller.hotspots.isNotEmpty) {
@@ -247,6 +248,15 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                       controller.durasiController,
                       'Durasi',
                       hint: '1h',
+                      keyboardType: TextInputType.text,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildTextField(
+                      controller.rateLimitController,
+                      'Rate Limit (Speed)',
+                      hint: '3M/3M',
                       keyboardType: TextInputType.text,
                     ),
                   ),

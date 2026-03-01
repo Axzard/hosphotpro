@@ -1,3 +1,3 @@
-# hosphotpro
+# hotspotpro
 
 A new Flutter project.

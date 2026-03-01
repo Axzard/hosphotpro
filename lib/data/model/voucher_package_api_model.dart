@@ -12,6 +12,7 @@ class VoucherPackageApiModel {
   final int panjangUsername;
   final String formatKarakter;
   final int dataLimitMb;
+  final String? rateLimit;
   final String? dnsLogin;
   final bool gunakanSsl;
 
@@ -27,6 +28,7 @@ class VoucherPackageApiModel {
     required this.panjangUsername,
     required this.formatKarakter,
     required this.dataLimitMb,
+    this.rateLimit,
     this.dnsLogin,
     this.gunakanSsl = false,
   });
@@ -44,6 +46,7 @@ class VoucherPackageApiModel {
       panjangUsername: int.tryParse(json['panjang_username']?.toString() ?? '') ?? 4,
       formatKarakter: json['format_karakter']?.toString() ?? 'mix',
       dataLimitMb: int.tryParse(json['data_limit_mb']?.toString() ?? '') ?? 0,
+      rateLimit: json['rate_limit']?.toString(),
       dnsLogin: json['dns_login']?.toString(),
       gunakanSsl: json['gunakan_ssl'] == true || json['gunakan_ssl'] == 1,
     );
@@ -60,6 +63,7 @@ class VoucherPackageApiModel {
       'data_limit_mb': dataLimitMb,
       'harga': harga.toInt() == harga ? harga.toInt() : harga,
       'nama_profile_mikrotik': namaProfileMikrotik,
+      'rate_limit': rateLimit,
       'dns_login': dnsLogin,
       'gunakan_ssl': gunakanSsl,
     };
@@ -78,6 +82,7 @@ class VoucherPackageApiModel {
       panjangUsername: panjangUsername,
       formatKarakter: formatKarakter,
       dataLimitMb: dataLimitMb,
+      rateLimit: rateLimit,
       dnsLogin: dnsLogin,
       gunakanSsl: gunakanSsl,
     );
@@ -96,6 +101,7 @@ class VoucherPackageApiModel {
       panjangUsername: domain.panjangUsername,
       formatKarakter: domain.formatKarakter,
       dataLimitMb: domain.dataLimitMb,
+      rateLimit: domain.rateLimit,
       dnsLogin: domain.dnsLogin,
       gunakanSsl: domain.gunakanSsl,
     );

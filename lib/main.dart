@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'config/routing/app_pages.dart';
 import 'config/routing/global_binding.dart';
 import 'ui/core/themes/app_theme.dart';
-
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
@@ -21,7 +20,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'HosphotPro Admin',
+      title: 'Hotspot Pro',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,

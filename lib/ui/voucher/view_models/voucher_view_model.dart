@@ -75,9 +75,8 @@ class VoucherViewModel extends GetxController {
 
     ever(selectedHotspot, (hotspot) {
       if (_isInitialLoad.value) return;
-      if (hotspot != null) {
-        onHotspotChanged(hotspot);
-      }
+      loadVoucherPackages();
+      loadVouchers();
     });
   }
 
@@ -186,25 +185,22 @@ class VoucherViewModel extends GetxController {
 
       final result = await _routerRepository.getRouters();
       
-      routers.assignAll(result);
+      routers.assignAll([RouterModel.semua, ...result]);
 
       if (selectedRouter.value == null) {
         final savedRouterId = _sessionService.selectedRouterId.value;
-        if (savedRouterId != null && savedRouterId != 'all') {
-          selectedRouter.value = result.firstWhereOrNull((r) => r.id == savedRouterId);
+        if (savedRouterId != null) {
+          selectedRouter.value = routers.firstWhereOrNull((r) => r.id == savedRouterId);
         }
       }
 
-      // If still null, pick first if available
+      // If still null, pick "Semua Router" by default
       if (selectedRouter.value == null && routers.isNotEmpty) {
-        selectedRouter.value = routers.first;
+        selectedRouter.value = RouterModel.semua;
       }
       
       final idRouter = int.tryParse(selectedRouter.value?.id ?? '') ?? 0;
-      List<HotspotModel> hotspotResult = [];
-      if (idRouter != 0) {
-        hotspotResult = await _routerRepository.getHotspots(idRouter);
-      }
+      List<HotspotModel> hotspotResult = await _routerRepository.getHotspots(idRouter);
 
       hotspots.assignAll(hotspotResult);
 
@@ -226,10 +222,9 @@ class VoucherViewModel extends GetxController {
           selectedHotspot.value = hotspots.first;
         }
 
-        // Trigger loading data for currently selected hotspot
-        if (selectedHotspot.value != null) {
-          await onHotspotChanged(selectedHotspot.value);
-        }
+        // Trigger loading data
+        await loadVoucherPackages();
+        await loadVouchers();
       }
     } catch (e) {
       if (selectedHotspot.value != null) {
@@ -243,11 +238,8 @@ class VoucherViewModel extends GetxController {
   }
 
   Future<void> loadVoucherPackages() async {
-    final hotspot = selectedHotspot.value;
-    if (hotspot == null) return;
-
     try {
-      final idHotspot = hotspot.idHotspot;
+      final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
       final result = await _voucherRepository.getVoucherPackages(idHotspot);
       voucherPackages.value = result;
     } catch (e) {
@@ -264,12 +256,9 @@ class VoucherViewModel extends GetxController {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) return;
 
-    final hotspot = selectedHotspot.value;
-    if (hotspot == null) return;
-
     if (vouchers.isEmpty) isLoading.value = true;
     try {
-      final idHotspot = hotspot.idHotspot;
+      final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
       final result = await _voucherRepository.getVouchersByHotspot(idHotspot);
       vouchers.value = result;
     } catch (e) {

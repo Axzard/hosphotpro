@@ -18,6 +18,7 @@ class VoucherService extends GetxService {
   Future<ApiResponse<List<VoucherPackageApiModel>>> getVoucherPackages(
     int idHotspot,
   ) async {
+    if (idHotspot <= 0) return getAllVoucherPackages();
     try {
       final token = _tokenService.getToken();
       final response = await _dio.get(

@@ -154,6 +154,7 @@ class RouterService extends GetxService {
   }
 
   Future<ApiResponse<List<HotspotApiModel>>> getHotspots(int idRouter) async {
+    if (idRouter == 0) return getAllHotspots();
     try {
       final token = _tokenService.getToken();
       final response = await _dio.get(

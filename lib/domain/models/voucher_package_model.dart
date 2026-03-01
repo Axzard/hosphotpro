@@ -10,6 +10,7 @@ class VoucherPackageModel {
   final int panjangUsername;
   final String formatKarakter;
   final int dataLimitMb;
+  final String? rateLimit;
   final String? dnsLogin;
   final bool gunakanSsl;
 
@@ -25,6 +26,7 @@ class VoucherPackageModel {
     required this.panjangUsername,
     required this.formatKarakter,
     required this.dataLimitMb,
+    this.rateLimit,
     this.dnsLogin,
     this.gunakanSsl = false,
   });

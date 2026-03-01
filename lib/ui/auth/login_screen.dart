@@ -26,7 +26,7 @@ class LoginScreen extends GetView<AuthViewModel> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 20),
-                  const AuthLogo(title: 'Hosphotpro'),
+                  const AuthLogo(title: 'hotspotpro'),
                   const SizedBox(height: 60),
                   
                   const Align(

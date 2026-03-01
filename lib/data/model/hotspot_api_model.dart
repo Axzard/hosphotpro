@@ -2,6 +2,7 @@ import '../../domain/models/hotspot_model.dart';
 
 class HotspotApiModel {
   final int idHotspot;
+  final int idRouter;
   final String namaServer;
   final String interface;
   final String statusHotspot;
@@ -9,6 +10,7 @@ class HotspotApiModel {
 
   HotspotApiModel({
     required this.idHotspot,
+    required this.idRouter,
     required this.namaServer,
     required this.interface,
     required this.statusHotspot,
@@ -18,6 +20,7 @@ class HotspotApiModel {
   factory HotspotApiModel.fromJson(Map<String, dynamic> json) {
     return HotspotApiModel(
       idHotspot: json['id_hotspot'] ?? 0,
+      idRouter: json['id_router'] ?? 0,
       namaServer: json['nama_server'] ?? '',
       interface: json['interface'] ?? '',
       statusHotspot: json['status_hotspot'] ?? '',
@@ -28,7 +31,7 @@ class HotspotApiModel {
   HotspotModel toDomain({int? idRouterOverride}) {
     return HotspotModel(
       idHotspot: idHotspot,
-      idRouter: idRouterOverride ?? 0,
+      idRouter: idRouterOverride ?? idRouter,
       namaServer: namaServer,
       interface: interface,
       statusHotspot: statusHotspot,
