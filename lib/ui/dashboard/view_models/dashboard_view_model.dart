@@ -283,8 +283,6 @@ class DashboardViewModel extends GetxController {
       totalTransactionsToday.value = transactions;
 
       if (activeVouchers != null) {
-        // The endpoint /api/voucher/aktif should already return only active vouchers.
-        // We set the count directly.
         activeUserCount.value = activeVouchers.length;
         print(
           '[DashboardVM] Initialized Active Vouchers: ${activeUserCount.value}',
@@ -317,7 +315,6 @@ class DashboardViewModel extends GetxController {
         isActiveSubscription.value = false;
         packageName.value = 'Anda Belum Berlangganan';
       }
-
 
       if (selectedRouter.value == null) {
         final savedRouterId = _sessionService.selectedRouterId.value;
@@ -391,7 +388,9 @@ class DashboardViewModel extends GetxController {
         voucherPackageCount.value = allPackages.length;
 
         final activeVouchersList = await _voucherRepository.getActiveVouchers();
-        final filteredByRouter = activeVouchersList.where((v) => v.idRouter == idRouter).toList();
+        final filteredByRouter = activeVouchersList
+            .where((v) => v.idRouter == idRouter)
+            .toList();
         activeUserCount.value = filteredByRouter.length;
         print(
           '[DashboardVM] Active Vouchers (Filtered by Router $idRouter): ${activeUserCount.value}',
