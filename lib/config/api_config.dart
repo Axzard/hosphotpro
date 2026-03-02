@@ -10,6 +10,7 @@ class ApiConfig {
 
   // Langganan endpoints
   static const String packages = '$baseUrl/api/langganan/paket';
+  static const String publicPackages = '$baseUrl/api/langganan/public/paket';
   static String packageDetail(int id) => '$baseUrl/api/langganan/paket/$id';
   static const String createSubscription = '$baseUrl/api/langganan';
   static const String mySubscriptions = '$baseUrl/api/langganan/saya';

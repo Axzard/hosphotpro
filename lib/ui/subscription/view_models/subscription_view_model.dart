@@ -41,8 +41,15 @@ class SubscriptionViewModel extends GetxController {
   void onInit() {
     super.onInit();
 
-    Future.wait([loadPackages(), loadMySubscriptions()]);
+    _loadInitialData();
     _initRealtimeListeners();
+  }
+
+  Future<void> _loadInitialData() async {
+    // Load subscriptions first to know if user is subscribed
+    await loadMySubscriptions();
+    // Then load packages (public or authenticated based on subscription status)
+    await loadPackages();
   }
 
   void _initRealtimeListeners() {
@@ -64,7 +71,12 @@ class SubscriptionViewModel extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
-      final result = await _subscriptionRepository.getPackages();
+      
+      // Use public endpoint if no active subscription
+      final bool isPublic = currentSubscription.value == null;
+      print('Fetching packages: isPublic=$isPublic');
+      
+      final result = await _subscriptionRepository.getPackages(isPublic: isPublic);
       packages.assignAll(result);
     } catch (e) {
       errorMessage.value = ErrorUtils.getUserFriendlyMessage(e);
@@ -98,20 +110,7 @@ class SubscriptionViewModel extends GetxController {
   }
 
   double calculateTotalPrice(SubscriptionPackageModel package) {
-    final basePrice = package.price;
-    final duration = selectedDuration.value;
-
-    double discount = 0;
-    if (duration == 3) {
-      discount = 0.10;
-    } else if (duration == 6) {
-      discount = 0.15;
-    } else if (duration == 12) {
-      discount = 0.20;
-    }
-
-    final totalPrice = basePrice * duration * (1 - discount);
-    return totalPrice;
+    return package.price * selectedDuration.value;
   }
 
   Future<void> initiatePayment(SubscriptionPackageModel package) async {

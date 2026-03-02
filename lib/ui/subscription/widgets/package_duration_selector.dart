@@ -17,12 +17,10 @@ class PackageDurationSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final durationOptions = [
-      {'months': 1, 'label': '1 Bulan'},
-      {'months': 3, 'label': '3 Bulan'},
-      {'months': 6, 'label': '6 Bulan'},
-      {'months': 12, 'label': '12 Bulan'},
-    ];
+    final durationOptions = List.generate(12, (index) {
+      final months = index + 1;
+      return {'months': months, 'label': '$months Bulan'};
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

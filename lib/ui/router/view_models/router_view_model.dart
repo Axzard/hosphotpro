@@ -157,87 +157,139 @@ class RouterViewModel extends GetxController {
     return true;
   }
 
+  final RxBool isPingLoading = false.obs;
+  final RxString pingStatus = 'UNKNOWN'.obs;
+  final RxString pingResponseTime = '-'.obs;
+  final RxList<String> pingLines = <String>[].obs;
+
   Future<void> pingRouter(String id) async {
     try {
-      isLoading.value = true;
-      final int routerId = int.tryParse(id) ?? 0;
-      final result = await _routerRepository.pingRouter(routerId);
-
-      final isOnline = result['status'] == 'ONLINE';
-      final detail = result['detail'] ?? {};
-      final output = detail['output'] ?? 'No output';
-      final time = detail['time']?.toString() ?? '-';
+      isPingLoading.value = true;
+      pingStatus.value = 'PENDING';
+      pingResponseTime.value = '-';
+      pingLines.clear();
 
       Get.dialog(
-        AlertDialog(
-          backgroundColor: const Color(0xFF131E29),
-          title: Row(
-            children: [
-              Icon(
-                isOnline ? Icons.check_circle : Icons.error,
-                color: isOnline ? Colors.green : Colors.red,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Router Ping Status',
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+        Obx(
+          () => AlertDialog(
+            backgroundColor: const Color(0xFF131E29),
+            title: Row(
               children: [
-                _buildStatusRow(
-                  'Status',
-                  result['status'] ?? 'UNKNOWN',
-                  isOnline ? Colors.green : Colors.red,
-                ),
-                _buildStatusRow('Response Time', '$time ms', Colors.white70),
-                const SizedBox(height: 16),
-                const Text(
-                  'Console Output:',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  width: double.maxFinite,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    output,
-                    style: GoogleFonts.firaCode(
-                      color: Colors.greenAccent,
-                      fontSize: 10,
+                if (isPingLoading.value)
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF00C2FF),
                     ),
+                  )
+                else
+                  Icon(
+                    pingStatus.value == 'ONLINE'
+                        ? Icons.check_circle
+                        : Icons.error,
+                    color: pingStatus.value == 'ONLINE'
+                        ? Colors.green
+                        : Colors.red,
                   ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Router Ping Status',
+                  style: TextStyle(color: Colors.white),
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(),
-              child: const Text(
-                'Tutup',
-                style: TextStyle(color: Color(0xFF00C2FF)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStatusRow(
+                    'Status',
+                    pingStatus.value,
+                    pingStatus.value == 'ONLINE' ? Colors.green : Colors.red,
+                  ),
+                  _buildStatusRow(
+                    'Response Time',
+                    '${pingResponseTime.value} ms',
+                    Colors.white70,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Console Output:',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    constraints: const BoxConstraints(minHeight: 150),
+                    width: double.maxFinite,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: pingLines.isEmpty && isPingLoading.value
+                        ? const Center(
+                            child: Text(
+                              "Waiting for response...",
+                              style: TextStyle(
+                                color: Colors.white24,
+                                fontSize: 10,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            pingLines.join('\n'),
+                            style: GoogleFonts.firaCode(
+                              color: Colors.greenAccent,
+                              fontSize: 10,
+                            ),
+                          ),
+                  ),
+                ],
               ),
             ),
-          ],
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(),
+                child: const Text(
+                  'Tutup',
+                  style: TextStyle(color: Color(0xFF00C2FF)),
+                ),
+              ),
+            ],
+          ),
         ),
+        barrierDismissible: false,
       );
+
+      final int routerId = int.tryParse(id) ?? 0;
+      final result = await _routerRepository.pingRouter(routerId);
+
+      final detail = result['detail'] ?? {};
+      final String rawOutput = detail['output'] ?? 'No output';
+      final String time = detail['time']?.toString() ?? '-';
+
+      isPingLoading.value = false;
+      pingStatus.value = result['status'] ?? 'UNKNOWN';
+      pingResponseTime.value = time;
+
+      final List<String> lines = rawOutput.split('\n');
+      for (var line in lines) {
+        if (line.trim().isEmpty) continue;
+        pingLines.add(line);
+
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
     } catch (e) {
+      isPingLoading.value = false;
+      if (Get.isDialogOpen ?? false) Get.back();
       SnackbarUtils.showError('Ping Gagal', e.toString());
-    } finally {
-      isLoading.value = false;
     }
   }
 

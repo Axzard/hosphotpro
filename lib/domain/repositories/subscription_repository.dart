@@ -3,7 +3,7 @@ import '../models/transaction_model.dart';
 import '../models/user_subscription_model.dart';
 
 abstract class SubscriptionRepository {
-  Future<List<SubscriptionPackageModel>> getPackages();
+  Future<List<SubscriptionPackageModel>> getPackages({bool isPublic = false});
   Future<SubscriptionPackageModel?> getPackageDetail(int id);
   Future<Map<String, dynamic>?> createSubscription(
     int packageId,
