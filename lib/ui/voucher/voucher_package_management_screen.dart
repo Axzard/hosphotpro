@@ -152,12 +152,18 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
       controller.dnsLoginController.clear();
       controller.prefixController.clear();
       controller.panjangUsernameController.clear();
-      controller.dataLimitMbController.clear();
       controller.rateLimitController.clear();
       controller.gunakanSsl.value = false;
 
-      if (controller.selectedHotspot.value == null && controller.hotspots.isNotEmpty) {
-        controller.selectedHotspot.value = controller.hotspots.first;
+      // Initialize form hotspot with current filter or first available (excluding 'Semua Hotspot')
+      if (controller.selectedHotspot.value != null && 
+          controller.selectedHotspot.value!.idHotspot != -1) {
+        controller.formSelectedHotspot.value = controller.selectedHotspot.value;
+      } else if (controller.hotspots.isNotEmpty) {
+        controller.formSelectedHotspot.value = controller.hotspots.firstWhere(
+          (h) => h.idHotspot != -1,
+          orElse: () => controller.hotspots.first,
+        );
       }
     }
 
@@ -217,7 +223,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                 ],
               ),
               const SizedBox(height: 24),
-              _buildHotspotSelector(),
+              _buildHotspotSelector(isEdit),
               const SizedBox(height: 16),
               _buildTextField(
                 controller.namaPaketController,
@@ -262,8 +268,6 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              _buildDataLimitField(),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -344,9 +348,9 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
     );
   }
 
-  Widget _buildHotspotSelector() {
+  Widget _buildHotspotSelector(bool isEdit) {
     return Obx(() {
-      final currentHotspot = controller.selectedHotspot.value;
+      final currentHotspot = controller.formSelectedHotspot.value;
       final dropdownValue = controller.hotspots.firstWhereOrNull(
         (h) => h.idHotspot == currentHotspot?.idHotspot,
       );
@@ -375,9 +379,9 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                 child: Text(hotspot.namaServer),
               );
             }).toList(),
-            onChanged: (val) {
+            onChanged: isEdit ? null : (val) {
               if (val != null) {
-                controller.onHotspotChanged(val);
+                controller.onFormHotspotChanged(val);
               }
             },
           ),
@@ -435,62 +439,6 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
     );
   }
 
-  Widget _buildDataLimitField() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          flex: 4,
-          child: _buildTextField(
-            controller.dataLimitMbController,
-            'Limit Data',
-            hint: '0 (Unlimited)',
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 2,
-          child: Container(
-            height: 56,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-            ),
-            child: Obx(
-              () => DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: controller.selectedDataUnit.value,
-                  dropdownColor: const Color(0xFF1E293B),
-                  isExpanded: true,
-                  icon: const Icon(
-                    Icons.unfold_more,
-                    color: Color(0xFF00C2FF),
-                    size: 18,
-                  ),
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  items: controller.dataUnitOptions.map((unit) {
-                    return DropdownMenuItem<String>(
-                      value: unit,
-                      child: Text(unit),
-                    );
-                  }).toList(),
-                  onChanged: controller.onDataUnitChanged,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   void _showDeleteConfirm(BuildContext context, VoucherPackageModel package) {
     Get.dialog(

@@ -27,8 +27,7 @@ class VoucherViewModel extends GetxController {
   List<VoucherModel> get stockVouchers => _applyFilters(VoucherStatus.stok);
   List<VoucherModel> get soldVouchers => _applyFilters(VoucherStatus.terjual);
   List<VoucherModel> get activeVouchers => _applyFilters(VoucherStatus.aktif);
-  List<VoucherModel> get expiredVouchers =>
-      _applyFilters(VoucherStatus.expired);
+  List<VoucherModel> get expiredVouchers => _applyFilters(VoucherStatus.expired);
 
   List<VoucherModel> _applyFilters(VoucherStatus status) {
     return vouchers.where((v) {
@@ -57,7 +56,7 @@ class VoucherViewModel extends GetxController {
   final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
   final Rxn<HotspotModel> selectedHotspot = Rxn<HotspotModel>();
   final selectedPaketId = Rxn<int>();
-
+  
   StreamSubscription? _refreshSub;
 
   @override
@@ -171,6 +170,7 @@ class VoucherViewModel extends GetxController {
     super.onClose();
   }
 
+
   Future<void> loadRouters() async {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) {
@@ -270,6 +270,7 @@ class VoucherViewModel extends GetxController {
       isLoading.value = false;
     }
   }
+
 
   Future<void> createVoucher() async {
     final dashboardVM = Get.find<DashboardViewModel>();

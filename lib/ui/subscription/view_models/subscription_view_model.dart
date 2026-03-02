@@ -72,11 +72,7 @@ class SubscriptionViewModel extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
       
-      // Use public endpoint if no active subscription
-      final bool isPublic = currentSubscription.value == null;
-      print('Fetching packages: isPublic=$isPublic');
-      
-      final result = await _subscriptionRepository.getPackages(isPublic: isPublic);
+      final result = await _subscriptionRepository.getPackages();
       packages.assignAll(result);
     } catch (e) {
       errorMessage.value = ErrorUtils.getUserFriendlyMessage(e);

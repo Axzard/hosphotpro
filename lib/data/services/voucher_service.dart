@@ -7,14 +7,15 @@ import '../model/voucher_package_api_model.dart';
 import 'token_service.dart';
 
 class VoucherService extends GetxService {
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-    sendTimeout: const Duration(seconds: 30),
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+    ),
+  );
   final TokenService _tokenService = Get.find<TokenService>();
 
-  /// GET /api/paket-voucher/router/{idRouter}
   Future<ApiResponse<List<VoucherPackageApiModel>>> getVoucherPackages(
     int idHotspot,
   ) async {
@@ -44,7 +45,7 @@ class VoucherService extends GetxService {
         final packages = listData
             .map((json) => VoucherPackageApiModel.fromJson(json))
             .toList();
-            
+
         return ApiResponse(
           success: true,
           message: message ?? 'Packages fetched',
@@ -68,7 +69,8 @@ class VoucherService extends GetxService {
     }
   }
 
-  Future<ApiResponse<List<VoucherPackageApiModel>>> getAllVoucherPackages() async {
+  Future<ApiResponse<List<VoucherPackageApiModel>>>
+  getAllVoucherPackages() async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.get(
@@ -94,7 +96,7 @@ class VoucherService extends GetxService {
         final packages = listData
             .map((json) => VoucherPackageApiModel.fromJson(json))
             .toList();
-            
+
         return ApiResponse(
           success: true,
           message: message ?? 'Packages fetched',
@@ -118,7 +120,6 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// POST /api/paket-voucher
   Future<ApiResponse<VoucherPackageApiModel?>> createVoucherPackage(
     VoucherPackageApiModel package,
   ) async {
@@ -150,7 +151,9 @@ class VoucherService extends GetxService {
             dataLimitMb: package.dataLimitMb,
           );
         } else if (response.data['data'] != null) {
-          createdPackage = VoucherPackageApiModel.fromJson(response.data['data']);
+          createdPackage = VoucherPackageApiModel.fromJson(
+            response.data['data'],
+          );
         }
         return ApiResponse(
           success: true,
@@ -160,8 +163,10 @@ class VoucherService extends GetxService {
       } else {
         String errorMsg = 'Server Error (${response.statusCode})';
         if (response.data is Map<String, dynamic>) {
-          errorMsg = response.data['pesan'] ?? response.data['detail'] ?? errorMsg;
-        } else if (response.data is String && response.data.toString().isNotEmpty) {
+          errorMsg =
+              response.data['pesan'] ?? response.data['detail'] ?? errorMsg;
+        } else if (response.data is String &&
+            response.data.toString().isNotEmpty) {
           errorMsg = response.data.toString();
         }
         return ApiResponse(success: false, message: errorMsg);
@@ -176,7 +181,6 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// GET /api/paket-voucher/{id}
   Future<ApiResponse<VoucherPackageApiModel?>> getVoucherPackageDetail(
     int id,
   ) async {
@@ -191,7 +195,9 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.data['sukses'] == true) {
-        final package = VoucherPackageApiModel.fromJson(response.data['data'] ?? response.data);
+        final package = VoucherPackageApiModel.fromJson(
+          response.data['data'] ?? response.data,
+        );
         return ApiResponse(success: true, message: 'OK', data: package);
       } else {
         return ApiResponse(
@@ -204,7 +210,6 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// PUT /api/paket-voucher/{id}
   Future<ApiResponse<void>> updateVoucherPackage(
     int id,
     VoucherPackageApiModel package,
@@ -236,7 +241,6 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// DELETE /api/paket-voucher/{id}
   Future<ApiResponse<void>> deleteVoucherPackage(int id) async {
     try {
       final token = _tokenService.getToken();
@@ -264,7 +268,6 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// GET /api/voucher/paket/{idPaket}
   Future<ApiResponse<List<VoucherApiModel>>> getVouchersByPackage(
     int idPaket,
   ) async {
@@ -289,22 +292,17 @@ class VoucherService extends GetxService {
           data: vouchers,
         );
       } else {
-        final errorMsg = response.data?['pesan'] ??
+        final errorMsg =
+            response.data?['pesan'] ??
             response.data?['detail'] ??
             'Status code: ${response.statusCode}';
-        return ApiResponse(
-          success: false,
-          message: errorMsg,
-          data: [],
-        );
+        return ApiResponse(success: false, message: errorMsg, data: []);
       }
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), data: []);
     }
   }
 
-  /// GET /api/voucher?id_hotspot={idHotspot}
-  // This might be deprecated/non-existent based on 404, we'll keep it for now but prioritize byPackage
   Future<ApiResponse<List<VoucherApiModel>>> getVouchersByHotspot(
     int idHotspot,
   ) async {
@@ -329,24 +327,18 @@ class VoucherService extends GetxService {
           data: vouchers,
         );
       } else {
-        final errorMsg = response.data?['pesan'] ??
+        final errorMsg =
+            response.data?['pesan'] ??
             response.data?['detail'] ??
             'Status code: ${response.statusCode}';
-        return ApiResponse(
-          success: false,
-          message: errorMsg,
-          data: [],
-        );
+        return ApiResponse(success: false, message: errorMsg, data: []);
       }
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), data: []);
     }
   }
 
-  /// GET /api/voucher/{id}
-  Future<ApiResponse<VoucherApiModel?>> getVoucherDetail(
-    int id,
-  ) async {
+  Future<ApiResponse<VoucherApiModel?>> getVoucherDetail(int id) async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.get(
@@ -371,10 +363,7 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// POST /api/voucher  (single)
-  Future<ApiResponse<VoucherApiModel?>> createVoucher(
-    int idPaket,
-  ) async {
+  Future<ApiResponse<VoucherApiModel?>> createVoucher(int idPaket) async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.post(
@@ -408,7 +397,6 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// POST /api/voucher/bulk
   Future<ApiResponse<List<VoucherApiModel>>> createVoucherBulk(
     int idPaket,
     int jumlah,
@@ -449,7 +437,6 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// DELETE /api/voucher/{id}
   Future<ApiResponse<void>> deleteVoucher(int id) async {
     try {
       final token = _tokenService.getToken();
@@ -477,7 +464,6 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// GET /api/voucher/aktif
   Future<ApiResponse<List<VoucherApiModel>>> getActiveVouchers() async {
     try {
       final token = _tokenService.getToken();
@@ -499,7 +485,9 @@ class VoucherService extends GetxService {
           listData = rawData;
         }
 
-        final vouchers = listData.map((json) => VoucherApiModel.fromJson(json)).toList();
+        final vouchers = listData
+            .map((json) => VoucherApiModel.fromJson(json))
+            .toList();
         return ApiResponse(
           success: true,
           message: 'Vouchers fetched',
@@ -517,7 +505,6 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// POST /api/voucher/jual/{id}
   Future<ApiResponse<double>> sellVoucher(int id, String paymentMethod) async {
     try {
       final token = _tokenService.getToken();

@@ -24,6 +24,7 @@ class VoucherPackageViewModel extends GetxController {
 
   final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
   final Rxn<HotspotModel> selectedHotspot = Rxn<HotspotModel>();
+  final Rxn<HotspotModel> formSelectedHotspot = Rxn<HotspotModel>(); // Separate state for form
   final RxBool isLoading = false.obs;
   final RxSet<int> deletingPackageIds = <int>{}.obs;
 
@@ -33,7 +34,6 @@ class VoucherPackageViewModel extends GetxController {
   final profileMikrotikController = TextEditingController();
   final prefixController = TextEditingController();
   final panjangUsernameController = TextEditingController();
-  final dataLimitMbController = TextEditingController();
   final rateLimitController = TextEditingController();
   final dnsLoginController = TextEditingController();
 
@@ -46,9 +46,6 @@ class VoucherPackageViewModel extends GetxController {
     'angka',
     'mix',
   ];
-
-  final RxString selectedDataUnit = 'MB'.obs;
-  final List<String> dataUnitOptions = ['MB', 'GB'];
 
   final Map<String, String> formatKarakterLabels = {
     'huruf_kecil': 'Random abcd',
@@ -113,7 +110,6 @@ class VoucherPackageViewModel extends GetxController {
     profileMikrotikController.dispose();
     prefixController.dispose();
     panjangUsernameController.dispose();
-    dataLimitMbController.dispose();
     rateLimitController.dispose();
     dnsLoginController.dispose();
     super.onClose();
@@ -238,17 +234,16 @@ class VoucherPackageViewModel extends GetxController {
     selectedHotspot.value = hotspot;
   }
 
+  void onFormHotspotChanged(HotspotModel? hotspot) {
+    formSelectedHotspot.value = hotspot;
+  }
+
   void onFormatKarakterChanged(String? value) {
     if (value != null) {
       selectedFormatKarakter.value = value;
     }
   }
 
-  void onDataUnitChanged(String? value) {
-    if (value != null) {
-      selectedDataUnit.value = value;
-    }
-  }
 
   Future<void> createPackage() async {
     final dashboardVM = Get.find<DashboardViewModel>();
@@ -264,16 +259,10 @@ class VoucherPackageViewModel extends GetxController {
 
     try {
       isLoading.value = true;
-
-      int dataLimit = int.tryParse(dataLimitMbController.text) ?? 0;
-      if (selectedDataUnit.value == 'GB') {
-        dataLimit *= 1024;
-      }
-
       final package = VoucherPackageModel(
         id: 0,
         idRouter: null,
-        idHotspot: selectedHotspot.value!.idHotspot,
+        idHotspot: formSelectedHotspot.value!.idHotspot,
         namaPaket: namaPaketController.text,
         durasi: durasiController.text,
         harga: CurrencyFormatter.parse(hargaController.text),
@@ -281,7 +270,7 @@ class VoucherPackageViewModel extends GetxController {
         prefix: prefixController.text,
         panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
         formatKarakter: selectedFormatKarakter.value,
-        dataLimitMb: dataLimit,
+        dataLimitMb: 0,
         rateLimit: rateLimitController.text.isNotEmpty
             ? rateLimitController.text
             : null,
@@ -308,16 +297,10 @@ class VoucherPackageViewModel extends GetxController {
 
     try {
       isLoading.value = true;
-
-      int dataLimit = int.tryParse(dataLimitMbController.text) ?? 0;
-      if (selectedDataUnit.value == 'GB') {
-        dataLimit *= 1024;
-      }
-
       final package = VoucherPackageModel(
         id: id,
         idRouter: null,
-        idHotspot: selectedHotspot.value!.idHotspot,
+        idHotspot: formSelectedHotspot.value!.idHotspot,
         namaPaket: namaPaketController.text,
         durasi: durasiController.text,
         harga: CurrencyFormatter.parse(hargaController.text),
@@ -325,7 +308,7 @@ class VoucherPackageViewModel extends GetxController {
         prefix: prefixController.text,
         panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
         formatKarakter: selectedFormatKarakter.value,
-        dataLimitMb: dataLimit,
+        dataLimitMb: 0,
         rateLimit: rateLimitController.text.isNotEmpty
             ? rateLimitController.text
             : null,
@@ -378,15 +361,6 @@ class VoucherPackageViewModel extends GetxController {
     dnsLoginController.text = package.dnsLogin ?? '';
     gunakanSsl.value = package.gunakanSsl;
 
-    if (package.dataLimitMb >= 1024 && package.dataLimitMb % 1024 == 0) {
-      dataLimitMbController.text = (package.dataLimitMb / 1024).toStringAsFixed(
-        0,
-      );
-      selectedDataUnit.value = 'GB';
-    } else {
-      dataLimitMbController.text = package.dataLimitMb.toString();
-      selectedDataUnit.value = 'MB';
-    }
 
     selectedFormatKarakter.value = package.formatKarakter;
 
@@ -395,9 +369,9 @@ class VoucherPackageViewModel extends GetxController {
     );
 
     if (existingHotspot != null) {
-      selectedHotspot.value = existingHotspot;
+      formSelectedHotspot.value = existingHotspot;
     } else {
-      selectedHotspot.value = null;
+      formSelectedHotspot.value = null;
       print(
         '[VoucherForm] Warning: Package hotspot ID ${package.idHotspot} not found in current hotspots list',
       );
@@ -411,16 +385,14 @@ class VoucherPackageViewModel extends GetxController {
     profileMikrotikController.clear();
     prefixController.clear();
     panjangUsernameController.clear();
-    dataLimitMbController.clear();
-    rateLimitController.clear();
     dnsLoginController.clear();
     gunakanSsl.value = false;
     selectedFormatKarakter.value = 'mix';
-    selectedDataUnit.value = 'MB';
+    formSelectedHotspot.value = null;
   }
 
   bool _validateForm() {
-    if (selectedHotspot.value == null || selectedHotspot.value?.idHotspot == -1) {
+    if (formSelectedHotspot.value == null || formSelectedHotspot.value?.idHotspot == -1) {
       SnackbarUtils.showError('Error', 'Hotspot harus dipilih secara spesifik untuk membuat paket');
       return false;
     }

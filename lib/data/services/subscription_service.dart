@@ -17,12 +17,10 @@ class SubscriptionService extends GetxService {
   );
   final TokenService _tokenService = Get.find<TokenService>();
 
-  Future<ApiResponse<List<SubscriptionPackageApiModel>>> getPackages({
-    bool isPublic = false,
-  }) async {
+  Future<ApiResponse<List<SubscriptionPackageApiModel>>> getPackages() async {
     try {
       final token = _tokenService.getToken();
-      final url = isPublic ? ApiConfig.publicPackages : ApiConfig.packages;
+      final url = ApiConfig.packages;
 
       final response = await _dio.get(
         url,

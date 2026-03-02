@@ -10,11 +10,12 @@ class ApiConfig {
 
   // Langganan endpoints
   static const String packages = '$baseUrl/api/langganan/paket';
-  static const String publicPackages = '$baseUrl/api/langganan/public/paket';
   static String packageDetail(int id) => '$baseUrl/api/langganan/paket/$id';
   static const String createSubscription = '$baseUrl/api/langganan';
   static const String mySubscriptions = '$baseUrl/api/langganan/saya';
   static String updateSubscriptionStatus(int id) => '$baseUrl/api/langganan/$id/status';
+
+  // Transaksi endpoints
   static const String checkout = '$baseUrl/api/transaksi/checkout';
   static const String perpanjang = '$baseUrl/api/transaksi/perpanjang';
   static const String callback = '$baseUrl/api/transaksi/callback';

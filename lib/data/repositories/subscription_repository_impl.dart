@@ -10,9 +10,9 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
       Get.find<SubscriptionService>();
 
   @override
-  Future<List<SubscriptionPackageModel>> getPackages({bool isPublic = false}) async {
+  Future<List<SubscriptionPackageModel>> getPackages() async {
     try {
-      final response = await _subscriptionService.getPackages(isPublic: isPublic);
+      final response = await _subscriptionService.getPackages();
       if (response.success && response.data != null) {
         return response.data!.map((pkg) => pkg.toDomain()).toList();
       }
