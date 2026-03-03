@@ -127,7 +127,7 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
                               Get.put(SubscriptionViewModel(Get.find()));
                             }
                             controller.selectedPackageForDetail.value = package;
-                            if (Get.isRegistered<NavigationController>()) {
+                            if (Get.isRegistered<NavigationController>() && ResponsiveLayout.isDesktop(context)) {
                               Get.find<NavigationController>().setIndexByRoute(Routes.PACKAGE_DETAIL);
                             } else {
                               Get.to(

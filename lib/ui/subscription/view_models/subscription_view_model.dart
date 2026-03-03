@@ -13,6 +13,7 @@ import '../midtrans_webview_screen.dart';
 import '../../../data/services/payment_persistence_service.dart';
 import '../../../core/services/websocket_service.dart';
 import '../../core/controllers/navigation_controller.dart';
+import '../../core/widgets/responsive_layout.dart';
 
 class SubscriptionViewModel extends GetxController {
   final SubscriptionRepository _subscriptionRepository;
@@ -343,7 +344,7 @@ class SubscriptionViewModel extends GetxController {
   }
 
   void navigateToPackages() {
-    if (Get.isRegistered<NavigationController>()) {
+    if (Get.isRegistered<NavigationController>() && Get.context != null && ResponsiveLayout.isDesktop(Get.context!)) {
       Get.find<NavigationController>().setIndexByRoute(Routes.PACKAGES);
     } else {
       Get.toNamed(Routes.PACKAGES);
