@@ -106,13 +106,48 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
           fontWeight: FontWeight.w600,
         ),
         dividerColor: Colors.transparent,
-        tabs: const [
-          Tab(text: 'STOK'),
-          Tab(text: 'TERJUAL'),
-          Tab(text: 'AKTIF'),
-          Tab(text: 'EXPIRED'),
+        tabs: [
+          Tab(
+            child: Obx(() => _buildTabLabel('STOK', controller.stockVouchers.length)),
+          ),
+          Tab(
+            child: Obx(() => _buildTabLabel('TERJUAL', controller.soldVouchers.length)),
+          ),
+          Tab(
+            child: Obx(() => _buildTabLabel('AKTIF', controller.activeVouchers.length)),
+          ),
+          Tab(
+            child: Obx(() => _buildTabLabel('EXPIRED', controller.expiredVouchers.length)),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTabLabel(String label, int count) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(label),
+        if (count > 0) ...[
+          const SizedBox(width: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              count.toString(),
+              style: const TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -542,15 +577,14 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: TextButton.icon(
-                          onPressed: () =>
-                              controller.sellVoucher(voucher, 'cash'),
+                          onPressed: () => controller.printVoucher(voucher),
                           icon: const Icon(
-                            Icons.sell_outlined,
+                            Icons.print_outlined,
                             size: 18,
                             color: Color(0xFF4ADE80),
                           ),
                           label: const Text(
-                            'Jual',
+                            'Print',
                             style: TextStyle(
                               color: Color(0xFF4ADE80),
                               fontWeight: FontWeight.bold,

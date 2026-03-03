@@ -93,7 +93,7 @@ class DashboardMenuGrid extends StatelessWidget {
               final isRestricted = !controller.isActiveSubscription.value;
               return _buildMenuCard(
                 icon: Icons.receipt_long_rounded,
-                title: 'Transaksi',
+                title: 'Laporan Penjualan',
                 subtitle: isRestricted ? 'Butuh Langganan' : 'Riwayat Penjualan',
                 color: isRestricted ? Colors.grey : const Color(0xFFFF6B81),
                 onTap: isRestricted

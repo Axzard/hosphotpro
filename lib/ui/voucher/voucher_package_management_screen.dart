@@ -331,11 +331,22 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    isEdit ? 'Simpan Perubahan' : 'Buat Paket',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Obx(
+                    () => controller.isLoading.value
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            isEdit ? 'Simpan Perubahan' : 'Buat Paket',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ),

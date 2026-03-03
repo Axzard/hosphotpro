@@ -183,54 +183,65 @@ class VoucherViewModel extends GetxController {
     try {
       if (routers.isEmpty) isLoading.value = true;
 
-      final result = await _routerRepository.getRouters();
-      
-      routers.assignAll([RouterModel.semua, ...result]);
+      // 1. Fetch Routers
+      final routerList = await _routerRepository.getRouters();
+      final allRouters = [RouterModel.semua, ...routerList];
 
-      if (selectedRouter.value == null) {
+      // Determine selected router
+      RouterModel? nextRouter = selectedRouter.value;
+      if (nextRouter == null) {
         final savedRouterId = _sessionService.selectedRouterId.value;
         if (savedRouterId != null) {
-          selectedRouter.value = routers.firstWhereOrNull((r) => r.id == savedRouterId);
+          nextRouter = allRouters.firstWhereOrNull((r) => r.id == savedRouterId);
         }
       }
-
-      // If still null, pick "Semua Router" by default
-      if (selectedRouter.value == null && routers.isNotEmpty) {
-        selectedRouter.value = RouterModel.semua;
+      if (nextRouter == null && allRouters.isNotEmpty) {
+        nextRouter = RouterModel.semua;
       }
       
-      final idRouter = int.tryParse(selectedRouter.value?.id ?? '') ?? 0;
-      List<HotspotModel> hotspotResult = await _routerRepository.getHotspots(idRouter);
+      // 2. Fetch Hotspots
+      final idRouter = int.tryParse(nextRouter?.id ?? '') ?? 0;
+      final hotspotList = await _routerRepository.getHotspots(idRouter);
+      final allHotspots = [HotspotModel.semua, ...hotspotList];
 
-      hotspots.assignAll([HotspotModel.semua, ...hotspotResult]);
+      // Determine selected hotspot
+      HotspotModel? nextHotspot = selectedHotspot.value;
+      bool currentStillValid = allHotspots.any(
+        (h) => h.idHotspot == nextHotspot?.idHotspot,
+      );
 
-      if (hotspots.isNotEmpty) {
-        final currentHotspot = selectedHotspot.value;
-        bool currentStillValid = hotspots.any(
-          (h) => h.idHotspot == currentHotspot?.idHotspot,
-        );
-
-        if (currentHotspot == null || !currentStillValid) {
-          final savedHotspotId = _sessionService.voucherHotspotId.value;
-          if (savedHotspotId != null) {
-            selectedHotspot.value = hotspots.firstWhereOrNull((h) => h.idHotspot == savedHotspotId);
-          }
+      if (nextHotspot == null || !currentStillValid) {
+        final savedHotspotId = _sessionService.voucherHotspotId.value;
+        if (savedHotspotId != null) {
+          nextHotspot = allHotspots.firstWhereOrNull((h) => h.idHotspot == savedHotspotId);
         }
-        
-        // If still null, pick "Semua Hotspot" by default
-        if (selectedHotspot.value == null && hotspots.isNotEmpty) {
-          selectedHotspot.value = HotspotModel.semua;
-        }
-
-        // Trigger loading data
-        await loadVoucherPackages();
-        await loadVouchers();
       }
+      
+      if (nextHotspot == null && allHotspots.isNotEmpty) {
+        nextHotspot = HotspotModel.semua;
+      }
+
+      // 3. Fetch Packages and Vouchers in parallel
+      final idHotspot = nextHotspot?.idHotspot ?? 0;
+      final results = await Future.wait([
+        _voucherRepository.getVoucherPackages(idHotspot),
+        _voucherRepository.getVouchersByHotspot(idHotspot),
+      ]);
+
+      final pkgList = results[0] as List<VoucherPackageModel>;
+      final vchList = results[1] as List<VoucherModel>;
+
+      // 4. BATCH UPDATE ALL STATES AT ONCE
+      // This prevents the "one by one" loading feel in the UI
+      routers.assignAll(allRouters);
+      selectedRouter.value = nextRouter;
+      hotspots.assignAll(allHotspots);
+      selectedHotspot.value = nextHotspot;
+      voucherPackages.assignAll(pkgList);
+      vouchers.assignAll(vchList);
+
     } catch (e) {
-      if (selectedHotspot.value != null) {
-        await onHotspotChanged(selectedHotspot.value);
-      }
-      SnackbarUtils.showError('Error', 'Gagal memuat daftar hotspot: $e');
+      SnackbarUtils.showError('Error', 'Gagal memuat data voucher: $e');
     } finally {
       isLoading.value = false;
       _isInitialLoad.value = false;
@@ -294,7 +305,6 @@ class VoucherViewModel extends GetxController {
       await _voucherRepository.createVoucher(idPaket);
       Get.back();
       SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dibuat');
-      await loadVouchers();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal membuat voucher: $e');
     } finally {
@@ -327,8 +337,6 @@ class VoucherViewModel extends GetxController {
         'Berhasil',
         '${count.value} voucher berhasil dibuat',
       );
-
-      await loadVouchers();
 
       if (result.isNotEmpty) {
         final selectedPackage = voucherPackages.firstWhereOrNull(
@@ -509,7 +517,10 @@ class VoucherViewModel extends GetxController {
     await Future.wait([loadVouchers(), loadVoucherPackages()]);
   }
 
-  void printVoucher(VoucherModel voucher) {
+  void printVoucher(VoucherModel voucher) async {
+    if (voucher.statusVoucher == VoucherStatus.stok) {
+      await sellVoucher(voucher, 'cash');
+    }
     _openPrintPreview([voucher]);
   }
 

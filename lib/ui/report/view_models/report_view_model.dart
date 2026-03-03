@@ -5,7 +5,6 @@ import '../../../domain/models/report_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/services/websocket_service.dart';
 import '../../../config/routing/app_routes.dart' as app_routes;
-import 'package:intl/intl.dart';
 
 class ReportViewModel extends GetxController {
   final ReportRepository _reportRepository = Get.find<ReportRepository>();
@@ -89,25 +88,16 @@ class ReportViewModel extends GetxController {
       final year = selectedDate.value?.year ?? now.year;
       final month = selectedDate.value?.month ?? now.month;
 
-      final firstDay = DateTime(year, month, 1);
-      final lastDay = DateTime(year, month + 1, 0);
+      final dashboardReport = await _reportRepository.getDashboardReport(
+        year: year,
+        month: month,
+      );
 
-      final startDateStr = DateFormat('yyyy-MM-dd').format(firstDay);
-      final endDateStr = DateFormat('yyyy-MM-dd').format(lastDay);
-
-      final results = await Future.wait([
-        _reportRepository.getGroupedReport(
-          type: 'day',
-          start: startDateStr,
-          end: endDateStr,
-        ),
-        _reportRepository.getMonthlyReports(year: selectedYear.value),
-        _reportRepository.getYearlyReports(),
-      ]);
-
-      dailyReports.assignAll(results[0] as List<DailyReportModel>);
-      monthlyReports.assignAll(results[1] as List<MonthlyReportModel>);
-      yearlyReports.assignAll(results[2] as List<YearlyReportModel>);
+      if (dashboardReport != null) {
+        dailyReports.assignAll(dashboardReport.perHari);
+        monthlyReports.assignAll(dashboardReport.perBulan);
+        yearlyReports.assignAll(dashboardReport.perTahun);
+      }
     } catch (e) {
       if (!isSilent) {
         Get.toNamed(
