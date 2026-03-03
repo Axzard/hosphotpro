@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 import '../../ui/main/main_layout_screen.dart';
 import '../../ui/core/controllers/navigation_controller.dart';
-import '../../ui/dashboard/dashboard_screen.dart';
 import '../../ui/auth/login_screen.dart';
 import '../../ui/auth/register_screen.dart';
 import '../../ui/dashboard/view_models/dashboard_view_model.dart';
@@ -49,6 +48,7 @@ class AppPages {
         Get.lazyPut(() => RouterViewModel(Get.find()));
         Get.lazyPut(() => HotspotViewModel());
         Get.lazyPut(() => ReportViewModel());
+        Get.lazyPut(() => VoucherPackageViewModel());
         if (!Get.isRegistered<SubscriptionViewModel>()) {
           Get.put(SubscriptionViewModel(Get.find()));
         }

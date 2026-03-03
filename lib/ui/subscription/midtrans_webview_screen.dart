@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hotspotpro/ui/subscription/view_models/subscription_view_model.dart';
+import 'package:hotspotsio/ui/subscription/view_models/subscription_view_model.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import '../../../core/utils/snackbar_utils.dart';

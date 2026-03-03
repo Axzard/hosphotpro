@@ -23,16 +23,26 @@ class DesktopSidebar extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 40),
-            alignment: Alignment.center,
-            child: const Text(
-              'hotspotpro',
-              style: TextStyle(
-                color: Color(0xFF00C2FF),
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
+            padding: const EdgeInsets.fromLTRB(24, 40, 16, 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'hotspotsio',
+                  style: TextStyle(
+                    color: Color(0xFF00C2FF),
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                if (navCtrl != null)
+                  IconButton(
+                    icon: const Icon(Icons.menu_open, color: Colors.white70),
+                    onPressed: navCtrl.toggleSidebar,
+                    tooltip: 'Tutup Menu',
+                  ),
+              ],
             ),
           ),
           Expanded(
@@ -63,13 +73,23 @@ class DesktopSidebar extends StatelessWidget {
                     navCtrl: navCtrl,
                   ),
                   _SidebarItem(
+                    icon: Icons.inventory_2_outlined,
+                    label: 'Paket Voucher',
+                    route: Routes.VOUCHER_PACKAGES,
+                    isActive: navCtrl != null 
+                        ? selectedIndex == 2 
+                        : currentRoute == Routes.VOUCHER_PACKAGES,
+                    index: 2,
+                    navCtrl: navCtrl,
+                  ),
+                  _SidebarItem(
                     icon: Icons.router_outlined,
                     label: 'Manajemen Router',
                     route: Routes.MIKROTIK_ROUTERS,
                     isActive: navCtrl != null 
-                        ? selectedIndex == 2 
+                        ? selectedIndex == 3 
                         : currentRoute == Routes.MIKROTIK_ROUTERS,
-                    index: 2,
+                    index: 3,
                     navCtrl: navCtrl,
                   ),
                   _SidebarItem(
@@ -77,9 +97,9 @@ class DesktopSidebar extends StatelessWidget {
                     label: 'Manajemen Hotspot',
                     route: Routes.HOTSPOTS,
                     isActive: navCtrl != null 
-                        ? selectedIndex == 3 
+                        ? selectedIndex == 4 
                         : currentRoute == Routes.HOTSPOTS,
-                    index: 3,
+                    index: 4,
                     navCtrl: navCtrl,
                   ),
                   _SidebarItem(
@@ -87,9 +107,9 @@ class DesktopSidebar extends StatelessWidget {
                     label: 'Laporan',
                     route: Routes.TRANSACTIONS,
                     isActive: navCtrl != null 
-                        ? selectedIndex == 4 
+                        ? selectedIndex == 5 
                         : currentRoute == Routes.TRANSACTIONS,
-                    index: 4,
+                    index: 5,
                     navCtrl: navCtrl,
                   ),
                   _SidebarItem(
@@ -97,9 +117,9 @@ class DesktopSidebar extends StatelessWidget {
                     label: 'Paket Langganan',
                     route: Routes.PACKAGES,
                     isActive: navCtrl != null 
-                        ? selectedIndex == 5 
+                        ? selectedIndex == 6 
                         : currentRoute == Routes.PACKAGES,
-                    index: 5,
+                    index: 6,
                     navCtrl: navCtrl,
                   ),
                   _SidebarItem(
@@ -107,9 +127,9 @@ class DesktopSidebar extends StatelessWidget {
                     label: 'Status Langganan',
                     route: Routes.SUBSCRIPTION_STATUS,
                     isActive: navCtrl != null 
-                        ? selectedIndex == 6 
+                        ? selectedIndex == 7 
                         : currentRoute == Routes.SUBSCRIPTION_STATUS,
-                    index: 6,
+                    index: 7,
                     navCtrl: navCtrl,
                   ),
                 ],
@@ -121,7 +141,38 @@ class DesktopSidebar extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: ListTile(
               onTap: () {
-                Get.offAllNamed(Routes.LOGIN);
+                Get.dialog(
+                  AlertDialog(
+                    backgroundColor: const Color(0xFF131E29),
+                    title: const Text(
+                      'Konfirmasi Keluar',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    content: const Text(
+                      'Apakah Anda yakin ingin keluar dari aplikasi?',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Get.back(),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Get.back();
+                          Get.offAllNamed(Routes.LOGIN);
+                        },
+                        child: const Text(
+                          'Keluar',
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
               },
               leading: const Icon(Icons.logout, color: Colors.redAccent),
               title: const Text(

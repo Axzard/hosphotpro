@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../core/widgets/desktop_page_wrapper.dart';
 import '../core/widgets/responsive_layout.dart';
+import '../core/widgets/responsive_max_width.dart';
 import 'view_models/report_view_model.dart';
 import '../../../domain/models/report_model.dart';
 
@@ -179,18 +180,20 @@ class ReportScreen extends GetView<ReportViewModel> {
 
               // Tab content
               Expanded(
-                child: Obx(
-                  () => controller.isLoading.value
-                      ? const Center(
-                          child: CircularProgressIndicator(color: accentColor),
-                        )
-                      : TabBarView(
-                          children: [
-                            _buildDailyTab(controller),
-                            _buildMonthlyTab(controller),
-                            _buildYearlyTab(controller),
-                          ],
-                        ),
+                child: ResponsiveMaxWidth(
+                  child: Obx(
+                    () => controller.isLoading.value
+                        ? const Center(
+                            child: CircularProgressIndicator(color: accentColor),
+                          )
+                        : TabBarView(
+                            children: [
+                              _buildDailyTab(context, controller),
+                              _buildMonthlyTab(context, controller),
+                              _buildYearlyTab(context, controller),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             ],
@@ -200,7 +203,7 @@ class ReportScreen extends GetView<ReportViewModel> {
     );
   }
 
-  Widget _buildDailyTab(ReportViewModel controller) {
+  Widget _buildDailyTab(BuildContext context, ReportViewModel controller) {
     return Column(
       children: [
         _buildChartSection(
@@ -212,13 +215,13 @@ class ReportScreen extends GetView<ReportViewModel> {
         Expanded(
           child: controller.dailyReports.isEmpty
               ? _buildEmptyState()
-              : _buildDailyList(controller.dailyReports),
+              : _buildReportList(context, controller.dailyReports, 'daily'),
         ),
       ],
     );
   }
 
-  Widget _buildMonthlyTab(ReportViewModel controller) {
+  Widget _buildMonthlyTab(BuildContext context, ReportViewModel controller) {
     return Column(
       children: [
         _buildChartSection(
@@ -230,13 +233,13 @@ class ReportScreen extends GetView<ReportViewModel> {
         Expanded(
           child: controller.monthlyReports.isEmpty
               ? _buildEmptyState()
-              : _buildMonthlyList(controller.monthlyReports),
+              : _buildReportList(context, controller.monthlyReports, 'monthly'),
         ),
       ],
     );
   }
 
-  Widget _buildYearlyTab(ReportViewModel controller) {
+  Widget _buildYearlyTab(BuildContext context, ReportViewModel controller) {
     return Column(
       children: [
         _buildChartSection(
@@ -248,7 +251,7 @@ class ReportScreen extends GetView<ReportViewModel> {
         Expanded(
           child: controller.yearlyReports.isEmpty
               ? _buildEmptyState()
-              : _buildYearlyList(controller.yearlyReports),
+              : _buildReportList(context, controller.yearlyReports, 'yearly'),
         ),
       ],
     );
@@ -367,9 +370,9 @@ class ReportScreen extends GetView<ReportViewModel> {
 
                 String formatted = '';
                 if (value >= 1000000) {
-                  formatted = '${(value / 1000000).toStringAsFixed(1)}M';
+                  formatted = '${(value / 1000000).toStringAsFixed(1)}jt';
                 } else if (value >= 1000) {
-                  formatted = '${(value / 1000).toStringAsFixed(0)}K';
+                  formatted = '${(value / 1000).toStringAsFixed(0)}rb';
                 } else {
                   formatted = value.toStringAsFixed(0);
                 }
@@ -456,62 +459,65 @@ class ReportScreen extends GetView<ReportViewModel> {
     );
   }
 
-  Widget _buildDailyList(List<DailyReportModel> reports) {
-    if (reports.isEmpty) return _buildEmptyState();
-    return ListView.builder(
+  Widget _buildReportList(BuildContext context, List<dynamic> reports, String type) {
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+    
+    if (isDesktop) {
+      return GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 400,
+          mainAxisExtent: 130,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: reports.length,
+        itemBuilder: (context, index) {
+          final report = reports[index];
+          return _buildFlexibleReportCard(report, type);
+        },
+      );
+    }
+
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: reports.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final report = reports[index];
-        return _buildReportCard(
-          title: DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(report.tanggal),
-          income: report.totalPendapatan,
-          transactions: report.totalTransaksi,
-          icon: Icons.calendar_today,
-          iconColor: const Color(0xFF4ADE80),
-        );
+        return _buildFlexibleReportCard(report, type);
       },
     );
   }
 
-  Widget _buildMonthlyList(List<MonthlyReportModel> reports) {
-    if (reports.isEmpty) return _buildEmptyState();
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: reports.length,
-      itemBuilder: (context, index) {
-        final report = reports[index];
-        final monthName = DateFormat(
-          'MMMM',
-          'id_ID',
-        ).format(DateTime(2024, report.bulan));
-        return _buildReportCard(
-          title: monthName,
-          income: report.totalPendapatan,
-          transactions: report.totalTransaksi,
-          icon: Icons.calendar_month,
-          iconColor: const Color(0xFF00C2FF),
-        );
-      },
-    );
-  }
-
-  Widget _buildYearlyList(List<YearlyReportModel> reports) {
-    if (reports.isEmpty) return _buildEmptyState();
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: reports.length,
-      itemBuilder: (context, index) {
-        final report = reports[index];
-        return _buildReportCard(
-          title: '${report.tahun}',
-          income: report.totalPendapatan,
-          transactions: report.totalTransaksi,
-          icon: Icons.event,
-          iconColor: const Color(0xFFF472B6),
-        );
-      },
-    );
+  Widget _buildFlexibleReportCard(dynamic report, String type) {
+    if (report is DailyReportModel) {
+      return _buildReportCard(
+        title: DateFormat('EEEE, dd MMM yyyy', 'id_ID').format(report.tanggal),
+        income: report.totalPendapatan,
+        transactions: report.totalTransaksi,
+        icon: Icons.calendar_today,
+        iconColor: const Color(0xFF4ADE80),
+      );
+    } else if (report is MonthlyReportModel) {
+      final monthName = DateFormat('MMMM', 'id_ID').format(DateTime(2024, report.bulan));
+      return _buildReportCard(
+        title: monthName,
+        income: report.totalPendapatan,
+        transactions: report.totalTransaksi,
+        icon: Icons.calendar_month,
+        iconColor: const Color(0xFF00C2FF),
+      );
+    } else if (report is YearlyReportModel) {
+      return _buildReportCard(
+        title: '${report.tahun}',
+        income: report.totalPendapatan,
+        transactions: report.totalTransaksi,
+        icon: Icons.event,
+        iconColor: const Color(0xFFF472B6),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   Widget _buildReportCard({
@@ -528,7 +534,6 @@ class ReportScreen extends GetView<ReportViewModel> {
     );
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),

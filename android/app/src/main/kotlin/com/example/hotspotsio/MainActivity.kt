@@ -1,4 +1,4 @@
-package com.example.hotspotpro
+package com.example.hotspotsio
 
 import io.flutter.embedding.android.FlutterActivity
 

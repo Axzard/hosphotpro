@@ -9,6 +9,7 @@ import 'widgets/sales_chart.dart';
 import 'widgets/dashboard_menu_grid.dart';
 import '../core/widgets/desktop_page_wrapper.dart';
 import '../core/widgets/responsive_layout.dart';
+import '../core/widgets/responsive_max_width.dart';
 
 class DashboardScreen extends GetView<DashboardViewModel> {
   const DashboardScreen({super.key});
@@ -32,34 +33,36 @@ class DashboardScreen extends GetView<DashboardViewModel> {
       onRefresh: () => controller.fetchDashboardData(isSilent: true),
       color: const Color(0xFF00C2FF),
       backgroundColor: const Color(0xFF1E293B),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 20,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            DashboardHeader(controller: controller),
-            const SizedBox(height: 32),
-            SubscriptionCard(controller: controller),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Ringkasan'),
-            const SizedBox(height: 16),
-            DashboardStatusCards(controller: controller),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Tren Penjualan'),
-            const SizedBox(height: 16),
-            SalesChart(controller: controller),
-            const SizedBox(height: 32),
-            if (!ResponsiveLayout.isDesktop(context)) ...[
-              _buildSectionTitle('Menu Utama'),
+      child: ResponsiveMaxWidth(
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 20,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DashboardHeader(controller: controller),
+              const SizedBox(height: 32),
+              SubscriptionCard(controller: controller),
+              const SizedBox(height: 32),
+              _buildSectionTitle('Ringkasan'),
               const SizedBox(height: 16),
-              DashboardMenuGrid(controller: controller),
-              const SizedBox(height: 48),
+              DashboardStatusCards(controller: controller),
+              const SizedBox(height: 32),
+              _buildSectionTitle('Tren Penjualan'),
+              const SizedBox(height: 16),
+              SalesChart(controller: controller),
+              const SizedBox(height: 32),
+              if (!ResponsiveLayout.isDesktop(context)) ...[
+                _buildSectionTitle('Menu Utama'),
+                const SizedBox(height: 16),
+                DashboardMenuGrid(controller: controller),
+                const SizedBox(height: 48),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

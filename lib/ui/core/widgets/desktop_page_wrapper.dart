@@ -7,8 +7,13 @@ import '../../dashboard/widgets/background_blobs.dart';
 
 class DesktopPageWrapper extends StatelessWidget {
   final Widget child;
+  final bool forceSidebar;
 
-  const DesktopPageWrapper({super.key, required this.child});
+  const DesktopPageWrapper({
+    super.key, 
+    required this.child,
+    this.forceSidebar = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +23,8 @@ class DesktopPageWrapper extends StatelessWidget {
 
     // If we are on desktop and NavigationController is registered, 
     // it means we are likely using the MainLayoutScreen which already has a sidebar.
-    if (Get.isRegistered<NavigationController>()) {
+    // BUT if forceSidebar is true, we render the sidebar anyway (useful for pushed pages).
+    if (Get.isRegistered<NavigationController>() && !forceSidebar) {
       return child;
     }
 

@@ -26,6 +26,7 @@ class VoucherPackageViewModel extends GetxController {
   final Rxn<HotspotModel> selectedHotspot = Rxn<HotspotModel>();
   final Rxn<HotspotModel> formSelectedHotspot = Rxn<HotspotModel>(); // Separate state for form
   final RxBool isLoading = false.obs;
+  final RxBool _isInitialLoad = true.obs;
   final RxSet<int> deletingPackageIds = <int>{}.obs;
 
   final namaPaketController = TextEditingController();
@@ -59,33 +60,31 @@ class VoucherPackageViewModel extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    final dashboardVM = Get.find<DashboardViewModel>();
+
+    // Listen to subscription status changes
+    ever(dashboardVM.isActiveSubscription, (bool isActive) {
+      if (isActive && (routers.isEmpty || _isInitialLoad.value)) {
+        loadRouters();
+      }
+    });
+
     loadRouters();
     _initRealtimeListeners();
 
     ever(selectedRouter, (router) {
+      if (_isInitialLoad.value) return;
       if (router != null) {
         print('[VoucherPackageVM] Global Router changed: ${router.namaRouter}');
         final idRouter = int.tryParse(router.id) ?? 0;
         loadHotspots(idRouter).then((_) {
-          if (hotspots.isNotEmpty) {
-            final currentHotspot = selectedHotspot.value;
-
-            if (currentHotspot == null || currentHotspot.idRouter != idRouter) {
-              print('[VoucherPackageVM] Resetting hotspot to Semua Hotspot');
-              selectedHotspot.value = HotspotModel.semua;
-              loadPackages();
-            } else {
-              print(
-                '[VoucherPackageVM] Keeping current hotspot selection: ${currentHotspot.namaServer}',
-              );
-              loadPackages();
-            }
-          }
+          loadPackages();
         });
       }
     });
 
     ever(selectedHotspot, (hotspot) {
+      if (_isInitialLoad.value) return;
       if (hotspot != null) {
         loadPackages();
       }
@@ -126,41 +125,61 @@ class VoucherPackageViewModel extends GetxController {
 
     try {
       if (routers.isEmpty) isLoading.value = true;
+      
+      // 1. Fetch Routers
       final result = await _routerRepository.getRouters();
-      routers.assignAll([RouterModel.semua, ...result]);
+      final allRouters = [RouterModel.semua, ...result];
 
-      if (selectedRouter.value == null) {
+      // Determine selected router
+      RouterModel? nextRouter = selectedRouter.value;
+      if (nextRouter == null) {
         final savedRouterId = _sessionService.selectedRouterId.value;
         if (savedRouterId != null) {
-          selectedRouter.value = routers.firstWhereOrNull((r) => r.id == savedRouterId);
+          nextRouter = allRouters.firstWhereOrNull((r) => r.id == savedRouterId);
         }
       }
-
-      // If still null, pick "Semua Router" by default
-      if (selectedRouter.value == null && routers.isNotEmpty) {
-        selectedRouter.value = RouterModel.semua;
+      if (nextRouter == null && allRouters.isNotEmpty) {
+        nextRouter = RouterModel.semua;
       }
 
-      final idRouter = int.tryParse(selectedRouter.value?.id ?? '') ?? 0;
-      await loadHotspots(idRouter);
+      // 2. Fetch Hotspots
+      final idRouter = int.tryParse(nextRouter?.id ?? '') ?? 0;
+      final hotspotList = await _routerRepository.getHotspots(idRouter);
+      final allHotspots = [HotspotModel.semua, ...hotspotList];
 
-      if (selectedHotspot.value == null) {
+      // Determine selected hotspot
+      HotspotModel? nextHotspot = selectedHotspot.value;
+      bool currentStillValid = allHotspots.any(
+        (h) => h.idHotspot == nextHotspot?.idHotspot,
+      );
+
+      if (nextHotspot == null || !currentStillValid) {
         final savedHotspotId = _sessionService.packageHotspotId.value;
         if (savedHotspotId != null) {
-          selectedHotspot.value = hotspots.firstWhereOrNull((h) => h.idHotspot == savedHotspotId);
+          nextHotspot = allHotspots.firstWhereOrNull((h) => h.idHotspot == savedHotspotId);
         }
       }
-
-      // If still null, pick first
-      if (selectedHotspot.value == null && hotspots.isNotEmpty) {
-        selectedHotspot.value = hotspots.first;
+      
+      if (nextHotspot == null && allHotspots.isNotEmpty) {
+        nextHotspot = HotspotModel.semua;
       }
 
-      await loadPackages();
+      // 3. Fetch Packages
+      final idHotspot = nextHotspot?.idHotspot ?? 0;
+      final pList = await _voucherRepository.getVoucherPackages(idHotspot);
+
+      // 4. Update states
+      routers.assignAll(allRouters);
+      selectedRouter.value = nextRouter;
+      hotspots.assignAll(allHotspots);
+      selectedHotspot.value = nextHotspot;
+      packages.assignAll(pList);
+
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal memuat data: $e');
     } finally {
       isLoading.value = false;
+      _isInitialLoad.value = false;
     }
   }
   Future<void> loadHotspots(int idRouter) async {

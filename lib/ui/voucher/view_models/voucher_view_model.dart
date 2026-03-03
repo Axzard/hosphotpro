@@ -66,7 +66,7 @@ class VoucherViewModel extends GetxController {
     
     // Listen to subscription status changes
     ever(dashboardVM.isActiveSubscription, (bool isActive) {
-      if (isActive && routers.isEmpty) {
+      if (isActive && (routers.isEmpty || _isInitialLoad.value)) {
         loadRouters();
       }
     });

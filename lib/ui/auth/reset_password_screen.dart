@@ -25,7 +25,7 @@ class ResetPasswordScreen extends GetView<ForgotPasswordViewModel> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const AuthLogo(title: 'hotspotpro'),
+                const AuthLogo(title: 'hotspotsio'),
                 const SizedBox(height: 60),
                 
                 const Align(

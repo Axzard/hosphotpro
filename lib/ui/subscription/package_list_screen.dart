@@ -3,8 +3,9 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'view_models/subscription_view_model.dart';
 import '../auth/widgets/auth_widgets.dart';
-import '../core/widgets/desktop_page_wrapper.dart';
 import '../core/widgets/responsive_layout.dart';
+import '../core/controllers/navigation_controller.dart';
+import '../../config/routing/app_routes.dart';
 import 'package_detail_screen.dart';
 
 class PackageListScreen extends GetView<SubscriptionViewModel> {
@@ -18,8 +19,7 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
       decimalDigits: 0,
     );
 
-    return DesktopPageWrapper(
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: const Color(0xFF0F172A),
         body: SafeArea(
           child: Column(
@@ -123,14 +123,18 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
                           isSelected: isCurrentPackage,
                           isLoading: controller.isProcessingPayment.value,
                           onBuy: () {
-                            // Ensure SubscriptionViewModel is available
                             if (!Get.isRegistered<SubscriptionViewModel>()) {
                               Get.put(SubscriptionViewModel(Get.find()));
                             }
-                            Get.to(
-                              () => const PackageDetailScreen(),
-                              arguments: package,
-                            );
+                            controller.selectedPackageForDetail.value = package;
+                            if (Get.isRegistered<NavigationController>()) {
+                              Get.find<NavigationController>().setIndexByRoute(Routes.PACKAGE_DETAIL);
+                            } else {
+                              Get.to(
+                                () => const PackageDetailScreen(),
+                                arguments: package,
+                              );
+                            }
                           },
                         );
                       },
@@ -141,7 +145,6 @@ class PackageListScreen extends GetView<SubscriptionViewModel> {
             ],
           ),
         ),
-      ),
     );
   }
 

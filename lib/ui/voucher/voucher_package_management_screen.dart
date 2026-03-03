@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'view_models/voucher_package_view_model.dart';
 import '../../../domain/models/voucher_package_model.dart';
 import '../../../domain/models/hotspot_model.dart';
+import '../core/widgets/responsive_layout.dart';
+import '../core/widgets/responsive_max_width.dart';
 import '../core/widgets/desktop_page_wrapper.dart';
 import '../../core/utils/currency_formatter.dart';
 import 'widgets/voucher_package_header.dart';
@@ -73,66 +75,100 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                 ),
               ),
               Expanded(
-                child: Obx(() {
-                  if (controller.isLoading.value && controller.packages.isEmpty) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: accentColor),
-                    );
-                  }
+                child: ResponsiveMaxWidth(
+                  child: Obx(() {
+                    if (controller.isLoading.value && controller.packages.isEmpty) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: accentColor),
+                      );
+                    }
 
-                  if (controller.packages.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.inventory_2_outlined,
-                            size: 64,
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Tidak ada paket voucher',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white54,
+                    if (controller.packages.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.inventory_2_outlined,
+                              size: 64,
+                              color: Colors.white.withValues(alpha: 0.2),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 16),
+                            Text(
+                              'Tidak ada paket voucher',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final isDesktop = ResponsiveLayout.isDesktop(context);
+                    if (isDesktop) {
+                      return GridView.builder(
+                        padding: const EdgeInsets.only(
+                          left: 24,
+                          right: 24,
+                          bottom: 80,
+                        ),
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 450,
+                          mainAxisExtent: 220,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: controller.packages.length,
+                        itemBuilder: (context, index) {
+                          final package = controller.packages[index];
+                          return VoucherPackageItemCard(
+                            package: package,
+                            cardColor: cardColor,
+                            accentColor: accentColor,
+                            onEdit: (p) => _showFormSheet(context, package: p),
+                            onDelete: (p) => _showDeleteConfirm(context, p),
+                            isDeleting: controller.deletingPackageIds.contains(
+                              package.id,
+                            ),
+                          );
+                        },
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: controller.loadPackages,
+                      color: accentColor,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(
+                          left: 24,
+                          right: 24,
+                          bottom: 80,
+                        ),
+                        itemCount: controller.packages.length,
+                        itemBuilder: (context, index) {
+                          final package = controller.packages[index];
+                          return VoucherPackageItemCard(
+                            package: package,
+                            cardColor: cardColor,
+                            accentColor: accentColor,
+                            onEdit: (p) => _showFormSheet(context, package: p),
+                            onDelete: (p) => _showDeleteConfirm(context, p),
+                            isDeleting: controller.deletingPackageIds.contains(
+                              package.id,
+                            ),
+                          );
+                        },
                       ),
                     );
-                  }
-
-                  return RefreshIndicator(
-                    onRefresh: controller.loadPackages,
-                    color: accentColor,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.only(
-                        left: 24,
-                        right: 24,
-                        bottom: 80,
-                      ),
-                      itemCount: controller.packages.length,
-                      itemBuilder: (context, index) {
-                        final package = controller.packages[index];
-                        return VoucherPackageItemCard(
-                          package: package,
-                          cardColor: cardColor,
-                          accentColor: accentColor,
-                          onEdit: (p) => _showFormSheet(context, package: p),
-                          onDelete: (p) => _showDeleteConfirm(context, p),
-                          isDeleting: controller.deletingPackageIds.contains(
-                            package.id,
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                }),
+                  }),
+                ),
               ),
             ],
           ),
         ),
         floatingActionButton: FloatingActionButton(
+          heroTag: null,
           onPressed: () => _showFormSheet(context),
           backgroundColor: accentColor,
           child: const Icon(Icons.add_rounded, color: Colors.white),

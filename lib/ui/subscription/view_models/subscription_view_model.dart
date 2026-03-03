@@ -12,6 +12,7 @@ import '../../../config/routing/app_routes.dart';
 import '../midtrans_webview_screen.dart';
 import '../../../data/services/payment_persistence_service.dart';
 import '../../../core/services/websocket_service.dart';
+import '../../core/controllers/navigation_controller.dart';
 
 class SubscriptionViewModel extends GetxController {
   final SubscriptionRepository _subscriptionRepository;
@@ -24,6 +25,7 @@ class SubscriptionViewModel extends GetxController {
   final packages = <SubscriptionPackageModel>[].obs;
   final mySubscriptions = <UserSubscriptionModel>[].obs;
   final currentSubscription = Rx<UserSubscriptionModel?>(null);
+  final selectedPackageForDetail = Rxn<SubscriptionPackageModel>();
   final isLoading = false.obs;
   bool _isLoadingSubscriptions = false;
 
@@ -341,7 +343,11 @@ class SubscriptionViewModel extends GetxController {
   }
 
   void navigateToPackages() {
-    Get.toNamed(Routes.PACKAGES);
+    if (Get.isRegistered<NavigationController>()) {
+      Get.find<NavigationController>().setIndexByRoute(Routes.PACKAGES);
+    } else {
+      Get.toNamed(Routes.PACKAGES);
+    }
   }
 
   void _navigateToPaymentResult(

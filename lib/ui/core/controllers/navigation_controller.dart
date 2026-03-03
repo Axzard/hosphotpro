@@ -3,16 +3,23 @@ import '../../../config/routing/app_routes.dart';
 
 class NavigationController extends GetxController {
   final selectedIndex = 0.obs;
+  final isSidebarOpen = true.obs;
+
+  void toggleSidebar() {
+    isSidebarOpen.value = !isSidebarOpen.value;
+  }
 
   // Mapping from index to route for deep linking / syncing
   final List<String> indexRoutes = [
     Routes.DASHBOARD,
     Routes.VOUCHERS,
+    Routes.VOUCHER_PACKAGES,
     Routes.MIKROTIK_ROUTERS,
     Routes.HOTSPOTS,
     Routes.TRANSACTIONS,
     Routes.PACKAGES,
     Routes.SUBSCRIPTION_STATUS,
+    Routes.PACKAGE_DETAIL,
   ];
 
   void changeIndex(int index) {

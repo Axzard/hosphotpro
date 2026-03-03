@@ -1,5 +1,5 @@
 
-import 'package:hotspotpro/data/model/api_response.dart';
+import 'package:hotspotsio/data/model/api_response.dart';
 import '../models/auth_model.dart';
 
 abstract class AuthRepository {

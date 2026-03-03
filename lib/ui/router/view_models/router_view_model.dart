@@ -209,58 +209,61 @@ class RouterViewModel extends GetxController {
                 ),
               ],
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildStatusRow(
-                    'Status',
-                    pingStatus.value,
-                    pingStatus.value == 'ONLINE' ? Colors.green : Colors.red,
-                  ),
-                  _buildStatusRow(
-                    'Response Time',
-                    '${pingResponseTime.value} ms',
-                    Colors.white70,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Console Output:',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+            content: SizedBox(
+              width: 500, // Constrain width on desktop
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatusRow(
+                      'Status',
+                      pingStatus.value,
+                      pingStatus.value == 'ONLINE' ? Colors.green : Colors.red,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    constraints: const BoxConstraints(minHeight: 150),
-                    width: double.maxFinite,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(8),
+                    _buildStatusRow(
+                      'Response Time',
+                      '${pingResponseTime.value} ms',
+                      Colors.white70,
                     ),
-                    child: pingLines.isEmpty && isPingLoading.value
-                        ? const Center(
-                            child: Text(
-                              "Waiting for response...",
-                              style: TextStyle(
-                                color: Colors.white24,
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Console Output:',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      constraints: const BoxConstraints(minHeight: 150),
+                      width: double.maxFinite,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: isPingLoading.value && pingLines.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "Waiting for response...",
+                                style: TextStyle(
+                                  color: Colors.white24,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              pingLines.isEmpty ? "Ping completed with no log data." : pingLines.join('\n'),
+                              style: GoogleFonts.firaCode(
+                                color: pingLines.isEmpty ? Colors.white38 : Colors.greenAccent,
                                 fontSize: 10,
                               ),
                             ),
-                          )
-                        : Text(
-                            pingLines.join('\n'),
-                            style: GoogleFonts.firaCode(
-                              color: Colors.greenAccent,
-                              fontSize: 10,
-                            ),
-                          ),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -279,13 +282,21 @@ class RouterViewModel extends GetxController {
 
       final int routerId = int.tryParse(id) ?? 0;
       final result = await _routerRepository.pingRouter(routerId);
-
-      final detail = result['detail'] ?? {};
-      final String rawOutput = detail['output'] ?? 'No output';
-      final String time = detail['time']?.toString() ?? '-';
+      
+      // Try to find detail and output in various possible keys
+      final detail = result['detail'] ?? result['data'] ?? result;
+      final String rawOutput = detail['output'] ?? 
+                             detail['log'] ?? 
+                             detail['message'] ?? 
+                             detail['response'] ?? 
+                             result['output'] ?? 
+                             result['log'] ?? 
+                             result['message'] ?? 
+                             result.toString();
+      final String time = detail['time']?.toString() ?? result['time']?.toString() ?? '-';
 
       isPingLoading.value = false;
-      pingStatus.value = result['status'] ?? 'UNKNOWN';
+      pingStatus.value = result['status'] ?? result['state'] ?? 'UNKNOWN';
       pingResponseTime.value = time;
 
       final List<String> lines = rawOutput.split('\n');

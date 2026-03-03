@@ -24,6 +24,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
         child: Scaffold(
           backgroundColor: bgColor,
           floatingActionButton: FloatingActionButton(
+            heroTag: null,
             onPressed: () {
               Get.bottomSheet(
                 const CreateVoucherSheet(),

@@ -101,7 +101,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                     children: [
                       // Header
                       Text(
-                        'hotspotpro',
+                        'hotspotsio',
                         style: GoogleFonts.courierPrime(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -568,7 +568,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
               children: [
                 // Header
                 pw.Text(
-                  'hotspotpro',
+                  'hotspotsio',
                   style: pw.TextStyle(
                     font: fontBold,
                     fontSize: 16,

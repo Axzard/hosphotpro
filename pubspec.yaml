@@ -1,5 +1,5 @@
-name: hotspotpro
-description: "A new Flutter project."
+name: hotspotsio
+description: "Hotspotsio - Smart Hotspot Management"
 publish_to: 'none'
 version: 0.1.0
 
@@ -39,16 +39,14 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/siodef.png
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
+  windows:
+    generate: true
+    image_path: "assets/siodef.png"
   image_path: "assets/siodef.png"
   min_sdk_android: 21
-  assets:
-    - assets/siodef.png
-
-flutter_icons:
-  android: true
-  ios: true
-  image_path: "assets/siodef.png"

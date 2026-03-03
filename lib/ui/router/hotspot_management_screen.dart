@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'view_models/hotspot_view_model.dart';
 import '../../../domain/models/router_model.dart';
+import '../core/widgets/responsive_layout.dart';
+import '../core/widgets/responsive_max_width.dart';
 import '../core/widgets/desktop_page_wrapper.dart';
 import 'widgets/hotspot_header.dart';
 import 'widgets/hotspot_item_card.dart';
@@ -98,42 +100,67 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
               ),
               const SizedBox(height: 8),
               Expanded(
-                child: Obx(() {
-                  if (controller.isLoading.value && controller.hotspots.isEmpty) {
-                    return const Center(child: CircularProgressIndicator(color: accentColor));
-                  }
-                  if (controller.hotspots.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.wifi_off, size: 64, color: Colors.white.withValues(alpha: 0.2)),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Tidak ada hotspot server',
-                            style: GoogleFonts.plusJakartaSans(color: Colors.white54),
-                          ),
-                        ],
+                child: ResponsiveMaxWidth(
+                  child: Obx(() {
+                    if (controller.isLoading.value && controller.hotspots.isEmpty) {
+                      return const Center(child: CircularProgressIndicator(color: accentColor));
+                    }
+                    if (controller.hotspots.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.wifi_off, size: 64, color: Colors.white.withValues(alpha: 0.2)),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Tidak ada hotspot server',
+                              style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final isDesktop = ResponsiveLayout.isDesktop(context);
+                    if (isDesktop) {
+                      return GridView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 400,
+                          mainAxisExtent: 220,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: controller.hotspots.length,
+                        itemBuilder: (context, index) {
+                          final hotspot = controller.hotspots[index];
+                          return HotspotItemCard(
+                            hotspot: hotspot,
+                            cardColor: cardColor,
+                            accentColor: accentColor,
+                          );
+                        },
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: controller.loadHotspots,
+                      color: accentColor,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        itemCount: controller.hotspots.length,
+                        itemBuilder: (context, index) {
+                          final hotspot = controller.hotspots[index];
+                          return HotspotItemCard(
+                            hotspot: hotspot,
+                            cardColor: cardColor,
+                            accentColor: accentColor,
+                          );
+                        },
                       ),
                     );
-                  }
-                  return RefreshIndicator(
-                    onRefresh: controller.loadHotspots,
-                    color: accentColor,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      itemCount: controller.hotspots.length,
-                      itemBuilder: (context, index) {
-                        final hotspot = controller.hotspots[index];
-                        return HotspotItemCard(
-                          hotspot: hotspot,
-                          cardColor: cardColor,
-                          accentColor: accentColor,
-                        );
-                      },
-                    ),
-                  );
-                }),
+                  }),
+                ),
               ),
             ],
           ),

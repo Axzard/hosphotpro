@@ -87,9 +87,8 @@ class ReportViewModel extends GetxController {
   }
 
   List<double> get dailyIncomeData {
-    final now = DateTime.now();
-    final year = selectedDate.value?.year ?? now.year;
-    final month = selectedDate.value?.month ?? now.month;
+    final year = selectedYear.value;
+    final month = selectedDate.value?.month ?? DateTime.now().month;
 
     final daysInMonth = DateTime(year, month + 1, 0).day;
 
@@ -109,9 +108,9 @@ class ReportViewModel extends GetxController {
   }
 
   List<double> get yearlyIncomeData {
-    final currentYear = DateTime.now().year;
+    final baseYear = selectedYear.value;
     return List.generate(5, (index) {
-      final year = currentYear - 4 + index;
+      final year = baseYear - 4 + index;
       final report = yearlyReports.firstWhereOrNull((e) => e.tahun == year);
       return report?.totalPendapatan ?? 0.0;
     });
@@ -125,48 +124,78 @@ class ReportViewModel extends GetxController {
     if (!isSilent && !hasData) isLoading.value = true;
     try {
       final now = DateTime.now();
-      final year = selectedDate.value?.year ?? now.year;
+      final year = selectedYear.value;
       final month = selectedDate.value?.month ?? now.month;
 
-      final dashboardReport = await _reportRepository.getDashboardReport(
-        year: year,
-        month: month,
+      // 1. Fetch Daily Reports (for the selected month)
+      final firstDayOfMonth = DateTime(year, month, 1);
+      final lastDayOfMonth = DateTime(year, month + 1, 0);
+      final dailyData = await _reportRepository.getGroupedReport(
+        type: 'day',
+        start: _formatDate(firstDayOfMonth),
+        end: _formatDate(lastDayOfMonth),
+      );
+      
+      // Sort newest first for the list
+      final sortedDaily = List<DailyReportModel>.from(dailyData);
+      sortedDaily.sort((a, b) => b.tanggal.compareTo(a.tanggal));
+      dailyReports.assignAll(sortedDaily);
+
+      // 2. Fetch Monthly Reports (for the selected year)
+      final firstDayOfYear = DateTime(year, 1, 1);
+      final lastDayOfYear = DateTime(year, 12, 31);
+      final monthlyData = await _reportRepository.getGroupedReport(
+        type: 'month',
+        start: _formatDate(firstDayOfYear),
+        end: _formatDate(lastDayOfYear),
+      );
+      
+      // Convert e.tanggal to MonthlyReportModel
+      monthlyReports.assignAll(monthlyData.map((e) => MonthlyReportModel(
+        bulan: e.tanggal.month,
+        totalPendapatan: e.totalPendapatan,
+        totalTransaksi: e.totalTransaksi,
+      )).toList());
+
+      // 3. Fetch Yearly Reports (last 5 years)
+      final firstDayOfFiveYears = DateTime(year - 4, 1, 1);
+      final lastDayOfFiveYears = DateTime(year, 12, 31);
+      final yearlyData = await _reportRepository.getGroupedReport(
+        type: 'year',
+        start: _formatDate(firstDayOfFiveYears),
+        end: _formatDate(lastDayOfFiveYears),
       );
 
-      if (dashboardReport != null) {
-        // Sort newest first
-        final sortedDaily = dashboardReport.perHari;
-        sortedDaily.sort((a, b) => b.tanggal.compareTo(a.tanggal));
-        
-        dailyReports.assignAll(sortedDaily);
-        monthlyReports.assignAll(dashboardReport.perBulan);
-        yearlyReports.assignAll(dashboardReport.perTahun);
+      yearlyReports.assignAll(yearlyData.map((e) => YearlyReportModel(
+        tahun: e.tanggal.year,
+        totalPendapatan: e.totalPendapatan,
+        totalTransaksi: e.totalTransaksi,
+      )).toList());
 
-        // Save to cache (we need raw data or reconstruct map)
-        _cacheService.saveReports({
-          'daily': dashboardReport.perHari.map((e) => {
-            'tanggal': e.tanggal.toIso8601String(),
-            'total_pendapatan': e.totalPendapatan,
-            'total_transaksi': e.totalTransaksi,
-          }).toList(),
-          'monthly': dashboardReport.perBulan.map((e) => {
-            'bulan': e.bulan,
-            'total_pendapatan': e.totalPendapatan,
-            'total_transaksi': e.totalTransaksi,
-          }).toList(),
-          'yearly': dashboardReport.perTahun.map((e) => {
-            'tahun': e.tahun,
-            'total_pendapatan': e.totalPendapatan,
-            'total_transaksi': e.totalTransaksi,
-          }).toList(),
-        });
-      }
+      // Update cache
+      _cacheService.saveReports({
+        'daily': dailyReports.map((e) => {
+          'tanggal': e.tanggal.toIso8601String(),
+          'total_pendapatan': e.totalPendapatan,
+          'total_transaksi': e.totalTransaksi,
+        }).toList(),
+        'monthly': monthlyReports.map((e) => {
+          'bulan': e.bulan,
+          'total_pendapatan': e.totalPendapatan,
+          'total_transaksi': e.totalTransaksi,
+        }).toList(),
+        'yearly': yearlyReports.map((e) => {
+          'tahun': e.tahun,
+          'total_pendapatan': e.totalPendapatan,
+          'total_transaksi': e.totalTransaksi,
+        }).toList(),
+      });
+
     } catch (e) {
-
       if (!isSilent) {
         Get.toNamed(
           app_routes.Routes.ERROR,
-          arguments: 'Gagal memuat laporan, terjadi gangguan pada server.',
+          arguments: 'Gagal memuat laporan: $e',
         );
       }
     } finally {
@@ -174,22 +203,23 @@ class ReportViewModel extends GetxController {
     }
   }
 
+  String _formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
   void setDate(DateTime? date) {
-    selectedDate.value = date;
     if (date != null) {
+      selectedDate.value = date;
       selectedYear.value = date.year;
+      fetchAllReports();
     }
-    fetchAllReports();
   }
 
   void setYear(int year) {
     selectedYear.value = year;
-
-    if (selectedDate.value != null) {
-      selectedDate.value = DateTime(year, selectedDate.value!.month, 1);
-    } else {
-      selectedDate.value = DateTime(year, DateTime.now().month, 1);
-    }
+    // Keep the same month if possible, otherwise use January
+    final currentMonth = selectedDate.value?.month ?? DateTime.now().month;
+    selectedDate.value = DateTime(year, currentMonth, 1);
     fetchAllReports();
   }
 

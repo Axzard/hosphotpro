@@ -5,6 +5,7 @@ import 'view_models/router_view_model.dart';
 import '../../../domain/models/router_model.dart';
 import '../core/widgets/desktop_page_wrapper.dart';
 import '../core/widgets/responsive_layout.dart';
+import '../core/widgets/responsive_max_width.dart';
 import 'widgets/router_form_sheet.dart';
 
 class RouterManagementScreen extends GetView<RouterViewModel> {
@@ -20,6 +21,7 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
       child: Scaffold(
         backgroundColor: bgColor,
         floatingActionButton: FloatingActionButton.extended(
+          heroTag: null,
           onPressed: () {
             controller.prepareCreate();
             Get.bottomSheet(
@@ -43,17 +45,19 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
             children: [
               _buildHeader(context, accentColor),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Removed inline form card
-                      _buildListHeader(accentColor),
-                      const SizedBox(height: 16),
-                      _buildRouterList(accentColor, cardColor),
-                      const SizedBox(height: 80), // Space for FAB
-                    ],
+                child: ResponsiveMaxWidth(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Removed inline form card
+                        _buildListHeader(accentColor),
+                        const SizedBox(height: 16),
+                        _buildRouterList(accentColor, cardColor),
+                        const SizedBox(height: 80), // Space for FAB
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -178,6 +182,25 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
           ),
         );
       }
+      final isDesktop = ResponsiveLayout.isDesktop(Get.context!);
+      if (isDesktop) {
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: controller.routers.length,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 480,
+            mainAxisExtent: 180,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemBuilder: (context, index) {
+            final router = controller.routers[index];
+            return _buildRouterCard(context, router, accentColor, cardColor);
+          },
+        );
+      }
+
       return ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -185,19 +208,20 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
         separatorBuilder: (_, __) => const SizedBox(height: 16),
         itemBuilder: (context, index) {
           final router = controller.routers[index];
-          return _buildRouterCard(router, accentColor, cardColor);
+          return _buildRouterCard(context, router, accentColor, cardColor);
         },
       );
     });
   }
 
   Widget _buildRouterCard(
+    BuildContext context,
     RouterModel router,
     Color accentColor,
     Color cardColor,
   ) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(20),
@@ -247,8 +271,10 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: ResponsiveLayout.isDesktop(context) ? null : 1,
+                  overflow: ResponsiveLayout.isDesktop(context) 
+                      ? TextOverflow.visible 
+                      : TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
