@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../view_models/voucher_view_model.dart';
+
 
 class CreateVoucherSheet extends StatefulWidget {
   const CreateVoucherSheet({super.key});
@@ -102,14 +104,20 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
                 value: controller.selectedPaketId.value,
                 hint: 'Pilih Paket',
                 items: controller.voucherPackages.map((pkg) {
+                  final currencyFormat = NumberFormat.currency(
+                    locale: 'id_ID',
+                    symbol: 'Rp ',
+                    decimalDigits: 0,
+                  );
                   return DropdownMenuItem<int>(
                     value: pkg.id,
-                    child: Text('${pkg.namaPaket} - Rp ${pkg.harga}'),
+                    child: Text('${pkg.namaPaket} - ${currencyFormat.format(pkg.harga)}'),
                   );
                 }).toList(),
                 onChanged: (val) => controller.selectedPaketId.value = val,
               ),
             ),
+
 
 
             const SizedBox(height: 16),

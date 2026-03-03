@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'view_models/router_view_model.dart';
 import '../../../domain/models/router_model.dart';
+import '../core/widgets/desktop_page_wrapper.dart';
+import '../core/widgets/responsive_layout.dart';
 import 'widgets/router_form_sheet.dart';
 
 class RouterManagementScreen extends GetView<RouterViewModel> {
@@ -14,74 +16,80 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
     const cardColor = Color(0xFF131E29);
     const accentColor = Color(0xFF00C2FF);
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          controller.prepareCreate();
-          Get.bottomSheet(
-            const RouterFormSheet(),
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-          );
-        },
-        backgroundColor: accentColor,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(
-          'Tambah Router',
-          style: GoogleFonts.plusJakartaSans(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+    return DesktopPageWrapper(
+      child: Scaffold(
+        backgroundColor: bgColor,
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            controller.prepareCreate();
+            Get.bottomSheet(
+              const RouterFormSheet(),
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+            );
+          },
+          backgroundColor: accentColor,
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: Text(
+            'Tambah Router',
+            style: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(accentColor),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Removed inline form card
-                    _buildListHeader(accentColor),
-                    const SizedBox(height: 16),
-                    _buildRouterList(accentColor, cardColor),
-                    const SizedBox(height: 80), // Space for FAB
-                  ],
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(context, accentColor),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Removed inline form card
+                      _buildListHeader(accentColor),
+                      const SizedBox(height: 16),
+                      _buildRouterList(accentColor, cardColor),
+                      const SizedBox(height: 80), // Space for FAB
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(Color accentColor) {
+  Widget _buildHeader(BuildContext context, Color accentColor) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Get.back(),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
-                size: 20,
+          if (ResponsiveLayout.isMobile(context))
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: GestureDetector(
+                onTap: () => Get.back(),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
           Expanded(
+
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

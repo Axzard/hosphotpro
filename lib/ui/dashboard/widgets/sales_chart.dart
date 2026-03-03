@@ -150,12 +150,14 @@ class SalesChart extends StatelessWidget {
                 if (value == 0) return const SizedBox.shrink();
                 String text = '';
                 if (value >= 1000000) {
-                  text = '${(value / 1000000).toStringAsFixed(1)}M';
+                  text = '${(value / 1000000).toStringAsFixed(1)}jt';
                 } else if (value >= 1000) {
-                  text = '${(value / 1000).toStringAsFixed(0)}K';
+                  text = '${(value / 1000).toStringAsFixed(0)}rb';
                 } else {
                   text = value.toStringAsFixed(0);
                 }
+
+
                 return Text(
                   text,
                   style: GoogleFonts.plusJakartaSans(

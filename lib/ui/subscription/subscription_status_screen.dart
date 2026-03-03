@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../core/widgets/desktop_page_wrapper.dart';
 import 'view_models/subscription_view_model.dart';
 import 'widgets/subscription_header.dart';
 import 'widgets/subscription_empty_state.dart';
@@ -16,106 +17,98 @@ class SubscriptionStatusScreen extends GetView<SubscriptionViewModel> {
     const cardColor = Color(0xFF131E29);
     const accentColor = Color(0xFF00C2FF);
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SubscriptionHeader(
-              title: 'Status Langganan',
-              subtitle: 'Kelola Langganan Anda',
-              accentColor: accentColor,
-            ),
-            Expanded(
-              child: Obx(() {
-                if (controller.isLoading.value) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: accentColor),
-                  );
-                }
+    return DesktopPageWrapper(
+      child: Scaffold(
+        backgroundColor: bgColor,
+        body: SafeArea(
+          child: Column(
+            children: [
+              SubscriptionHeader(
+                title: 'Status Langganan',
+                subtitle: 'Kelola Langganan Anda',
+                accentColor: accentColor,
+              ),
+              Expanded(
+                child: Obx(() {
+                  if (controller.isLoading.value) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: accentColor),
+                    );
+                  }
 
-                if (controller.mySubscriptions.isEmpty) {
-                  return SubscriptionEmptyState(
-                    accentColor: accentColor,
-                    onActionPressed: () => controller.navigateToPackages(),
-                  );
-                }
+                  if (controller.mySubscriptions.isEmpty) {
+                    return SubscriptionEmptyState(
+                      accentColor: accentColor,
+                      onActionPressed: () => controller.navigateToPackages(),
+                    );
+                  }
 
-                return RefreshIndicator(
-                  onRefresh: controller.loadMySubscriptions,
-                  color: accentColor,
-                  backgroundColor: cardColor,
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    children: [
-                      const SizedBox(height: 8),
-                      // Show active subscription card prominently if exists
-                      ...controller.mySubscriptions
-                          .where((s) => s.isActive)
-                          .map(
-                            (s) => Padding(
-                              padding: const EdgeInsets.only(bottom: 20),
-                              child: ActiveSubscriptionCard(
-                                subscription: s,
-                                cardColor: cardColor,
-                                accentColor: accentColor,
-                                controller: controller,
-                              ),
-                            ),
-                          ),
-                      // Show pending subscriptions
-                      if (controller.mySubscriptions.any(
-                        (s) => s.isPending,
-                      )) ...[
-                        const SizedBox(height: 12),
-                        _buildSectionTitle(
-                          'Menunggu Pembayaran',
-                          Colors.orange,
-                        ),
-                        const SizedBox(height: 16),
+                  return RefreshIndicator(
+                    onRefresh: controller.loadMySubscriptions,
+                    color: accentColor,
+                    backgroundColor: cardColor,
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      children: [
+                        const SizedBox(height: 8),
                         ...controller.mySubscriptions
-                            .where((s) => s.isPending)
+                            .where((s) => s.isActive)
                             .map(
                               (s) => Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: SubscriptionItemCard(
+                                padding: const EdgeInsets.only(bottom: 20),
+                                child: ActiveSubscriptionCard(
                                   subscription: s,
                                   cardColor: cardColor,
+                                  accentColor: accentColor,
                                   controller: controller,
                                 ),
                               ),
                             ),
-                      ],
-                      // Show expired subscriptions
-                      if (controller.mySubscriptions.any(
-                        (s) => s.isExpired,
-                      )) ...[
-                        const SizedBox(height: 12),
-                        _buildSectionTitle('Kadaluarsa', Colors.redAccent),
-                        const SizedBox(height: 16),
-                        ...controller.mySubscriptions
-                            .where((s) => s.isExpired)
-                            .map(
-                              (s) => Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: SubscriptionItemCard(
-                                  subscription: s,
-                                  cardColor: cardColor,
-                                  controller: controller,
+                        if (controller.mySubscriptions.any((s) => s.isPending)) ...[
+                          const SizedBox(height: 12),
+                          _buildSectionTitle('Menunggu Pembayaran', Colors.orange),
+                          const SizedBox(height: 16),
+                          ...controller.mySubscriptions
+                              .where((s) => s.isPending)
+                              .map(
+                                (s) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: SubscriptionItemCard(
+                                    subscription: s,
+                                    cardColor: cardColor,
+                                    controller: controller,
+                                  ),
                                 ),
                               ),
-                            ),
+                        ],
+                        if (controller.mySubscriptions.any((s) => s.isExpired)) ...[
+                          const SizedBox(height: 12),
+                          _buildSectionTitle('Kadaluarsa', Colors.redAccent),
+                          const SizedBox(height: 16),
+                          ...controller.mySubscriptions
+                              .where((s) => s.isExpired)
+                              .map(
+                                (s) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: SubscriptionItemCard(
+                                    subscription: s,
+                                    cardColor: cardColor,
+                                    controller: controller,
+                                  ),
+                                ),
+                              ),
+                        ],
+                        const SizedBox(height: 100),
                       ],
-                      const SizedBox(height: 100), // Space for bottom button
-                    ],
-                  ),
-                );
-              }),
-            ),
-          ],
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
         ),
+        bottomNavigationBar: _buildBottomButton(accentColor),
       ),
-      bottomNavigationBar: _buildBottomButton(accentColor),
     );
   }
 

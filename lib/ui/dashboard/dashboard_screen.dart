@@ -2,54 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'view_models/dashboard_view_model.dart';
-import 'widgets/background_blobs.dart';
 import 'widgets/dashboard_header.dart';
 import 'widgets/subscription_card.dart';
 import 'widgets/dashboard_status_cards.dart';
 import 'widgets/sales_chart.dart';
 import 'widgets/dashboard_menu_grid.dart';
+import '../core/widgets/desktop_page_wrapper.dart';
 import '../core/widgets/responsive_layout.dart';
-import '../core/widgets/desktop_sidebar.dart';
 
 class DashboardScreen extends GetView<DashboardViewModel> {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveLayout(
-      mobileBody: _buildMobileBody(context),
-      desktopBody: _buildDesktopBody(context),
-    );
-  }
-
-  Widget _buildMobileBody(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      body: Stack(
+    return DesktopPageWrapper(
+      child: Stack(
         children: [
-          const BackgroundBlobs(),
           SafeArea(
             child: _buildMainContent(context),
-          ),
-          _buildLoadingOverlay(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDesktopBody(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      body: Stack(
-        children: [
-          const BackgroundBlobs(),
-          Row(
-            children: [
-              const DesktopSidebar(),
-              Expanded(
-                child: _buildMainContent(context),
-              ),
-            ],
           ),
           _buildLoadingOverlay(),
         ],
@@ -83,10 +53,12 @@ class DashboardScreen extends GetView<DashboardViewModel> {
             const SizedBox(height: 16),
             SalesChart(controller: controller),
             const SizedBox(height: 32),
-            _buildSectionTitle('Menu Utama'),
-            const SizedBox(height: 16),
-            DashboardMenuGrid(controller: controller),
-            const SizedBox(height: 48),
+            if (!ResponsiveLayout.isDesktop(context)) ...[
+              _buildSectionTitle('Menu Utama'),
+              const SizedBox(height: 16),
+              DashboardMenuGrid(controller: controller),
+              const SizedBox(height: 48),
+            ],
           ],
         ),
       ),

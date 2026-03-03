@@ -21,6 +21,8 @@ import '../../core/services/printer_service.dart';
 import '../../core/services/websocket_service.dart';
 import '../../data/services/payment_persistence_service.dart';
 import '../../core/services/session_service.dart';
+import '../../core/services/cache_service.dart';
+
 
 class GlobalBinding extends Bindings {
   @override
@@ -33,6 +35,11 @@ class GlobalBinding extends Bindings {
     final paymentPersistenceService = PaymentPersistenceService();
     await paymentPersistenceService.init();
     Get.put<PaymentPersistenceService>(paymentPersistenceService);
+
+    final cacheService = CacheService();
+    await cacheService.init();
+    Get.put<CacheService>(cacheService);
+
 
     // Services
     Get.put<PrinterService>(PrinterService());

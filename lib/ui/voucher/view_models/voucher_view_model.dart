@@ -62,6 +62,15 @@ class VoucherViewModel extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    final dashboardVM = Get.find<DashboardViewModel>();
+    
+    // Listen to subscription status changes
+    ever(dashboardVM.isActiveSubscription, (bool isActive) {
+      if (isActive && routers.isEmpty) {
+        loadRouters();
+      }
+    });
+
     loadRouters();
     _initRealtimeListeners();
 
@@ -543,6 +552,9 @@ class VoucherViewModel extends GetxController {
         vouchers: vouchersToPrint,
         routerName: selectedHotspot.value!.namaServer,
       ),
+      transition: Transition.fadeIn,
+      duration: const Duration(milliseconds: 200),
     );
+
   }
 }

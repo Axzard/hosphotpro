@@ -33,6 +33,15 @@ class RouterViewModel extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    final dashboardVM = Get.find<DashboardViewModel>();
+    
+    // Listen to subscription status changes
+    ever(dashboardVM.isActiveSubscription, (bool isActive) {
+      if (isActive && routers.isEmpty) {
+        loadRouters();
+      }
+    });
+
     loadRouters();
     _initRealtimeListeners();
   }

@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../core/widgets/desktop_page_wrapper.dart';
+import '../core/widgets/responsive_layout.dart';
 import 'view_models/report_view_model.dart';
 import '../../../domain/models/report_model.dart';
 
@@ -51,145 +53,148 @@ class ReportScreen extends GetView<ReportViewModel> {
     const cardColor = Color(0xFF1E293B);
     const accentColor = Color(0xFF00C2FF);
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        backgroundColor: bgColor,
-        appBar: AppBar(
+    return DesktopPageWrapper(
+      child: DefaultTabController(
+        length: 3,
+        child: Scaffold(
           backgroundColor: bgColor,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: () => Get.back(),
-          ),
-          title: Text(
-            'Laporan Penjualan',
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+          appBar: AppBar(
+            backgroundColor: bgColor,
+            elevation: 0,
+            leading: ResponsiveLayout.isDesktop(context)
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                    onPressed: () => Get.back(),
+                  ),
+            title: Text(
+              'Laporan Penjualan',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          bottom: TabBar(
-            indicatorColor: accentColor,
-            labelColor: accentColor,
-            unselectedLabelColor: Colors.white54,
-            labelStyle: GoogleFonts.plusJakartaSans(
-              fontWeight: FontWeight.bold,
+            bottom: TabBar(
+              indicatorColor: accentColor,
+              labelColor: accentColor,
+              unselectedLabelColor: Colors.white54,
+              labelStyle: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.bold,
+              ),
+              tabs: const [
+                Tab(text: 'Harian'),
+                Tab(text: 'Bulanan'),
+                Tab(text: 'Tahunan'),
+              ],
             ),
-            tabs: const [
-              Tab(text: 'Harian'),
-              Tab(text: 'Bulanan'),
-              Tab(text: 'Tahunan'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                tooltip: 'Refresh Data',
+                onPressed: () => controller.refreshData(),
+              ),
+              Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.calendar_month, color: Colors.white),
+                  onPressed: () async {
+                    final tabController = DefaultTabController.of(context);
+                    if (tabController.index == 2) {
+                      _showYearPicker(context, controller);
+                    } else {
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate:
+                            controller.selectedDate.value ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: accentColor,
+                                onPrimary: Colors.white,
+                                surface: cardColor,
+                                onSurface: Colors.white,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        controller.setDate(picked);
+                      }
+                    }
+                  },
+                ),
+              ),
+              Obx(
+                () => (controller.selectedDate.value != null ||
+                        controller.selectedYear.value != DateTime.now().year)
+                    ? IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () {
+                          controller.selectedDate.value = null;
+                          controller.selectedYear.value = DateTime.now().year;
+                          controller.fetchAllReports();
+                        },
+                      )
+                    : const SizedBox.shrink(),
+              ),
             ],
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              tooltip: 'Refresh Data',
-              onPressed: () => controller.refreshData(),
-            ),
-            Builder(
-              builder: (context) => IconButton(
-                icon: const Icon(Icons.calendar_month, color: Colors.white),
-                onPressed: () async {
-                  final tabController = DefaultTabController.of(context);
-                  if (tabController.index == 2) {
-                    _showYearPicker(context, controller);
-                  } else {
-                    final DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate:
-                          controller.selectedDate.value ?? DateTime.now(),
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
-                      builder: (context, child) {
-                        return Theme(
-                          data: Theme.of(context).copyWith(
-                            colorScheme: const ColorScheme.dark(
-                              primary: accentColor,
-                              onPrimary: Colors.white,
-                              surface: cardColor,
-                              onSurface: Colors.white,
-                            ),
-                          ),
-                          child: child!,
-                        );
-                      },
-                    );
-                    if (picked != null) {
-                      controller.setDate(picked);
-                    }
-                  }
-                },
-              ),
-            ),
-            Obx(
-              () =>
-                  (controller.selectedDate.value != null ||
-                      controller.selectedYear.value != DateTime.now().year)
-                  ? IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () {
-                        controller.selectedDate.value = null;
-                        controller.selectedYear.value = DateTime.now().year;
-                        controller.fetchAllReports();
-                      },
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            // Date filter banner
-            Obx(
-              () => controller.selectedDate.value != null
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      width: double.infinity,
-                      color: accentColor.withValues(alpha: 0.1),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.filter_list,
-                            color: accentColor,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Filter: ${DateFormat('dd MMM yyyy', 'id_ID').format(controller.selectedDate.value!)}',
-                            style: GoogleFonts.plusJakartaSans(
+          body: Column(
+            children: [
+              // Date filter banner
+              Obx(
+                () => controller.selectedDate.value != null
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        width: double.infinity,
+                        color: accentColor.withValues(alpha: 0.1),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.filter_list,
                               color: accentColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                              size: 16,
                             ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-
-            // Tab content
-            Expanded(
-              child: Obx(
-                () => controller.isLoading.value
-                    ? const Center(
-                        child: CircularProgressIndicator(color: accentColor),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Filter: ${DateFormat('dd MMM yyyy', 'id_ID').format(controller.selectedDate.value!)}',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: accentColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       )
-                    : TabBarView(
-                        children: [
-                          _buildDailyTab(controller),
-                          _buildMonthlyTab(controller),
-                          _buildYearlyTab(controller),
-                        ],
-                      ),
+                    : const SizedBox.shrink(),
               ),
-            ),
-          ],
+
+              // Tab content
+              Expanded(
+                child: Obx(
+                  () => controller.isLoading.value
+                      ? const Center(
+                          child: CircularProgressIndicator(color: accentColor),
+                        )
+                      : TabBarView(
+                          children: [
+                            _buildDailyTab(controller),
+                            _buildMonthlyTab(controller),
+                            _buildYearlyTab(controller),
+                          ],
+                        ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -309,7 +314,8 @@ class ReportScreen extends GetView<ReportViewModel> {
                   label = 'H${spot.x.toInt() + 1}';
                 } else if (type == 'monthly') {
                   label = DateFormat(
-                    'MMM', 'id_ID',
+                    'MMM',
+                    'id_ID',
                   ).format(DateTime(2024, spot.x.toInt() + 1));
                 } else {
                   label = '${DateTime.now().year - 4 + spot.x.toInt()}';
@@ -354,13 +360,9 @@ class ReportScreen extends GetView<ReportViewModel> {
               interval: interval > 0 ? interval : 500,
               reservedSize: 45,
               getTitlesWidget: (value, meta) {
-                // Defensive label logic to prevent overlapping white blob
                 if (value == 0) return const SizedBox.shrink();
-
-                // Show a label every 2 intervals or at least at the top
                 final isTop = (value - chartMaxY).abs() < (interval / 2);
                 final isInterval = (value % (interval * 2)) < 0.1;
-
                 if (!isTop && !isInterval) return const SizedBox.shrink();
 
                 String formatted = '';
@@ -393,8 +395,7 @@ class ReportScreen extends GetView<ReportViewModel> {
               interval: type == 'daily' ? 5 : 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index < 0 || index >= data.length)
-                  return const SizedBox.shrink();
+                if (index < 0 || index >= data.length) return const SizedBox.shrink();
 
                 String text = '';
                 if (type == 'daily') {
@@ -425,19 +426,18 @@ class ReportScreen extends GetView<ReportViewModel> {
               data.length,
               (i) => FlSpot(i.toDouble(), data[i]),
             ),
-            isCurved: type != 'yearly', // Less curved for fewer points
+            isCurved: type != 'yearly',
             color: color,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
               show: true,
-              getDotPainter: (spot, percent, barData, index) =>
-                  FlDotCirclePainter(
-                    radius: 3,
-                    color: color,
-                    strokeWidth: 1,
-                    strokeColor: Colors.white,
-                  ),
+              getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                radius: 3,
+                color: color,
+                strokeWidth: 1,
+                strokeColor: Colors.white,
+              ),
             ),
             belowBarData: BarAreaData(
               show: true,
@@ -482,7 +482,8 @@ class ReportScreen extends GetView<ReportViewModel> {
       itemBuilder: (context, index) {
         final report = reports[index];
         final monthName = DateFormat(
-          'MMMM', 'id_ID',
+          'MMMM',
+          'id_ID',
         ).format(DateTime(2024, report.bulan));
         return _buildReportCard(
           title: monthName,
@@ -580,7 +581,6 @@ class ReportScreen extends GetView<ReportViewModel> {
       ),
     );
   }
-
 
   Widget _buildEmptyState() {
     return Center(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../core/widgets/desktop_page_wrapper.dart';
+import '../core/widgets/responsive_layout.dart';
 import 'view_models/voucher_view_model.dart';
 import '../../domain/models/voucher_model.dart';
 import '../../domain/models/hotspot_model.dart';
@@ -9,63 +11,66 @@ import '../../ui/voucher/widgets/create_voucher_sheet.dart';
 
 class PrintVoucherScreen extends GetView<VoucherViewModel> {
   const PrintVoucherScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     const bgColor = Color(0xFF0A1118);
     const cardColor = Color(0xFF131E29);
     const accentColor = Color(0xFF00C2FF);
 
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        backgroundColor: bgColor,
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            Get.bottomSheet(
-              const CreateVoucherSheet(),
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-            );
-          },
-          backgroundColor: accentColor,
-          child: const Icon(Icons.add_rounded),
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context, accentColor),
-              _buildTabBar(accentColor),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _buildVoucherList(
-                      controller.stockVouchers,
-                      accentColor,
-                      cardColor,
-                      'Belum ada voucher stok',
-                    ),
-                    _buildVoucherList(
-                      controller.soldVouchers,
-                      accentColor,
-                      cardColor,
-                      'Belum ada voucher terjual',
-                    ),
-                    _buildVoucherList(
-                      controller.activeVouchers,
-                      accentColor,
-                      cardColor,
-                      'Belum ada voucher aktif',
-                    ),
-                    _buildVoucherList(
-                      controller.expiredVouchers,
-                      accentColor,
-                      cardColor,
-                      'Belum ada voucher expired',
-                    ),
-                  ],
+    return DesktopPageWrapper(
+      child: DefaultTabController(
+        length: 4,
+        child: Scaffold(
+          backgroundColor: bgColor,
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              Get.bottomSheet(
+                const CreateVoucherSheet(),
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+              );
+            },
+            backgroundColor: accentColor,
+            child: const Icon(Icons.add_rounded),
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(context, accentColor),
+                _buildTabBar(accentColor),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _buildVoucherList(
+                        controller.stockVouchers,
+                        accentColor,
+                        cardColor,
+                        'Belum ada voucher stok',
+                      ),
+                      _buildVoucherList(
+                        controller.soldVouchers,
+                        accentColor,
+                        cardColor,
+                        'Belum ada voucher terjual',
+                      ),
+                      _buildVoucherList(
+                        controller.activeVouchers,
+                        accentColor,
+                        cardColor,
+                        'Belum ada voucher aktif',
+                      ),
+                      _buildVoucherList(
+                        controller.expiredVouchers,
+                        accentColor,
+                        cardColor,
+                        'Belum ada voucher expired',
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -318,22 +323,25 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
         children: [
           Row(
             children: [
-              GestureDetector(
-                onTap: () => Get.back(),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new,
-                    color: Colors.white,
-                    size: 20,
+              if (ResponsiveLayout.isMobile(context))
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: () => Get.back(),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +396,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
             ],
           ),
           const SizedBox(height: 16),
-          // Hotspot Selector
+          
           Obx(() {
             if (controller.hotspots.isEmpty) return const SizedBox.shrink();
 
@@ -591,9 +599,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                             ),
                           ),
                           style: TextButton.styleFrom(
-                            backgroundColor: const Color(
-                              0xFF4ADE80,
-                            ).withValues(alpha: 0.1),
+                            backgroundColor: const Color(0xFF4ADE80).withValues(alpha: 0.1),
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                           ),
                         ),
@@ -641,13 +647,24 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                     ),
                     if (voucher.statusVoucher == VoucherStatus.terjual ||
                         voucher.statusVoucher == VoucherStatus.aktif)
-                      IconButton(
+                      TextButton.icon(
+                        onPressed: () => controller.printVoucher(voucher),
                         icon: const Icon(
                           Icons.print_outlined,
-                          size: 20,
+                          size: 18,
                           color: Colors.white70,
                         ),
-                        onPressed: () => controller.printVoucher(voucher),
+                        label: const Text(
+                          'Print',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.1),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
                       ),
                   ],
                 ),

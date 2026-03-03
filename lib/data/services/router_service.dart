@@ -365,15 +365,19 @@ class RouterService extends GetxService {
         ),
       );
 
+      final responseData = response.data;
+      final pingResult = responseData['data'] ?? responseData;
+
       return ApiResponse(
         success:
-            response.statusCode == 200 && (response.data['sukses'] == true),
+            response.statusCode == 200 && (responseData['sukses'] == true || responseData['success'] == true),
         message:
-            response.data['pesan'] ??
-            response.data['message'] ??
+            responseData['pesan'] ??
+            responseData['message'] ??
             'Ping complete',
-        data: response.data,
+        data: Map<String, dynamic>.from(pingResult),
       );
+
     } catch (e) {
       return ApiResponse(success: false, message: 'Ping error: $e');
     }

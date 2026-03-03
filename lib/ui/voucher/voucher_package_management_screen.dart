@@ -5,9 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'view_models/voucher_package_view_model.dart';
 import '../../../domain/models/voucher_package_model.dart';
 import '../../../domain/models/hotspot_model.dart';
+import '../core/widgets/desktop_page_wrapper.dart';
+import '../../core/utils/currency_formatter.dart';
 import 'widgets/voucher_package_header.dart';
 import 'widgets/voucher_package_item_card.dart';
-import '../../core/utils/currency_formatter.dart';
 
 class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
   const VoucherPackageManagementScreen({super.key});
@@ -18,124 +19,124 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
     const cardColor = Color(0xFF1E293B);
     const accentColor = Color(0xFF00C2FF);
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const VoucherPackageHeader(accentColor: accentColor),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 12.0,
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
+    return DesktopPageWrapper(
+      child: Scaffold(
+        backgroundColor: bgColor,
+        body: SafeArea(
+          child: Column(
+            children: [
+              const VoucherPackageHeader(accentColor: accentColor),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 12.0,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
                   ),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: Obx(() {
-                    final currentHotspot = controller.selectedHotspot.value;
-                    final dropdownValue = controller.hotspots.firstWhereOrNull(
-                      (h) => h.idHotspot == currentHotspot?.idHotspot,
-                    );
-
-                    return DropdownButton<HotspotModel>(
-                      value: dropdownValue,
-                      hint: const Text(
-                        'Pilih Hotspot',
-                        style: TextStyle(color: Colors.white54),
-                      ),
-                      dropdownColor: cardColor,
-                      isExpanded: true,
-                      icon: const Icon(
-                        Icons.wifi_tethering,
-                        color: accentColor,
-                      ),
-                      style: GoogleFonts.plusJakartaSans(color: Colors.white),
-                      items: controller.hotspots.map((hotspot) {
-                        return DropdownMenuItem<HotspotModel>(
-                          value: hotspot,
-                          child: Text(hotspot.namaServer),
-                        );
-                      }).toList(),
-                      onChanged: controller.onHotspotFilterChanged,
-                    );
-                  }),
-                ),
-              ),
-            ),
-
-            Expanded(
-              child: Obx(() {
-                if (controller.isLoading.value && controller.packages.isEmpty) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: accentColor),
-                  );
-                }
-
-                if (controller.packages.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 64,
-                          color: Colors.white.withValues(alpha: 0.2),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Tidak ada paket voucher',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: controller.loadPackages,
-                  color: accentColor,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(
-                      left: 24,
-                      right: 24,
-                      bottom: 80,
-                    ),
-                    itemCount: controller.packages.length,
-                    itemBuilder: (context, index) {
-                      final package = controller.packages[index];
-                      return VoucherPackageItemCard(
-                        package: package,
-                        cardColor: cardColor,
-                        accentColor: accentColor,
-                        onEdit: (p) => _showFormSheet(context, package: p),
-                        onDelete: (p) => _showDeleteConfirm(context, p),
-                        isDeleting: controller.deletingPackageIds.contains(
-                          package.id,
-                        ),
+                  child: DropdownButtonHideUnderline(
+                    child: Obx(() {
+                      final currentHotspot = controller.selectedHotspot.value;
+                      final dropdownValue = controller.hotspots.firstWhereOrNull(
+                        (h) => h.idHotspot == currentHotspot?.idHotspot,
                       );
-                    },
+
+                      return DropdownButton<HotspotModel>(
+                        value: dropdownValue,
+                        hint: const Text(
+                          'Pilih Hotspot',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                        dropdownColor: cardColor,
+                        isExpanded: true,
+                        icon: const Icon(
+                          Icons.wifi_tethering,
+                          color: accentColor,
+                        ),
+                        style: GoogleFonts.plusJakartaSans(color: Colors.white),
+                        items: controller.hotspots.map((hotspot) {
+                          return DropdownMenuItem<HotspotModel>(
+                            value: hotspot,
+                            child: Text(hotspot.namaServer),
+                          );
+                        }).toList(),
+                        onChanged: controller.onHotspotFilterChanged,
+                      );
+                    }),
                   ),
-                );
-              }),
-            ),
-          ],
+                ),
+              ),
+              Expanded(
+                child: Obx(() {
+                  if (controller.isLoading.value && controller.packages.isEmpty) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: accentColor),
+                    );
+                  }
+
+                  if (controller.packages.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Tidak ada paket voucher',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: controller.loadPackages,
+                    color: accentColor,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(
+                        left: 24,
+                        right: 24,
+                        bottom: 80,
+                      ),
+                      itemCount: controller.packages.length,
+                      itemBuilder: (context, index) {
+                        final package = controller.packages[index];
+                        return VoucherPackageItemCard(
+                          package: package,
+                          cardColor: cardColor,
+                          accentColor: accentColor,
+                          onEdit: (p) => _showFormSheet(context, package: p),
+                          onDelete: (p) => _showDeleteConfirm(context, p),
+                          isDeleting: controller.deletingPackageIds.contains(
+                            package.id,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showFormSheet(context),
-        backgroundColor: accentColor,
-        child: const Icon(Icons.add_rounded, color: Colors.white),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showFormSheet(context),
+          backgroundColor: accentColor,
+          child: const Icon(Icons.add_rounded, color: Colors.white),
+        ),
       ),
     );
   }
@@ -155,8 +156,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
       controller.rateLimitController.clear();
       controller.gunakanSsl.value = false;
 
-      // Initialize form hotspot with current filter or first available (excluding 'Semua Hotspot')
-      if (controller.selectedHotspot.value != null && 
+      if (controller.selectedHotspot.value != null &&
           controller.selectedHotspot.value!.idHotspot != -1) {
         controller.formSelectedHotspot.value = controller.selectedHotspot.value;
       } else if (controller.hotspots.isNotEmpty) {
@@ -310,9 +310,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                   value: controller.gunakanSsl.value,
                   onChanged: (val) => controller.gunakanSsl.value = val,
                   activeThumbColor: const Color(0xFF00C2FF),
-                  activeTrackColor: const Color(
-                    0xFF00C2FF,
-                  ).withValues(alpha: 0.5),
+                  activeTrackColor: const Color(0xFF00C2FF).withValues(alpha: 0.5),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -390,11 +388,13 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                 child: Text(hotspot.namaServer),
               );
             }).toList(),
-            onChanged: isEdit ? null : (val) {
-              if (val != null) {
-                controller.onFormHotspotChanged(val);
-              }
-            },
+            onChanged: isEdit
+                ? null
+                : (val) {
+                    if (val != null) {
+                      controller.onFormHotspotChanged(val);
+                    }
+                  },
           ),
         ),
       );
@@ -449,7 +449,6 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
       ],
     );
   }
-
 
   void _showDeleteConfirm(BuildContext context, VoucherPackageModel package) {
     Get.dialog(

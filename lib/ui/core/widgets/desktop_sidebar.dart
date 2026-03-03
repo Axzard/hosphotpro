@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../config/routing/app_routes.dart';
+import '../controllers/navigation_controller.dart';
+import 'responsive_layout.dart';
 
 class DesktopSidebar extends StatelessWidget {
   const DesktopSidebar({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // We try to find the NavigationController. If it's not there, we're likely in a 
+    // standalone page or mobile view where indexing isn't used.
+    final NavigationController? navCtrl = Get.isRegistered<NavigationController>() 
+        ? Get.find<NavigationController>() 
+        : null;
+
     final currentRoute = Get.currentRoute;
 
     return Container(
@@ -28,54 +36,91 @@ class DesktopSidebar extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _SidebarItem(
-                  icon: Icons.dashboard_outlined,
-                  label: 'Dashboard',
-                  route: Routes.DASHBOARD,
-                  isActive: currentRoute == Routes.DASHBOARD,
-                ),
-                _SidebarItem(
-                  icon: Icons.confirmation_number_outlined,
-                  label: 'Voucher',
-                  route: Routes.VOUCHERS,
-                  isActive: currentRoute == Routes.VOUCHERS,
-                ),
-                _SidebarItem(
-                  icon: Icons.router_outlined,
-                  label: 'Manajemen Router',
-                  route: Routes.MIKROTIK_ROUTERS,
-                  isActive: currentRoute == Routes.MIKROTIK_ROUTERS,
-                ),
-                _SidebarItem(
-                  icon: Icons.wifi_off_outlined,
-                  label: 'Manajemen Hotspot',
-                  route: Routes.HOTSPOTS,
-                  isActive: currentRoute == Routes.HOTSPOTS,
-                ),
-                _SidebarItem(
-                  icon: Icons.bar_chart_outlined,
-                  label: 'Laporan',
-                  route: Routes.TRANSACTIONS,
-                  isActive: currentRoute == Routes.TRANSACTIONS,
-                ),
-                _SidebarItem(
-                  icon: Icons.card_membership_outlined,
-                  label: 'Status Langganan',
-                  route: Routes.SUBSCRIPTION_STATUS,
-                  isActive: currentRoute == Routes.SUBSCRIPTION_STATUS,
-                ),
-              ],
-            ),
+            child: Obx(() {
+              final selectedIndex = navCtrl?.selectedIndex.value ?? -1;
+
+              return ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  _SidebarItem(
+                    icon: Icons.dashboard_outlined,
+                    label: 'Dashboard',
+                    route: Routes.DASHBOARD,
+                    isActive: navCtrl != null 
+                        ? selectedIndex == 0 
+                        : currentRoute == Routes.DASHBOARD,
+                    index: 0,
+                    navCtrl: navCtrl,
+                  ),
+                  _SidebarItem(
+                    icon: Icons.confirmation_number_outlined,
+                    label: 'Voucher',
+                    route: Routes.VOUCHERS,
+                    isActive: navCtrl != null 
+                        ? selectedIndex == 1 
+                        : currentRoute == Routes.VOUCHERS,
+                    index: 1,
+                    navCtrl: navCtrl,
+                  ),
+                  _SidebarItem(
+                    icon: Icons.router_outlined,
+                    label: 'Manajemen Router',
+                    route: Routes.MIKROTIK_ROUTERS,
+                    isActive: navCtrl != null 
+                        ? selectedIndex == 2 
+                        : currentRoute == Routes.MIKROTIK_ROUTERS,
+                    index: 2,
+                    navCtrl: navCtrl,
+                  ),
+                  _SidebarItem(
+                    icon: Icons.wifi_off_outlined,
+                    label: 'Manajemen Hotspot',
+                    route: Routes.HOTSPOTS,
+                    isActive: navCtrl != null 
+                        ? selectedIndex == 3 
+                        : currentRoute == Routes.HOTSPOTS,
+                    index: 3,
+                    navCtrl: navCtrl,
+                  ),
+                  _SidebarItem(
+                    icon: Icons.bar_chart_outlined,
+                    label: 'Laporan',
+                    route: Routes.TRANSACTIONS,
+                    isActive: navCtrl != null 
+                        ? selectedIndex == 4 
+                        : currentRoute == Routes.TRANSACTIONS,
+                    index: 4,
+                    navCtrl: navCtrl,
+                  ),
+                  _SidebarItem(
+                    icon: Icons.shopping_bag_outlined,
+                    label: 'Paket Langganan',
+                    route: Routes.PACKAGES,
+                    isActive: navCtrl != null 
+                        ? selectedIndex == 5 
+                        : currentRoute == Routes.PACKAGES,
+                    index: 5,
+                    navCtrl: navCtrl,
+                  ),
+                  _SidebarItem(
+                    icon: Icons.card_membership_outlined,
+                    label: 'Status Langganan',
+                    route: Routes.SUBSCRIPTION_STATUS,
+                    isActive: navCtrl != null 
+                        ? selectedIndex == 6 
+                        : currentRoute == Routes.SUBSCRIPTION_STATUS,
+                    index: 6,
+                    navCtrl: navCtrl,
+                  ),
+                ],
+              );
+            }),
           ),
           const Divider(color: Colors.white10),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: ListTile(
               onTap: () {
-                // Assuming there's a logout logic in a controller or global state
                 Get.offAllNamed(Routes.LOGIN);
               },
               leading: const Icon(Icons.logout, color: Colors.redAccent),
@@ -98,12 +143,16 @@ class _SidebarItem extends StatelessWidget {
   final String label;
   final String route;
   final bool isActive;
+  final int index;
+  final NavigationController? navCtrl;
 
   const _SidebarItem({
     required this.icon,
     required this.label,
     required this.route,
     required this.isActive,
+    required this.index,
+    this.navCtrl,
   });
 
   @override
@@ -113,7 +162,11 @@ class _SidebarItem extends StatelessWidget {
       child: ListTile(
         onTap: () {
           if (!isActive) {
-            Get.toNamed(route);
+            if (navCtrl != null && ResponsiveLayout.isDesktop(context)) {
+              navCtrl!.changeIndex(index);
+            } else {
+              Get.toNamed(route);
+            }
           }
         },
         leading: Icon(

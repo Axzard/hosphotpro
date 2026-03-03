@@ -108,19 +108,13 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                           color: Colors.black,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.routerName,
-                        style: GoogleFonts.courierPrime(
-                          fontSize: 14,
-                          color: Colors.black,
-                        ),
-                      ),
+                      const SizedBox(height: 2),
                       const Divider(
                         color: Colors.black,
                         thickness: 1.5,
-                        height: 24,
+                        height: 16,
                       ),
+
 
                       // Vouchers List
                       ..._vouchersToPrint.map(
@@ -245,10 +239,11 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                 child: Slider(
                   value: selectedQuantity.toDouble(),
                   min: 1,
-                  max: widget.vouchers.length.toDouble(),
-                  divisions: math.max(1, widget.vouchers.length - 1),
+                  max: math.max(1, widget.vouchers.length.toDouble()),
+                  divisions: math.max(1, widget.vouchers.length),
                   activeColor: const Color(0xFF00C2FF),
                   label: selectedQuantity.toString(),
+
                   onChanged: (val) {
                     setState(() {
                       selectedQuantity = val.toInt();
@@ -468,8 +463,9 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
 
   Widget _buildVoucherItem(VoucherModel voucher) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 8),
+
       decoration: const BoxDecoration(
         border: Border(
           bottom: BorderSide(color: Colors.black26, style: BorderStyle.solid),
@@ -485,7 +481,8 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
+
           Text(
             'USERNAME / KODE',
             style: GoogleFonts.courierPrime(
@@ -496,7 +493,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
           Text(
             voucher.kodeVoucher,
             style: GoogleFonts.courierPrime(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.black,
               letterSpacing: 2,
@@ -504,7 +501,8 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
           ),
           if (voucher.passwordVoucher.isNotEmpty &&
               voucher.passwordVoucher != voucher.kodeVoucher) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
+
             Text(
               'PASSWORD',
               style: GoogleFonts.courierPrime(
@@ -515,12 +513,13 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
             Text(
               voucher.passwordVoucher,
               style: GoogleFonts.courierPrime(
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
                 letterSpacing: 2,
               ),
             ),
+
           ],
         ],
       ),
@@ -576,14 +575,10 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  widget.routerName,
-                  style: pw.TextStyle(font: font, fontSize: 10),
-                  textAlign: pw.TextAlign.center,
-                ),
+                pw.SizedBox(height: 2),
                 pw.Divider(thickness: 1.5),
-                pw.SizedBox(height: 4),
+                pw.SizedBox(height: 2),
+
 
                 // Body — voucher data
                 pw.Text(
@@ -594,7 +589,8 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
-                pw.SizedBox(height: 6),
+                pw.SizedBox(height: 2),
+
                 pw.Text(
                   'USERNAME / KODE',
                   style: pw.TextStyle(
@@ -608,11 +604,12 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                   voucher.kodeVoucher,
                   style: pw.TextStyle(
                     font: fontBold,
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: pw.FontWeight.bold,
                     letterSpacing: 2,
                   ),
                 ),
+
                 if (voucher.passwordVoucher.isNotEmpty &&
                     voucher.passwordVoucher != voucher.kodeVoucher) ...[
                   pw.SizedBox(height: 4),
@@ -629,16 +626,18 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                     voucher.passwordVoucher,
                     style: pw.TextStyle(
                       font: fontBold,
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: pw.FontWeight.bold,
                       letterSpacing: 2,
                     ),
                   ),
+
                 ],
 
                 // Footer
-                pw.SizedBox(height: 12),
+                pw.SizedBox(height: 8),
                 pw.Divider(thickness: 0.5),
+
                 pw.SizedBox(height: 4),
                 pw.Text(
                   'Terima Kasih',

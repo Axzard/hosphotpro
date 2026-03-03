@@ -16,6 +16,9 @@ import '../../../domain/models/auth_model.dart';
 import '../../../domain/models/voucher_model.dart';
 import '../../../domain/models/voucher_package_model.dart';
 import '../../../data/services/token_service.dart';
+import '../../../core/services/cache_service.dart';
+import '../../../data/model/report_api_model.dart';
+
 
 class DashboardViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
@@ -27,6 +30,8 @@ class DashboardViewModel extends GetxController {
   final AuthRepository _authRepository = Get.find<AuthRepository>();
   final TokenService _tokenService = Get.find<TokenService>();
   final SessionService _sessionService = Get.find<SessionService>();
+  final CacheService _cacheService = Get.find<CacheService>();
+
 
   final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
   final subscriptionStatus = 'Tidak Ada Langganan'.obs;
@@ -65,8 +70,10 @@ class DashboardViewModel extends GetxController {
       username.value = storedUsername;
     }
 
+    loadCachedData();
     fetchDashboardData(isInitial: true);
     _initRealtimeListeners();
+
 
     ever(selectedRouter, (router) {
       if (_isInitialLoad.value) return;
@@ -77,7 +84,30 @@ class DashboardViewModel extends GetxController {
     });
   }
 
+  void loadCachedData() {
+    final cachedData = _cacheService.getDashboard();
+    if (cachedData != null) {
+      try {
+        // We need a simple way to restore state from Map
+        // For DashboardReport, we can use the API model's fromJson if we store the raw JSON
+        if (cachedData['report_summary'] != null) {
+          final apiModel = ReportDashboardApiModel.fromJson(cachedData['report_summary']);
+          reportSummary.value = apiModel.toDomain();
+        }
+        totalIncomeToday.value = (cachedData['total_income_today'] as num?)?.toDouble() ?? 0.0;
+        totalTransactionsToday.value = cachedData['total_transactions_today'] as int? ?? 0;
+        activeUserCount.value = cachedData['active_user_count'] as int? ?? 0;
+        voucherCount.value = cachedData['voucher_count'] as int? ?? 0;
+        hotspotCount.value = cachedData['hotspot_count'] as int? ?? 0;
+        voucherPackageCount.value = cachedData['voucher_package_count'] as int? ?? 0;
+      } catch (e) {
+        print('[DashboardVM] Error loading cache: $e');
+      }
+    }
+  }
+
   Timer? _activeUserThrottle;
+
   void _throttledActiveUserFetch() {
     if (_activeUserThrottle?.isActive ?? false) return;
     _activeUserThrottle = Timer(const Duration(seconds: 3), () async {
@@ -328,7 +358,42 @@ class DashboardViewModel extends GetxController {
       }
 
       _fetchVoucherCountInBackground(selectedRouter.value!);
+
+      // Save to cache
+      _cacheService.saveDashboard({
+        'report_summary': reports == null ? null : {
+          'data': {
+            'perHari': reports.perHari.map((e) => {
+              'tanggal': e.tanggal.toIso8601String(),
+              'total_pendapatan': e.totalPendapatan,
+              'total_transaksi': e.totalTransaksi,
+            }).toList(),
+            'perBulan': reports.perBulan.map((e) => {
+              'bulan': e.bulan,
+              'total_pendapatan': e.totalPendapatan,
+              'total_transaksi': e.totalTransaksi,
+            }).toList(),
+            'perTahun': reports.perTahun.map((e) => {
+              'tahun': e.tahun,
+              'total_pendapatan': e.totalPendapatan,
+              'total_transaksi': e.totalTransaksi,
+            }).toList(),
+            'summary': {
+              'total_pendapatan': reports.totalIncome,
+              'total_transaksi': reports.totalTransactions,
+            }
+          }
+        },
+        'total_income_today': totalIncomeToday.value,
+        'total_transactions_today': totalTransactionsToday.value,
+        'active_user_count': activeUserCount.value,
+        'voucher_count': voucherCount.value,
+        'hotspot_count': hotspotCount.value,
+        'voucher_package_count': voucherPackageCount.value,
+      });
+
     } catch (e) {
+
       Get.toNamed(
         Routes.ERROR,
         arguments: 'Gagal memuat data dashboard, terjadi gangguan pada server.',
@@ -352,9 +417,11 @@ class DashboardViewModel extends GetxController {
         voucherPackageCount.value = voucherPackagesList.length;
 
         final vouchersList = await _voucherRepository.getAllVouchers();
-        voucherCount.value = vouchersList.length;
+        // Change logic: only count vouchers with status 'stok'
+        voucherCount.value = vouchersList.where((v) => v.statusVoucher == VoucherStatus.stok).length;
 
         final activeVouchersList = await _voucherRepository.getActiveVouchers();
+
         activeUserCount.value = activeVouchersList.length;
 
         return;
@@ -384,8 +451,10 @@ class DashboardViewModel extends GetxController {
         final allVouchers = voucherGroups.expand((x) => x).toList();
         final allPackages = packageGroups.expand((x) => x).toList();
 
-        voucherCount.value = allVouchers.length;
+        // Change logic: only count vouchers with status 'stok'
+        voucherCount.value = allVouchers.where((v) => v.statusVoucher == VoucherStatus.stok).length;
         voucherPackageCount.value = allPackages.length;
+
 
         final activeVouchersList = await _voucherRepository.getActiveVouchers();
         final filteredByRouter = activeVouchersList
