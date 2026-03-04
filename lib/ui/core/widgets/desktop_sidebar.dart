@@ -117,8 +117,8 @@ class DesktopSidebar extends StatelessWidget {
                     label: 'Paket Langganan',
                     route: Routes.PACKAGES,
                     isActive: navCtrl != null 
-                        ? selectedIndex == 6 
-                        : currentRoute == Routes.PACKAGES,
+                        ? (selectedIndex == 6 || selectedIndex == 8) 
+                        : (currentRoute == Routes.PACKAGES || currentRoute == Routes.PACKAGE_DETAIL),
                     index: 6,
                     navCtrl: navCtrl,
                   ),

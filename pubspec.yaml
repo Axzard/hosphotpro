@@ -7,7 +7,6 @@ environment:
   sdk: ^3.9.2
 
 dependencies:
-  flutter_blue_plus: ^2.1.1
   dio: ^5.9.1
   esc_pos_utils_plus: ^2.0.4
   flutter:
@@ -28,6 +27,7 @@ dependencies:
   webview_flutter: ^4.10.0
   fl_chart: ^0.70.2
   window_manager: ^0.4.3
+  print_bluetooth_thermal: ^1.1.9
   
 
 dev_dependencies:

@@ -177,43 +177,60 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
             final filteredItems = _getFilteredItemsByMessage(emptyMessage);
 
             if (filteredItems.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.confirmation_number_outlined,
-                      size: 64,
-                      color: Colors.white.withValues(alpha: 0.2),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      emptyMessage,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
-                        fontSize: 16,
+              return RefreshIndicator(
+                onRefresh: () => controller.refreshData(),
+                color: const Color(0xFF00C2FF),
+                backgroundColor: const Color(0xFF131E29),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: 300,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.confirmation_number_outlined,
+                            size: 64,
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            emptyMessage,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white54,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               );
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 10,
-                bottom: 80,
+            return RefreshIndicator(
+              onRefresh: () => controller.refreshData(),
+              color: const Color(0xFF00C2FF),
+              backgroundColor: const Color(0xFF131E29),
+              child: ListView.builder(
+                padding: const EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 10,
+                  bottom: 80,
+                ),
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: filteredItems.length,
+                itemBuilder: (context, index) {
+                  final voucher = filteredItems[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _buildVoucherCard(voucher, cardColor, accentColor),
+                  );
+                },
               ),
-              itemCount: filteredItems.length,
-              itemBuilder: (context, index) {
-                final voucher = filteredItems[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _buildVoucherCard(voucher, cardColor, accentColor),
-                );
-              },
             );
           }),
         ),
@@ -371,6 +388,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                   ],
                 ),
               ),
+              // Tombol Hapus Semua
               Obx(
                 () => controller.vouchers.isNotEmpty
                     ? IconButton(
@@ -481,7 +499,12 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
     }
 
     return GestureDetector(
-      onTap: () => controller.navigateToDetail(voucher),
+      onTap: () {
+        if (!controller.isDeletingAll.value &&
+            !controller.deletingVoucherIds.contains(voucher.idVoucher)) {
+          controller.navigateToDetail(voucher);
+        }
+      },
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -605,47 +628,74 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                           ),
                         ),
                       ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        size: 20,
-                        color: Colors.redAccent,
-                      ),
-                      onPressed: () {
-                        Get.dialog(
-                          AlertDialog(
-                            backgroundColor: const Color(0xFF131E29),
-                            title: const Text(
-                              'Hapus Voucher',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            content: Text(
-                              'Apakah Anda yakin ingin menghapus voucher "${voucher.kodeVoucher}"?',
-                              style: const TextStyle(color: Colors.white70),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Get.back(),
-                                child: const Text(
-                                  'Batal',
-                                  style: TextStyle(color: Colors.white54),
+                    Obx(() {
+                      final isDeleting = controller.deletingVoucherIds.contains(voucher.idVoucher) || 
+                                         controller.isDeletingAll.value;
+                      return IconButton(
+                        icon: isDeleting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.redAccent,
                                 ),
+                              )
+                            : const Icon(
+                                Icons.delete_outline,
+                                size: 20,
+                                color: Colors.redAccent,
                               ),
-                              TextButton(
-                                onPressed: () {
-                                  Get.back();
-                                  controller.deleteVoucher(voucher.idVoucher);
-                                },
-                                child: const Text(
-                                  'Hapus',
-                                  style: TextStyle(color: Colors.redAccent),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                        onPressed: isDeleting
+                            ? null
+                            : () {
+                                showDialog(
+                                  context: Get.context!,
+                                  barrierDismissible: true,
+                                  builder: (dialogContext) {
+                                    bool isConfirming = false;
+                                    return StatefulBuilder(
+                                      builder: (ctx, setStateDialog) {
+                                        return AlertDialog(
+                                          backgroundColor: const Color(0xFF131E29),
+                                          title: const Text(
+                                            'Hapus Voucher',
+                                            style: TextStyle(color: Colors.white),
+                                          ),
+                                          content: Text(
+                                            'Apakah Anda yakin ingin menghapus voucher "${voucher.kodeVoucher}"?',
+                                            style: const TextStyle(color: Colors.white70),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.of(dialogContext).pop(),
+                                              child: const Text(
+                                                'Batal',
+                                                style: TextStyle(color: Colors.white54),
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onPressed: isConfirming
+                                                  ? null
+                                                  : () {
+                                                      setStateDialog(() => isConfirming = true);
+                                                      Navigator.of(dialogContext).pop();
+                                                      controller.deleteVoucher(voucher.idVoucher);
+                                                    },
+                                              child: Text(
+                                                isConfirming ? 'Menghapus...' : 'Hapus',
+                                                style: const TextStyle(color: Colors.redAccent),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
+                              },
+                      );
+                    }),
                     if (voucher.statusVoucher == VoucherStatus.terjual ||
                         voucher.statusVoucher == VoucherStatus.aktif)
                       TextButton.icon(

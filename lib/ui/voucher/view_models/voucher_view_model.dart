@@ -105,9 +105,11 @@ class VoucherViewModel extends GetxController {
           );
 
           if (package != null) {
-            final newVoucher = VoucherApiModel.fromJson(
-              data,
-            ).toDomain().copyWith(namaPaket: package.namaPaket);
+            final parsed = VoucherApiModel.fromJson(data).toDomain();
+            final newVoucher = parsed.copyWith(
+              namaPaket: package.namaPaket,
+              harga: parsed.harga > 0 ? parsed.harga : package.harga,
+            );
             vouchers.insert(0, newVoucher);
           }
         } catch (e) {
@@ -128,9 +130,13 @@ class VoucherViewModel extends GetxController {
             if (listData != null) {
               final newVouchers = listData
                   .map(
-                    (e) => VoucherApiModel.fromJson(
-                      e,
-                    ).toDomain().copyWith(namaPaket: package.namaPaket),
+                    (e) {
+                      final parsed = VoucherApiModel.fromJson(e).toDomain();
+                      return parsed.copyWith(
+                        namaPaket: package.namaPaket,
+                        harga: parsed.harga > 0 ? parsed.harga : package.harga,
+                      );
+                    },
                   )
                   .toList();
               vouchers.insertAll(0, newVouchers);
@@ -314,6 +320,8 @@ class VoucherViewModel extends GetxController {
       await _voucherRepository.createVoucher(idPaket);
       Get.back();
       SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dibuat');
+      // Reload data agar harga dan data lengkap langsung tampil
+      await loadVouchers();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal membuat voucher: $e');
     } finally {
@@ -412,18 +420,40 @@ class VoucherViewModel extends GetxController {
   }
 
   Future<void> deleteVoucher(int idVoucher) async {
-    if (deletingVoucherIds.contains(idVoucher)) return;
+    if (deletingVoucherIds.contains(idVoucher)) {
+      // Beri feedback ke admin bahwa voucher sedang dalam proses penghapusan
+      SnackbarUtils.showInfo('Harap Tunggu', 'Voucher sedang dalam proses penghapusan');
+      return;
+    }
+
+    // Segera tandai sebagai "sedang dihapus" sebelum gap async
+    // agar tidak ada race condition jika admin menekan hapus dua kali
+    deletingVoucherIds.add(idVoucher);
+
+    // Optimistic delete: langsung hapus dari list agar UI responsif
+    final index = vouchers.indexWhere((v) => v.idVoucher == idVoucher);
+    VoucherModel? removedVoucher;
+    if (index != -1) {
+      removedVoucher = vouchers[index];
+      vouchers.removeAt(index);
+    }
 
     try {
-      deletingVoucherIds.add(idVoucher);
       final success = await _voucherRepository.deleteVoucher(idVoucher);
       if (success) {
-        vouchers.removeWhere((v) => v.idVoucher == idVoucher);
         SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dihapus');
       } else {
+        // Rollback: kembalikan voucher ke list jika gagal
+        if (removedVoucher != null) {
+          vouchers.insert(index.clamp(0, vouchers.length), removedVoucher);
+        }
         SnackbarUtils.showError('Error', 'Gagal menghapus voucher');
       }
     } catch (e) {
+      // Rollback: kembalikan voucher ke list jika error
+      if (removedVoucher != null) {
+        vouchers.insert(index.clamp(0, vouchers.length), removedVoucher);
+      }
       SnackbarUtils.showError('Error', 'Gagal menghapus voucher: $e');
     } finally {
       deletingVoucherIds.remove(idVoucher);
@@ -539,6 +569,43 @@ class VoucherViewModel extends GetxController {
       return;
     }
     _openPrintPreview(vouchers);
+  }
+
+  /// Refresh manual semua data voucher
+  Future<void> refreshData() async {
+    isLoading.value = true;
+    try {
+      await loadRouters();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Jual voucher stok secara bulk saat print
+  /// Mengembalikan list voucher yang sudah diupdate statusnya
+  Future<List<VoucherModel>> sellBulkVouchersForPrint(List<VoucherModel> vouchersToPrint) async {
+    final List<VoucherModel> updatedVouchers = [];
+    for (final voucher in vouchersToPrint) {
+      if (voucher.statusVoucher == VoucherStatus.stok) {
+        try {
+          await _voucherRepository.sellVoucher(voucher.idVoucher, 'cash');
+          final updated = voucher.copyWith(statusVoucher: VoucherStatus.terjual);
+          // Update di list utama juga
+          final index = vouchers.indexWhere((v) => v.idVoucher == voucher.idVoucher);
+          if (index != -1) {
+            vouchers[index] = updated;
+          }
+          updatedVouchers.add(updated);
+        } catch (e) {
+          // Jika gagal sell, tetap tambahkan voucher asli
+          updatedVouchers.add(voucher);
+          print('[VoucherVM] Gagal sell voucher ${voucher.idVoucher}: $e');
+        }
+      } else {
+        updatedVouchers.add(voucher);
+      }
+    }
+    return updatedVouchers;
   }
 
   void _openPrintPreview(List<VoucherModel> vouchersToPrint) {

@@ -43,7 +43,9 @@ class PackageDetailScreen extends GetView<SubscriptionViewModel> {
 
           return Column(
             children: [
-            const PackageDetailHeader(accentColor: accentColor),
+            ResponsiveMaxWidth(
+              child: const PackageDetailHeader(accentColor: accentColor),
+            ),
             Expanded(
               child: ResponsiveMaxWidth(
                 child: SingleChildScrollView(

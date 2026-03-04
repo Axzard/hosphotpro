@@ -145,6 +145,8 @@ class DashboardViewModel extends GetxController {
           if (event == 'voucher:sold') {
             totalIncomeToday.value += harga;
             totalTransactionsToday.value += 1;
+            // Voucher stok berkurang saat dijual
+            if (voucherCount.value > 0) voucherCount.value -= 1;
           } else if (event == 'voucher:activated') {
             if (harga > 0) totalIncomeToday.value += harga;
             totalTransactionsToday.value += 1;
@@ -153,6 +155,23 @@ class DashboardViewModel extends GetxController {
           _throttledActiveUserFetch();
           _throttledFetch();
         }
+      }
+
+      // Update voucher count saat ada voucher baru atau dihapus
+      if (event == 'voucher:created') {
+        voucherCount.value += 1;
+      }
+      if (event == 'voucher:bulkcreated') {
+        final data = eventData['data'];
+        if (data is Map) {
+          final listData = data['data'] as List?;
+          if (listData != null) {
+            voucherCount.value += listData.length;
+          }
+        }
+      }
+      if (event == 'voucher:deleted') {
+        if (voucherCount.value > 0) voucherCount.value -= 1;
       }
 
       if (_lastFetchTime == null ||
@@ -416,9 +435,17 @@ class DashboardViewModel extends GetxController {
             .getAllVoucherPackages();
         voucherPackageCount.value = voucherPackagesList.length;
 
-        final vouchersList = await _voucherRepository.getAllVouchers();
-        // Change logic: only count vouchers with status 'stok'
-        voucherCount.value = vouchersList.where((v) => v.statusVoucher == VoucherStatus.stok).length;
+        // Fetch vouchers per hotspot (getAllVouchers hanya return active, bukan semua)
+        if (hotspotsList.isNotEmpty) {
+          final voucherFutures = hotspotsList
+              .map((h) => _voucherRepository.getVouchersByHotspot(h.idHotspot))
+              .toList();
+          final voucherGroups = await Future.wait(voucherFutures);
+          final allVouchers = voucherGroups.expand((x) => x).toList();
+          voucherCount.value = allVouchers.where((v) => v.statusVoucher == VoucherStatus.stok).length;
+        } else {
+          voucherCount.value = 0;
+        }
 
         final activeVouchersList = await _voucherRepository.getActiveVouchers();
 

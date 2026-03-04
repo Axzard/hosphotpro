@@ -12,7 +12,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
 
   @override
   Widget build(BuildContext context) {
-    final voucher = Get.arguments as VoucherModel;
+    final initialVoucher = Get.arguments as VoucherModel;
     final currencyFormat = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
@@ -26,31 +26,40 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(accentColor),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    _buildCodeCard(voucher, accentColor),
-                    const SizedBox(height: 24),
-                    _buildInfoSection(
-                      voucher,
-                      currencyFormat,
-                      dateFormat,
-                      accentColor,
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+        child: Obx(() {
+          // Reactive lookup: ambil data terbaru dari list vouchers
+          final voucherInList = controller.vouchers.firstWhereOrNull(
+            (v) => v.idVoucher == initialVoucher.idVoucher,
+          );
+
+          final voucher = voucherInList ?? initialVoucher;
+
+          return Column(
+            children: [
+              _buildHeader(accentColor),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 16),
+                      _buildCodeCard(voucher, accentColor),
+                      const SizedBox(height: 24),
+                      _buildInfoSection(
+                        voucher,
+                        currencyFormat,
+                        dateFormat,
+                        accentColor,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            _buildActionButtons(voucher, accentColor),
-          ],
-        ),
+              _buildActionButtons(voucher, accentColor),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -579,9 +588,10 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  Get.back();
+                                  // Tutup dialog dan detail screen sekaligus (2 layer) tanpa delay animasi overlap
+                                  Get.close(2);
+                                  // Mulai proses hapus
                                   controller.deleteVoucher(voucher.idVoucher);
-                                  Get.back();
                                 },
                                 child: const Text(
                                   'Hapus',

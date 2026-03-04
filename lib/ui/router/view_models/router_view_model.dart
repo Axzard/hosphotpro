@@ -241,7 +241,7 @@ class RouterViewModel extends GetxController {
                       constraints: const BoxConstraints(minHeight: 150),
                       width: double.maxFinite,
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: isPingLoading.value && pingLines.isEmpty
@@ -282,29 +282,24 @@ class RouterViewModel extends GetxController {
 
       final int routerId = int.tryParse(id) ?? 0;
       final result = await _routerRepository.pingRouter(routerId);
-      
-      // Try to find detail and output in various possible keys
-      final detail = result['detail'] ?? result['data'] ?? result;
-      final String rawOutput = detail['output'] ?? 
-                             detail['log'] ?? 
-                             detail['message'] ?? 
-                             detail['response'] ?? 
-                             result['output'] ?? 
-                             result['log'] ?? 
-                             result['message'] ?? 
-                             result.toString();
-      final String time = detail['time']?.toString() ?? result['time']?.toString() ?? '-';
+
+      // Ambil detail dari respons API:
+      // { "status": "ONLINE", "detail": { "raw": "PING ...", "time": 60.7, "status": "ONLINE" } }
+      final detail = result['detail'] as Map? ?? {};
+      final String rawOutput = (detail['raw'] ?? '').toString();
+      final String time = (detail['time'] ?? result['time'] ?? '-').toString();
+      final String status = (result['status'] ?? detail['status'] ?? 'UNKNOWN').toString();
 
       isPingLoading.value = false;
-      pingStatus.value = result['status'] ?? result['state'] ?? 'UNKNOWN';
+      pingStatus.value = status;
       pingResponseTime.value = time;
 
+      // Tampilkan isi 'raw' baris per baris di console output
       final List<String> lines = rawOutput.split('\n');
       for (var line in lines) {
         if (line.trim().isEmpty) continue;
         pingLines.add(line);
-
-        await Future.delayed(const Duration(milliseconds: 300));
+        await Future.delayed(const Duration(milliseconds: 150));
       }
     } catch (e) {
       isPingLoading.value = false;

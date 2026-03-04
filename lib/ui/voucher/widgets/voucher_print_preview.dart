@@ -9,6 +9,7 @@ import '../../../domain/models/voucher_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/services/printer_service.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../view_models/voucher_view_model.dart';
 import 'dart:math' as math;
 
 class VoucherPrintPreview extends StatefulWidget {
@@ -197,7 +198,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                               printerService
                                   .selectedDevice
                                   .value
-                                  ?.platformName ??
+                                  ?.name ??
                               'Pilih Printer';
                           return Text(
                             deviceName,
@@ -227,49 +228,51 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          // Quantity Slider
-          Row(
-            children: [
-              Text(
-                'Jumlah:',
-                style: GoogleFonts.plusJakartaSans(color: Colors.white70),
-              ),
-              Expanded(
-                child: Slider(
-                  value: selectedQuantity.toDouble(),
-                  min: 1,
-                  max: math.max(1, widget.vouchers.length.toDouble()),
-                  divisions: math.max(1, widget.vouchers.length),
-                  activeColor: const Color(0xFF00C2FF),
-                  label: selectedQuantity.toString(),
+          if (widget.vouchers.length > 1) ...[
+            const SizedBox(height: 12),
+            // Quantity Slider
+            Row(
+              children: [
+                Text(
+                  'Jumlah:',
+                  style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+                ),
+                Expanded(
+                  child: Slider(
+                    value: selectedQuantity.toDouble(),
+                    min: 1,
+                    max: math.max(1, widget.vouchers.length.toDouble()),
+                    divisions: math.max(1, widget.vouchers.length),
+                    activeColor: const Color(0xFF00C2FF),
+                    label: selectedQuantity.toString(),
 
-                  onChanged: (val) {
-                    setState(() {
-                      selectedQuantity = val.toInt();
-                    });
-                  },
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF334155),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$selectedQuantity / ${widget.vouchers.length}',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    onChanged: (val) {
+                      setState(() {
+                        selectedQuantity = val.toInt();
+                      });
+                    },
                   ),
                 ),
-              ),
-            ],
-          ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF334155),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$selectedQuantity / ${widget.vouchers.length}',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -398,14 +401,14 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                       ),
                       leading: const Icon(Icons.print, color: Colors.white),
                       title: Text(
-                        device.platformName.isEmpty
+                        device.name.isEmpty
                             ? 'Unknown Device'
-                            : device.platformName,
+                            : device.name,
                         style: GoogleFonts.plusJakartaSans(color: Colors.white),
                       ),
                       trailing:
-                          printerService.selectedDevice.value?.remoteId ==
-                              device.remoteId
+                          printerService.selectedDevice.value?.macAdress ==
+                              device.macAdress
                           ? const Icon(Icons.check, color: Color(0xFF4ADE80))
                           : null,
                     );
@@ -435,7 +438,21 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
     });
 
     try {
-      final toPrint = _vouchersToPrint;
+      var toPrint = _vouchersToPrint;
+
+      // Auto-sell voucher stok sebelum print (sama seperti print single)
+      final hasStokVouchers = toPrint.any(
+        (v) => v.statusVoucher == VoucherStatus.stok,
+      );
+      if (hasStokVouchers) {
+        try {
+          final voucherVM = Get.find<VoucherViewModel>();
+          toPrint = await voucherVM.sellBulkVouchersForPrint(toPrint);
+        } catch (e) {
+          print('[PrintPreview] Error selling bulk vouchers: $e');
+        }
+      }
+
       for (int i = 0; i < toPrint.length; i++) {
         setState(() {
           currentPrintIndex = i + 1;
