@@ -27,12 +27,8 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
       backgroundColor: bgColor,
       body: SafeArea(
         child: Obx(() {
-          // Reactive lookup: ambil data terbaru dari list vouchers
-          final voucherInList = controller.vouchers.firstWhereOrNull(
-            (v) => v.idVoucher == initialVoucher.idVoucher,
-          );
-
-          final voucher = voucherInList ?? initialVoucher;
+          // Gunakan state reaktif selectedVoucher dari controller untuk performa lebih baik
+          final voucher = controller.selectedVoucher.value ?? initialVoucher;
 
           return Column(
             children: [
@@ -503,26 +499,23 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
               width: double.infinity,
               height: 54,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  controller.sellVoucher(voucher, 'cash');
-                  Get.back();
-                },
-                icon: const Icon(Icons.sell_outlined),
+                onPressed: () => controller.printVoucher(voucher),
+                icon: const Icon(Icons.print_outlined),
                 label: Text(
-                  'Jual Sekarang',
+                  'Cetak Sekarang',
                   style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4ADE80),
+                  backgroundColor: accentColor,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 8,
-                  shadowColor: const Color(0xFF4ADE80).withValues(alpha: 0.4),
+                  shadowColor: accentColor.withValues(alpha: 0.4),
                 ),
               ),
             ),

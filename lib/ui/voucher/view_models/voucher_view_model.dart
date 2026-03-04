@@ -53,6 +53,7 @@ class VoucherViewModel extends GetxController {
   final deletingVoucherIds = <int>{}.obs;
   final count = 1.obs;
 
+  final selectedVoucher = Rxn<VoucherModel>();
   final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
   final Rxn<HotspotModel> selectedHotspot = Rxn<HotspotModel>();
   final selectedPaketId = Rxn<int>();
@@ -545,7 +546,32 @@ class VoucherViewModel extends GetxController {
   }
 
   void navigateToDetail(VoucherModel voucher) {
+    selectedVoucher.value = voucher;
     Get.toNamed(Routes.VOUCHER_DETAIL, arguments: voucher);
+    
+    // Fetch detail lengkap di background jika data terasa "tipis" (misal profil kosong)
+    if (voucher.namaProfileMikrotik.isEmpty || voucher.namaServer.isEmpty) {
+      _fetchFullVoucherDetail(voucher.idVoucher);
+    }
+  }
+
+  Future<void> _fetchFullVoucherDetail(int idVoucher) async {
+    try {
+      final detail = await _voucherRepository.getVoucherDetail(idVoucher);
+      if (detail != null) {
+        // Update state detail jika user masih di halaman tersebut
+        if (selectedVoucher.value?.idVoucher == idVoucher) {
+          selectedVoucher.value = detail;
+        }
+        // Update juga di list utama agar sinkron
+        final index = vouchers.indexWhere((v) => v.idVoucher == idVoucher);
+        if (index != -1) {
+          vouchers[index] = detail;
+        }
+      }
+    } catch (e) {
+      print('[VoucherVM] Gagal fetch detail voucher: $e');
+    }
   }
 
   Future<void> onHotspotChanged(HotspotModel? hotspot) async {

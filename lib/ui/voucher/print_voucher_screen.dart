@@ -605,29 +605,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                 ),
                 Row(
                   children: [
-                    if (voucher.statusVoucher == VoucherStatus.stok)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: TextButton.icon(
-                          onPressed: () => controller.printVoucher(voucher),
-                          icon: const Icon(
-                            Icons.print_outlined,
-                            size: 18,
-                            color: Color(0xFF4ADE80),
-                          ),
-                          label: const Text(
-                            'Print',
-                            style: TextStyle(
-                              color: Color(0xFF4ADE80),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            backgroundColor: const Color(0xFF4ADE80).withValues(alpha: 0.1),
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                          ),
-                        ),
-                      ),
+                    // Hapus button (Dahulukan agar Print di sisi kanan)
                     Obx(() {
                       final isDeleting = controller.deletingVoucherIds.contains(voucher.idVoucher) || 
                                          controller.isDeletingAll.value;
@@ -696,25 +674,53 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                               },
                       );
                     }),
-                    if (voucher.statusVoucher == VoucherStatus.terjual ||
-                        voucher.statusVoucher == VoucherStatus.aktif)
-                      TextButton.icon(
-                        onPressed: () => controller.printVoucher(voucher),
-                        icon: const Icon(
-                          Icons.print_outlined,
-                          size: 18,
-                          color: Colors.white70,
-                        ),
-                        label: const Text(
-                          'Print',
-                          style: TextStyle(
+                    
+                    // Print button (Sekarang di sisi paling kanan)
+                    if (voucher.statusVoucher == VoucherStatus.stok)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: TextButton.icon(
+                          onPressed: () => controller.printVoucher(voucher),
+                          icon: const Icon(
+                            Icons.print_outlined,
+                            size: 18,
                             color: Colors.white70,
-                            fontWeight: FontWeight.bold,
+                          ),
+                          label: const Text(
+                            'Print',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.white.withValues(alpha: 0.1),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                           ),
                         ),
-                        style: TextButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.1),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                    if (voucher.statusVoucher == VoucherStatus.terjual ||
+                        voucher.statusVoucher == VoucherStatus.aktif)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: TextButton.icon(
+                          onPressed: () => controller.printVoucher(voucher),
+                          icon: const Icon(
+                            Icons.print_outlined,
+                            size: 18,
+                            color: Colors.white70,
+                          ),
+                          label: const Text(
+                            'Print',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.white.withValues(alpha: 0.1),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
                         ),
                       ),
                   ],
