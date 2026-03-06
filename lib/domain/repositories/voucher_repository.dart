@@ -4,10 +4,12 @@ import '../models/voucher_package_model.dart';
 abstract class VoucherRepository {
   Future<List<VoucherModel>> getVouchersByHotspot(int idHotspot);
   Future<List<VoucherModel>> getAllVouchers();
+  Future<List<VoucherModel>> getAllVouchersByPackages(List<int> paketIds);
   Future<VoucherModel?> getVoucherDetail(int id);
   Future<VoucherModel?> createVoucher(int idPaket);
   Future<List<VoucherModel>> createVoucherBulk(int idPaket, int jumlah);
   Future<bool> deleteVoucher(int id);
+  Future<bool> deleteVoucherBulkAll({List<int>? ids, String? status});
   Future<List<VoucherModel>> getActiveVouchers();
   Future<double> sellVoucher(int idVoucher, String paymentMethod);
 

@@ -32,6 +32,7 @@ class ApiConfig {
   // Voucher endpoints
   static const String createVoucher = '$baseUrl/api/voucher';
   static const String createVoucherBulk = '$baseUrl/api/voucher/bulk';
+  static const String deleteVoucherBulk = '$baseUrl/api/voucher/bulk';
   static const String voucherPackages = '$baseUrl/api/paket-voucher';
   static String packagesByHotspot(int idHotspot) => '$baseUrl/api/paket-voucher?id_hotspot=$idHotspot';
   static const String paketVoucherUser = '$baseUrl/api/paket-voucher/user';
@@ -39,7 +40,7 @@ class ApiConfig {
   static String updateVoucherPackage(int id) => '$baseUrl/api/paket-voucher/$id';
   static String deleteVoucherPackage(int id) => '$baseUrl/api/paket-voucher/$id';
   static String vouchersByPackage(int idPaket) => '$baseUrl/api/voucher/paket/$idPaket';
-  static String vouchersByHotspot(int idHotspot) => '$baseUrl/api/voucher/hotspot/$idHotspot';
+  static String vouchersByHotspot(int idHotspot) => '$baseUrl/api/voucher?id_hotspot=$idHotspot';
   static String voucherDetail(int id) => '$baseUrl/api/voucher/$id';
   static String deleteVoucher(int id) => '$baseUrl/api/voucher/$id';
   static const String vouchersAktif = '$baseUrl/api/voucher/aktif';
