@@ -527,26 +527,33 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
           SizedBox(
             width: double.infinity,
             height: 54,
-            child: ElevatedButton.icon(
-              onPressed: () => controller.printVoucher(voucher),
-              icon: const Icon(Icons.print_outlined),
-              label: Text(
-                'Cetak Sekarang',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+            child: Obx(() {
+              final isDeleting = controller.deletingVoucherIds.contains(
+                voucher.idVoucher,
+              );
+              return ElevatedButton.icon(
+                onPressed: isDeleting
+                    ? null
+                    : () => controller.printVoucher(voucher),
+                icon: const Icon(Icons.print_outlined),
+                label: Text(
+                  'Cetak Sekarang',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 8,
+                  shadowColor: accentColor.withValues(alpha: 0.4),
                 ),
-                elevation: 8,
-                shadowColor: accentColor.withValues(alpha: 0.4),
-              ),
-            ),
+              );
+            }),
           ),
           const SizedBox(height: 14),
           SizedBox(

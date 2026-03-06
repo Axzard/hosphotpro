@@ -1,6 +1,6 @@
 class ApiConfig {
-  static const String baseUrl = 'http://76.13.197.9:3000';
-  // static const String baseUrl = 'https://api.siodev.sbs';
+  // static const String baseUrl = 'http://76.13.197.9:3000';
+  static const String baseUrl = 'https://api.siodev.sbs';
 
   // Auth endpoints
   static const String register = '$baseUrl/api/daftar-admin';

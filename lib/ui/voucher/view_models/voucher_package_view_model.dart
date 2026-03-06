@@ -35,6 +35,7 @@ class VoucherPackageViewModel extends GetxController {
   final panjangUsernameController = TextEditingController();
   final dataLimitMbController = TextEditingController();
   final dnsLoginController = TextEditingController();
+  final rateLimitController = TextEditingController(text: '3M/3M');
 
   final RxBool gunakanSsl = false.obs;
 
@@ -66,18 +67,14 @@ class VoucherPackageViewModel extends GetxController {
 
     ever(selectedRouter, (router) {
       if (router != null) {
-        print(
-          '[VoucherPackageVM] Global Router changed: ${router.namaRouter}',
-        );
+        print('[VoucherPackageVM] Global Router changed: ${router.namaRouter}');
         final idRouter = int.tryParse(router.id) ?? 0;
         loadHotspots(idRouter).then((_) {
           if (hotspots.isNotEmpty) {
             final currentHotspot = selectedHotspot.value;
 
             if (currentHotspot == null || currentHotspot.idRouter != idRouter) {
-              print(
-                '[VoucherPackageVM] Resetting hotspot to first in router',
-              );
+              print('[VoucherPackageVM] Resetting hotspot to first in router');
               selectedHotspot.value = hotspots.first;
               loadPackages();
             } else {
@@ -261,9 +258,13 @@ class VoucherPackageViewModel extends GetxController {
         panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
         formatKarakter: selectedFormatKarakter.value,
         dataLimitMb: dataLimit,
+        rateLimit: rateLimitController.text.isNotEmpty
+            ? rateLimitController.text
+            : '3M/3M',
         dnsLogin: dnsLoginController.text.isNotEmpty
             ? dnsLoginController.text
             : null,
+
         gunakanSsl: gunakanSsl.value,
       );
 
@@ -347,7 +348,11 @@ class VoucherPackageViewModel extends GetxController {
     profileMikrotikController.text = package.namaProfileMikrotik;
     prefixController.text = package.prefix;
     panjangUsernameController.text = package.panjangUsername.toString();
+    selectedFormatKarakter.value = package.formatKarakter;
+    dataLimitMbController.text = package.dataLimitMb.toString();
+    rateLimitController.text = package.rateLimit;
     dnsLoginController.text = package.dnsLogin ?? '';
+
     gunakanSsl.value = package.gunakanSsl;
 
     if (package.dataLimitMb >= 1024 && package.dataLimitMb % 1024 == 0) {
@@ -374,7 +379,9 @@ class VoucherPackageViewModel extends GetxController {
     prefixController.clear();
     panjangUsernameController.clear();
     dataLimitMbController.clear();
+    rateLimitController.text = '3M/3M';
     dnsLoginController.clear();
+
     gunakanSsl.value = false;
     selectedFormatKarakter.value = 'mix';
     selectedDataUnit.value = 'MB';

@@ -10,21 +10,39 @@ class VoucherRepositoryImpl implements VoucherRepository {
 
   @override
   Future<List<VoucherModel>> getVouchersByHotspot(int idHotspot) async {
+    // 🚀 Langkah 1: Coba endpoint langsung (1 request)
+    try {
+      final directResponse = await _voucherService.getVouchersByHotspot(
+        idHotspot,
+      );
+      if (directResponse.success &&
+          directResponse.data != null &&
+          directResponse.data!.isNotEmpty) {
+        return directResponse.data!
+            .map((apiModel) => apiModel.toDomain())
+            .toList();
+      }
+    } catch (_) {
+      // Lanjut ke fallback
+    }
+
+    // 🔁 Fallback: Jika endpoint langsung gagal, gunakan per-paket (N+1 paralel)
     final packagesResponse = await _voucherService.getVoucherPackages(
       idHotspot,
     );
-    if (!packagesResponse.success || packagesResponse.data == null) {
-      throw Exception(packagesResponse.message);
+    if (!packagesResponse.success ||
+        packagesResponse.data == null ||
+        packagesResponse.data!.isEmpty) {
+      return [];
     }
 
     final packages = packagesResponse.data!;
-    final List<VoucherModel> allVouchers = [];
-
     final voucherFutures = packages.map(
       (pkg) => _voucherService.getVouchersByPackage(pkg.id),
     );
     final voucherResponses = await Future.wait(voucherFutures);
 
+    final List<VoucherModel> allVouchers = [];
     for (var response in voucherResponses) {
       if (response.success && response.data != null) {
         allVouchers.addAll(
@@ -32,7 +50,6 @@ class VoucherRepositoryImpl implements VoucherRepository {
         );
       }
     }
-
     return allVouchers;
   }
 

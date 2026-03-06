@@ -7,11 +7,14 @@ import '../model/voucher_package_api_model.dart';
 import 'token_service.dart';
 
 class VoucherService extends GetxService {
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-    sendTimeout: const Duration(seconds: 30),
-  ));
+  final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 15),
+      sendTimeout: const Duration(seconds: 10),
+      persistentConnection: true,
+    ),
+  );
   final TokenService _tokenService = Get.find<TokenService>();
 
   /// GET /api/paket-voucher/router/{idRouter}
@@ -43,7 +46,7 @@ class VoucherService extends GetxService {
         final packages = listData
             .map((json) => VoucherPackageApiModel.fromJson(json))
             .toList();
-            
+
         return ApiResponse(
           success: true,
           message: message ?? 'Packages fetched',
@@ -73,9 +76,13 @@ class VoucherService extends GetxService {
   ) async {
     try {
       final token = _tokenService.getToken();
+      final body = package.toJson();
+      print("==== DEBUG VOUCHER_PACKAGE PAYLOAD ====");
+      print(body);
+      print("=======================================");
       final response = await _dio.post(
         ApiConfig.voucherPackages,
-        data: package.toJson(),
+        data: body,
         options: Options(
           headers: ApiConfig.headers(token: token),
           validateStatus: (status) => status! < 600,
@@ -97,9 +104,12 @@ class VoucherService extends GetxService {
             panjangUsername: package.panjangUsername,
             formatKarakter: package.formatKarakter,
             dataLimitMb: package.dataLimitMb,
+            rateLimit: package.rateLimit,
           );
         } else if (response.data['data'] != null) {
-          createdPackage = VoucherPackageApiModel.fromJson(response.data['data']);
+          createdPackage = VoucherPackageApiModel.fromJson(
+            response.data['data'],
+          );
         }
         return ApiResponse(
           success: true,
@@ -109,8 +119,10 @@ class VoucherService extends GetxService {
       } else {
         String errorMsg = 'Server Error (${response.statusCode})';
         if (response.data is Map<String, dynamic>) {
-          errorMsg = response.data['pesan'] ?? response.data['detail'] ?? errorMsg;
-        } else if (response.data is String && response.data.toString().isNotEmpty) {
+          errorMsg =
+              response.data['pesan'] ?? response.data['detail'] ?? errorMsg;
+        } else if (response.data is String &&
+            response.data.toString().isNotEmpty) {
           errorMsg = response.data.toString();
         }
         return ApiResponse(success: false, message: errorMsg);
@@ -140,7 +152,9 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.data['sukses'] == true) {
-        final package = VoucherPackageApiModel.fromJson(response.data['data'] ?? response.data);
+        final package = VoucherPackageApiModel.fromJson(
+          response.data['data'] ?? response.data,
+        );
         return ApiResponse(success: true, message: 'OK', data: package);
       } else {
         return ApiResponse(
@@ -228,24 +242,32 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final List<dynamic> data = response.data['data'] ?? [];
+        final dynamic rawData = response.data;
+        List<dynamic> data = [];
+        String? message;
+
+        if (rawData is Map<String, dynamic>) {
+          data = rawData['data'] is List ? rawData['data'] : [];
+          message = rawData['pesan'];
+        } else if (rawData is List) {
+          data = rawData;
+        }
+
         final vouchers = data
             .map((json) => VoucherApiModel.fromJson(json))
             .toList();
         return ApiResponse(
           success: true,
-          message: response.data['pesan'] ?? 'Vouchers fetched',
+          message: message ?? 'Vouchers fetched',
           data: vouchers,
         );
       } else {
-        final errorMsg = response.data?['pesan'] ??
-            response.data?['detail'] ??
-            'Status code: ${response.statusCode}';
-        return ApiResponse(
-          success: false,
-          message: errorMsg,
-          data: [],
-        );
+        final errorMsg = (response.data is Map<String, dynamic>)
+            ? (response.data?['pesan'] ??
+                  response.data?['detail'] ??
+                  'Status code: ${response.statusCode}')
+            : 'Status code: ${response.statusCode}';
+        return ApiResponse(success: false, message: errorMsg, data: []);
       }
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), data: []);
@@ -268,24 +290,32 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final List<dynamic> data = response.data['data'] ?? [];
+        final dynamic rawData = response.data;
+        List<dynamic> data = [];
+        String? message;
+
+        if (rawData is Map<String, dynamic>) {
+          data = rawData['data'] is List ? rawData['data'] : [];
+          message = rawData['pesan'];
+        } else if (rawData is List) {
+          data = rawData;
+        }
+
         final vouchers = data
             .map((json) => VoucherApiModel.fromJson(json))
             .toList();
         return ApiResponse(
           success: true,
-          message: response.data['pesan'] ?? 'Vouchers fetched',
+          message: message ?? 'Vouchers fetched',
           data: vouchers,
         );
       } else {
-        final errorMsg = response.data?['pesan'] ??
-            response.data?['detail'] ??
-            'Status code: ${response.statusCode}';
-        return ApiResponse(
-          success: false,
-          message: errorMsg,
-          data: [],
-        );
+        final errorMsg = (response.data is Map<String, dynamic>)
+            ? (response.data?['pesan'] ??
+                  response.data?['detail'] ??
+                  'Status code: ${response.statusCode}')
+            : 'Status code: ${response.statusCode}';
+        return ApiResponse(success: false, message: errorMsg, data: []);
       }
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), data: []);
@@ -293,9 +323,7 @@ class VoucherService extends GetxService {
   }
 
   /// GET /api/voucher/{id}
-  Future<ApiResponse<VoucherApiModel?>> getVoucherDetail(
-    int id,
-  ) async {
+  Future<ApiResponse<VoucherApiModel?>> getVoucherDetail(int id) async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.get(
@@ -306,13 +334,22 @@ class VoucherService extends GetxService {
         ),
       );
 
-      if (response.statusCode == 200 && response.data['sukses'] == true) {
-        final voucher = VoucherApiModel.fromJson(response.data['data']);
-        return ApiResponse(success: true, message: 'OK', data: voucher);
+      if (response.statusCode == 200) {
+        final dynamic rawData = response.data;
+        if (rawData is Map<String, dynamic>) {
+          final data = rawData['data'] ?? rawData;
+          final voucher = VoucherApiModel.fromJson(data);
+          return ApiResponse(success: true, message: 'OK', data: voucher);
+        } else {
+          final voucher = VoucherApiModel.fromJson(rawData);
+          return ApiResponse(success: true, message: 'OK', data: voucher);
+        }
       } else {
         return ApiResponse(
           success: false,
-          message: response.data['pesan'] ?? 'Voucher not found',
+          message: (response.data is Map<String, dynamic>)
+              ? (response.data['pesan'] ?? 'Voucher not found')
+              : 'Voucher not found',
         );
       }
     } catch (e) {
@@ -321,9 +358,7 @@ class VoucherService extends GetxService {
   }
 
   /// POST /api/voucher  (single)
-  Future<ApiResponse<VoucherApiModel?>> createVoucher(
-    int idPaket,
-  ) async {
+  Future<ApiResponse<VoucherApiModel?>> createVoucher(int idPaket) async {
     try {
       final token = _tokenService.getToken();
       final response = await _dio.post(
@@ -374,22 +409,34 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        final dynamic rawData = response.data;
         List<VoucherApiModel> vouchers = [];
-        if (response.data['data'] != null && response.data['data'] is List) {
-          vouchers = (response.data['data'] as List)
+        String? message;
+
+        if (rawData is Map<String, dynamic>) {
+          if (rawData['data'] != null && rawData['data'] is List) {
+            vouchers = (rawData['data'] as List)
+                .map((json) => VoucherApiModel.fromJson(json))
+                .toList();
+          }
+          message = rawData['pesan'];
+        } else if (rawData is List) {
+          vouchers = rawData
               .map((json) => VoucherApiModel.fromJson(json))
               .toList();
         }
+
         return ApiResponse(
           success: true,
-          message: response.data['pesan'] ?? 'Bulk vouchers created',
+          message: message ?? 'Bulk vouchers created',
           data: vouchers,
         );
       } else {
         return ApiResponse(
           success: false,
-          message:
-              response.data['pesan'] ?? response.data['detail'] ?? 'Failed',
+          message: (response.data is Map<String, dynamic>)
+              ? (response.data['pesan'] ?? response.data['detail'] ?? 'Failed')
+              : 'Failed',
           data: [],
         );
       }
@@ -407,21 +454,35 @@ class VoucherService extends GetxService {
         options: Options(
           headers: ApiConfig.headers(token: token),
           validateStatus: (status) => status! < 600,
+          // Mikrotik operations can be slow — give enough time
+          receiveTimeout: const Duration(seconds: 60),
+          sendTimeout: const Duration(seconds: 15),
         ),
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return ApiResponse(
-          success: true,
-          message: response.data['pesan'] ?? 'Voucher deleted',
-        );
+      // Debug: lihat response asli di console
+      print(
+        '[DELETE VOUCHER] id=$id status=${response.statusCode} data=${response.data}',
+      );
+
+      final statusCode = response.statusCode ?? 0;
+      // Accept 200, 201, 204 (No Content) as success
+      if (statusCode == 200 || statusCode == 201 || statusCode == 204) {
+        final msg = (response.data is Map<String, dynamic>)
+            ? (response.data['pesan'] ?? 'Voucher deleted')
+            : 'Voucher deleted';
+        return ApiResponse(success: true, message: msg);
       } else {
-        return ApiResponse(
-          success: false,
-          message: response.data['pesan'] ?? 'Failed to delete voucher',
-        );
+        final msg = (response.data is Map<String, dynamic>)
+            ? (response.data['pesan'] ??
+                  response.data['message'] ??
+                  'Failed to delete voucher (status $statusCode)')
+            : 'Failed to delete voucher (status $statusCode)';
+        print('[DELETE VOUCHER] FAILED: $msg');
+        return ApiResponse(success: false, message: msg);
       }
     } catch (e) {
+      print('[DELETE VOUCHER] EXCEPTION: $e');
       return ApiResponse(success: false, message: 'Error: $e');
     }
   }
@@ -439,17 +500,31 @@ class VoucherService extends GetxService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['data'] ?? [];
-        final vouchers = data.map((json) => VoucherApiModel.fromJson(json)).toList();
+        final dynamic rawData = response.data;
+        List<dynamic> data = [];
+        String? message;
+
+        if (rawData is Map<String, dynamic>) {
+          data = rawData['data'] is List ? rawData['data'] : [];
+          message = rawData['pesan'];
+        } else if (rawData is List) {
+          data = rawData;
+        }
+
+        final vouchers = data
+            .map((json) => VoucherApiModel.fromJson(json))
+            .toList();
         return ApiResponse(
           success: true,
-          message: 'Vouchers fetched',
+          message: message ?? 'Vouchers fetched',
           data: vouchers,
         );
       } else {
         return ApiResponse(
           success: false,
-          message: response.data['pesan'] ?? 'Failed to fetch active vouchers',
+          message: (response.data is Map<String, dynamic>)
+              ? (response.data['pesan'] ?? 'Failed to fetch active vouchers')
+              : 'Failed to fetch active vouchers',
           data: [],
         );
       }

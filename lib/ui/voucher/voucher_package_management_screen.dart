@@ -221,7 +221,6 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                 'Panjang Username',
                 hint: 'Min. 4 karakter',
                 keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
               const SizedBox(height: 16),
               _buildFormatKarakterSelector(),
@@ -240,6 +239,12 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
               ),
               const SizedBox(height: 16),
               _buildDataLimitField(),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller.rateLimitController,
+                'Rate Limit',
+                hint: 'Contoh: 3M/3M',
+              ),
               const SizedBox(height: 16),
               Row(
                 children: [

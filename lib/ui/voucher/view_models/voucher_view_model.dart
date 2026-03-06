@@ -317,45 +317,44 @@ class VoucherViewModel extends GetxController {
       Get.back();
       SnackbarUtils.showSuccess(
         'Berhasil',
-        '${count.value} voucher berhasil dibuat',
+        '${result.length} voucher berhasil dibuat',
       );
-
-      await loadVouchers();
 
       if (result.isNotEmpty) {
         final selectedPackage = voucherPackages.firstWhereOrNull(
           (p) => p.id == idPaket,
         );
-        if (selectedPackage != null) {
-          final fixedVouchers = result.map((v) {
-            if (v.harga == 0) {
-              return VoucherModel(
-                idVoucher: v.idVoucher,
-                kodeVoucher: v.kodeVoucher,
-                passwordVoucher: v.passwordVoucher,
-                idPaket: v.idPaket,
-                idRouter: v.idRouter,
-                statusVoucher: v.statusVoucher,
-                tanggalAktif: v.tanggalAktif,
-                tanggalExpired: v.tanggalExpired,
-                dibuatPada: v.dibuatPada,
-                namaPaket: v.namaPaket,
-                harga: selectedPackage.harga,
-                namaProfileMikrotik: v.namaProfileMikrotik,
-                idHotspot: v.idHotspot,
-                namaServer: v.namaServer,
-                durasi: v.durasi,
-                namaRouter: v.namaRouter,
-                alamatIp: v.alamatIp,
-                portApi: v.portApi,
-              );
-            }
-            return v;
-          }).toList();
-          _openPrintPreview(fixedVouchers);
-        } else {
-          _openPrintPreview(result);
-        }
+
+        // 🚀 Insert langsung ke list tanpa reload API
+        final fixedVouchers = result.map((v) {
+          if (v.harga == 0 && selectedPackage != null) {
+            return VoucherModel(
+              idVoucher: v.idVoucher,
+              kodeVoucher: v.kodeVoucher,
+              passwordVoucher: v.passwordVoucher,
+              idPaket: v.idPaket,
+              idRouter: v.idRouter,
+              statusVoucher: v.statusVoucher,
+              tanggalAktif: v.tanggalAktif,
+              tanggalExpired: v.tanggalExpired,
+              dibuatPada: v.dibuatPada,
+              namaPaket: selectedPackage.namaPaket,
+              harga: selectedPackage.harga,
+              namaProfileMikrotik: v.namaProfileMikrotik,
+              idHotspot: v.idHotspot,
+              namaServer: v.namaServer,
+              durasi: v.durasi,
+              namaRouter: v.namaRouter,
+              alamatIp: v.alamatIp,
+              portApi: v.portApi,
+            );
+          }
+          return v;
+        }).toList();
+
+        // Satu batch insert = 1 UI rebuild
+        vouchers.insertAll(0, fixedVouchers);
+        _openPrintPreview(fixedVouchers);
       }
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal membuat voucher bulk: $e');
@@ -389,16 +388,30 @@ class VoucherViewModel extends GetxController {
   Future<void> deleteVoucher(int idVoucher) async {
     if (deletingVoucherIds.contains(idVoucher)) return;
 
+    // Simpan voucher untuk rollback jika gagal
+    final voucherToDelete = vouchers.firstWhereOrNull(
+      (v) => v.idVoucher == idVoucher,
+    );
+
     try {
       deletingVoucherIds.add(idVoucher);
+
+      // 🚀 Optimistic update: hapus dari UI dulu, rollback jika gagal
+      if (voucherToDelete != null) {
+        vouchers.removeWhere((v) => v.idVoucher == idVoucher);
+      }
+
       final success = await _voucherRepository.deleteVoucher(idVoucher);
       if (success) {
-        vouchers.removeWhere((v) => v.idVoucher == idVoucher);
         SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dihapus');
       } else {
+        // Rollback
+        if (voucherToDelete != null) vouchers.add(voucherToDelete);
         SnackbarUtils.showError('Error', 'Gagal menghapus voucher');
       }
     } catch (e) {
+      // Rollback
+      if (voucherToDelete != null) vouchers.add(voucherToDelete);
       SnackbarUtils.showError('Error', 'Gagal menghapus voucher: $e');
     } finally {
       deletingVoucherIds.remove(idVoucher);
@@ -410,8 +423,6 @@ class VoucherViewModel extends GetxController {
 
     isDeletingAll.value = true;
     try {
-      int successCount = 0;
-
       final listToDelete = status != null
           ? vouchers.where((v) => v.statusVoucher == status).toList()
           : List<VoucherModel>.from(vouchers);
@@ -424,27 +435,57 @@ class VoucherViewModel extends GetxController {
         return;
       }
 
-      for (var voucher in listToDelete) {
-        final success = await _voucherRepository.deleteVoucher(
-          voucher.idVoucher,
+      final idsToDelete = listToDelete.map((v) => v.idVoucher).toList();
+      final successIds = <int>{};
+
+      // ✅ Batch 5 at a time — server tidak kewalahan
+      const batchSize = 5;
+      for (int i = 0; i < idsToDelete.length; i += batchSize) {
+        final end = (i + batchSize) > idsToDelete.length
+            ? idsToDelete.length
+            : (i + batchSize);
+        final batch = idsToDelete.sublist(i, end);
+
+        final batchResults = await Future.wait<bool>(
+          batch.map((id) async {
+            try {
+              return await _voucherRepository.deleteVoucher(id);
+            } catch (_) {
+              return false;
+            }
+          }),
         );
-        if (success) {
-          vouchers.removeWhere((v) => v.idVoucher == voucher.idVoucher);
-          successCount++;
+
+        for (int j = 0; j < batch.length; j++) {
+          if (batchResults[j]) successIds.add(batch[j]);
         }
+
+        print(
+          '[DELETE ALL] Batch ${i ~/ batchSize + 1}: ${batch.length} sent, ${batchResults.where((r) => r).length} ok',
+        );
       }
 
-      if (successCount > 0) {
+      print(
+        '[DELETE ALL] Done: ${idsToDelete.length} total, ${successIds.length} berhasil',
+      );
+
+      if (successIds.isNotEmpty) {
+        // Single UI rebuild — bukan per item
+        vouchers.removeWhere((v) => successIds.contains(v.idVoucher));
         SnackbarUtils.showSuccess(
           'Berhasil',
-          '$successCount voucher ${status?.displayName.toUpperCase() ?? ""} berhasil dihapus',
+          '${successIds.length} voucher ${status?.displayName.toUpperCase() ?? ""} berhasil dihapus',
+        );
+      } else {
+        SnackbarUtils.showError(
+          'Gagal',
+          'Tidak ada voucher yang berhasil dihapus. Periksa koneksi server.',
         );
       }
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal menghapus beberapa voucher: $e');
+      SnackbarUtils.showError('Error', 'Gagal menghapus voucher: $e');
     } finally {
       isDeletingAll.value = false;
-      await loadVouchers();
     }
   }
 
@@ -469,8 +510,6 @@ class VoucherViewModel extends GetxController {
           statusVoucher: VoucherStatus.terjual,
         );
       }
-
-      await loadVouchers();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal menjual voucher: $e');
     } finally {

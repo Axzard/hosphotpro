@@ -544,85 +544,128 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                     color: Colors.white,
                   ),
                 ),
-                Row(
-                  children: [
-                    if (voucher.statusVoucher == VoucherStatus.stok)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: TextButton.icon(
-                          onPressed: () =>
-                              controller.sellVoucher(voucher, 'cash'),
-                          icon: const Icon(
-                            Icons.sell_outlined,
-                            size: 18,
-                            color: Color(0xFF4ADE80),
-                          ),
-                          label: const Text(
-                            'Jual',
-                            style: TextStyle(
-                              color: Color(0xFF4ADE80),
-                              fontWeight: FontWeight.bold,
+                Obx(() {
+                  final isDeleting =
+                      controller.isDeletingAll.value ||
+                      controller.deletingVoucherIds.contains(voucher.idVoucher);
+                  final isThisDeleting = controller.deletingVoucherIds.contains(
+                    voucher.idVoucher,
+                  );
+
+                  return Row(
+                    children: [
+                      if (voucher.statusVoucher == VoucherStatus.stok)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: TextButton.icon(
+                            onPressed: isDeleting
+                                ? null
+                                : () => controller.sellVoucher(voucher, 'cash'),
+                            icon: Icon(
+                              Icons.sell_outlined,
+                              size: 18,
+                              color: isDeleting
+                                  ? const Color(
+                                      0xFF4ADE80,
+                                    ).withValues(alpha: 0.3)
+                                  : const Color(0xFF4ADE80),
                             ),
-                          ),
-                          style: TextButton.styleFrom(
-                            backgroundColor: const Color(
-                              0xFF4ADE80,
-                            ).withValues(alpha: 0.1),
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            label: Text(
+                              'Jual',
+                              style: TextStyle(
+                                color: isDeleting
+                                    ? const Color(
+                                        0xFF4ADE80,
+                                      ).withValues(alpha: 0.3)
+                                    : const Color(0xFF4ADE80),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              backgroundColor: const Color(
+                                0xFF4ADE80,
+                              ).withValues(alpha: 0.1),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        size: 20,
-                        color: Colors.redAccent,
-                      ),
-                      onPressed: () {
-                        Get.dialog(
-                          AlertDialog(
-                            backgroundColor: const Color(0xFF131E29),
-                            title: const Text(
-                              'Hapus Voucher',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            content: Text(
-                              'Apakah Anda yakin ingin menghapus voucher "${voucher.kodeVoucher}"?',
-                              style: const TextStyle(color: Colors.white70),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Get.back(),
-                                child: const Text(
-                                  'Batal',
-                                  style: TextStyle(color: Colors.white54),
+                      IconButton(
+                        icon: isThisDeleting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.redAccent,
                                 ),
+                              )
+                            : Icon(
+                                Icons.delete_outline,
+                                size: 20,
+                                color: isDeleting
+                                    ? Colors.redAccent.withValues(alpha: 0.3)
+                                    : Colors.redAccent,
                               ),
-                              TextButton(
-                                onPressed: () {
-                                  Get.back();
-                                  controller.deleteVoucher(voucher.idVoucher);
-                                },
-                                child: const Text(
-                                  'Hapus',
-                                  style: TextStyle(color: Colors.redAccent),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.print_outlined,
-                        size: 20,
-                        color: Colors.white70,
+                        onPressed: isDeleting
+                            ? null
+                            : () {
+                                Get.dialog(
+                                  AlertDialog(
+                                    backgroundColor: const Color(0xFF131E29),
+                                    title: const Text(
+                                      'Hapus Voucher',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    content: Text(
+                                      'Apakah Anda yakin ingin menghapus voucher "${voucher.kodeVoucher}"?',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Get.back(),
+                                        child: const Text(
+                                          'Batal',
+                                          style: TextStyle(
+                                            color: Colors.white54,
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Get.back();
+                                          controller.deleteVoucher(
+                                            voucher.idVoucher,
+                                          );
+                                        },
+                                        child: const Text(
+                                          'Hapus',
+                                          style: TextStyle(
+                                            color: Colors.redAccent,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                       ),
-                      onPressed: () => controller.printVoucher(voucher),
-                    ),
-                  ],
-                ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.print_outlined,
+                          size: 20,
+                          color: isDeleting ? Colors.white30 : Colors.white70,
+                        ),
+                        onPressed: isDeleting
+                            ? null
+                            : () => controller.printVoucher(voucher),
+                      ),
+                    ],
+                  );
+                }),
               ],
             ),
           ],

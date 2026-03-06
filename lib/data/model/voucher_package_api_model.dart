@@ -12,6 +12,7 @@ class VoucherPackageApiModel {
   final int panjangUsername;
   final String formatKarakter;
   final int dataLimitMb;
+  final String rateLimit;
   final String? dnsLogin;
   final bool gunakanSsl;
 
@@ -27,13 +28,18 @@ class VoucherPackageApiModel {
     required this.panjangUsername,
     required this.formatKarakter,
     required this.dataLimitMb,
+    required this.rateLimit,
     this.dnsLogin,
     this.gunakanSsl = false,
   });
 
   factory VoucherPackageApiModel.fromJson(Map<String, dynamic> json) {
     return VoucherPackageApiModel(
-      id: int.tryParse(json['id_paket']?.toString() ?? json['id']?.toString() ?? '') ?? 0,
+      id:
+          int.tryParse(
+            json['id_paket']?.toString() ?? json['id']?.toString() ?? '',
+          ) ??
+          0,
       idRouter: int.tryParse(json['id_router']?.toString() ?? ''),
       idHotspot: int.tryParse(json['id_hotspot']?.toString() ?? '') ?? 0,
       namaPaket: json['nama_paket']?.toString() ?? '',
@@ -41,28 +47,34 @@ class VoucherPackageApiModel {
       harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
       namaProfileMikrotik: json['nama_profile_mikrotik']?.toString() ?? '',
       prefix: json['prefix']?.toString() ?? '',
-      panjangUsername: int.tryParse(json['panjang_username']?.toString() ?? '') ?? 4,
+      panjangUsername:
+          int.tryParse(json['panjang_username']?.toString() ?? '') ?? 4,
       formatKarakter: json['format_karakter']?.toString() ?? 'mix',
       dataLimitMb: int.tryParse(json['data_limit_mb']?.toString() ?? '') ?? 0,
+      rateLimit: json['rate_limit']?.toString() ?? '3M/3M',
       dnsLogin: json['dns_login']?.toString(),
       gunakanSsl: json['gunakan_ssl'] == true || json['gunakan_ssl'] == 1,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final data = <String, dynamic>{
       'id_hotspot': idHotspot,
       'nama_paket': namaPaket,
       'prefix': prefix,
       'panjang_username': panjangUsername,
       'format_karakter': formatKarakter,
       'durasi': durasi,
+      'rate_limit': rateLimit,
       'data_limit_mb': dataLimitMb,
       'harga': harga.toInt() == harga ? harga.toInt() : harga,
       'nama_profile_mikrotik': namaProfileMikrotik,
-      'dns_login': dnsLogin,
       'gunakan_ssl': gunakanSsl,
     };
+    if (dnsLogin != null) {
+      data['dns_login'] = dnsLogin;
+    }
+    return data;
   }
 
   VoucherPackageModel toDomain() {
@@ -78,6 +90,7 @@ class VoucherPackageApiModel {
       panjangUsername: panjangUsername,
       formatKarakter: formatKarakter,
       dataLimitMb: dataLimitMb,
+      rateLimit: rateLimit,
       dnsLogin: dnsLogin,
       gunakanSsl: gunakanSsl,
     );
@@ -96,6 +109,7 @@ class VoucherPackageApiModel {
       panjangUsername: domain.panjangUsername,
       formatKarakter: domain.formatKarakter,
       dataLimitMb: domain.dataLimitMb,
+      rateLimit: domain.rateLimit,
       dnsLogin: domain.dnsLogin,
       gunakanSsl: domain.gunakanSsl,
     );
