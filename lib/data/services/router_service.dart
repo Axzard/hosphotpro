@@ -1,10 +1,21 @@
 import 'package:get/get.dart' hide FormData;
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../model/router_api_model.dart';
 import '../model/hotspot_api_model.dart';
 import '../model/api_response.dart';
 import '../../config/api_config.dart';
 import 'token_service.dart';
+
+List<RouterApiModel> _parseRouters(dynamic data) {
+  final list = data as List<dynamic>;
+  return list.map((json) => RouterApiModel.fromJson(json as Map<String, dynamic>)).toList();
+}
+
+List<HotspotApiModel> _parseHotspots(dynamic data) {
+  final list = data as List<dynamic>;
+  return list.map((json) => HotspotApiModel.fromJson(json as Map<String, dynamic>)).toList();
+}
 
 class RouterService extends GetxService {
   final Dio _dio = Dio(
@@ -29,9 +40,8 @@ class RouterService extends GetxService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final List<dynamic> routersData = response.data['data'] ?? [];
-        final routers = routersData
-            .map((json) => RouterApiModel.fromJson(json))
-            .toList();
+        final routers = await compute(_parseRouters, routersData);
+
 
         return ApiResponse(
           success: true,
@@ -167,9 +177,8 @@ class RouterService extends GetxService {
 
       if (response.statusCode == 200) {
         final List<dynamic> hotspotsData = response.data['data'] ?? [];
-        final hotspots = hotspotsData
-            .map((json) => HotspotApiModel.fromJson(json))
-            .toList();
+        final hotspots = await compute(_parseHotspots, hotspotsData);
+
 
         return ApiResponse(
           success: true,
@@ -200,9 +209,8 @@ class RouterService extends GetxService {
 
       if (response.statusCode == 200) {
         final List<dynamic> hotspotsData = response.data['data'] ?? [];
-        final hotspots = hotspotsData
-            .map((json) => HotspotApiModel.fromJson(json))
-            .toList();
+        final hotspots = await compute(_parseHotspots, hotspotsData);
+
 
         return ApiResponse(
           success: true,

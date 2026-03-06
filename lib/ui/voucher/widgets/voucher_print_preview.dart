@@ -34,7 +34,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
     decimalDigits: 0,
   );
 
-  int selectedQuantity = 0; // 0 means all
+  int selectedQuantity = 0;
   bool isPrinting = false;
   int currentPrintIndex = 0;
 
@@ -76,16 +76,14 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
       ),
       body: Column(
         children: [
-          // 1. Printer & Settings Section
           _buildSettingsSection(),
 
-          // 2. Preview Section (Scrollable)
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Center(
                 child: Container(
-                  width: 300, // Simulate ~58-80mm width
+                  width: 300,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -100,9 +98,13 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Header
                       Text(
-                        'hotspotsio',
+                        (widget.vouchers.isNotEmpty &&
+                                widget.vouchers.first.namaServer.isNotEmpty &&
+                                widget.vouchers.first.namaServer !=
+                                    'Semua Hotspot')
+                            ? widget.vouchers.first.namaServer
+                            : 'hotspotsio',
                         style: GoogleFonts.courierPrime(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -116,8 +118,6 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                         height: 16,
                       ),
 
-
-                      // Vouchers List
                       ..._vouchersToPrint.map(
                         (voucher) => _buildVoucherItem(voucher),
                       ),
@@ -146,7 +146,6 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
             ),
           ),
 
-          // 3. Action Button
           _buildActionButtons(),
         ],
       ),
@@ -159,7 +158,6 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
       color: const Color(0xFF1E293B),
       child: Column(
         children: [
-          // Printer Info
           InkWell(
             onTap: _showPrinterScanner,
             borderRadius: BorderRadius.circular(12),
@@ -195,10 +193,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                         const SizedBox(height: 4),
                         Obx(() {
                           final deviceName =
-                              printerService
-                                  .selectedDevice
-                                  .value
-                                  ?.name ??
+                              printerService.selectedDevice.value?.name ??
                               'Pilih Printer';
                           return Text(
                             deviceName,
@@ -230,7 +225,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
           ),
           if (widget.vouchers.length > 1) ...[
             const SizedBox(height: 12),
-            // Quantity Slider
+
             Row(
               children: [
                 Text(
@@ -287,7 +282,6 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
       ),
       child: Row(
         children: [
-          // Print button
           Expanded(
             child: SizedBox(
               height: 54,
@@ -374,7 +368,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                     final device = printerService.devices[index];
                     return ListTile(
                       onTap: () async {
-                        Get.back(); // Close sheet
+                        Get.back();
                         await printerService.connectToDevice(device);
                       },
                       tileColor: const Color(0xFF0F172A),
@@ -383,9 +377,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                       ),
                       leading: const Icon(Icons.print, color: Colors.white),
                       title: Text(
-                        device.name.isEmpty
-                            ? 'Unknown Device'
-                            : device.name,
+                        device.name.isEmpty ? 'Unknown Device' : device.name,
                         style: GoogleFonts.plusJakartaSans(color: Colors.white),
                       ),
                       trailing:
@@ -427,11 +419,10 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
           currentPrintIndex = i + 1;
         });
         await printerService.printVoucher(toPrint[i]);
-        // Slight delay between print commands for buffer safety
+
         await Future.delayed(const Duration(milliseconds: 600));
       }
 
-      // Update status voucher ke terjual hanya SETELAH berhasil cetak
       final hasStokVouchers = toPrint.any(
         (v) => v.statusVoucher == VoucherStatus.stok,
       );
@@ -449,7 +440,6 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
         'Semua voucher ($selectedQuantity) berhasil dicetak',
       );
 
-      // Tutup halaman cetak otomatis setelah berhasil
       Get.back();
     } catch (e) {
       SnackbarUtils.showError(
@@ -522,13 +512,11 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
                 letterSpacing: 2,
               ),
             ),
-
           ],
         ],
       ),
     );
   }
-
 
   Future<void> _sharePdf(BuildContext context) async {
     final pdfDetails = await _generatePdf();
@@ -545,115 +533,140 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
     final fontBold = await PdfGoogleFonts.openSansBold();
 
     final listToPrint = _vouchersToPrint;
-    final dateStr = DateFormat('dd MMM yyyy HH:mm').format(DateTime.now());
+    DateFormat('dd MMM yyyy HH:mm').format(DateTime.now());
 
-    // Ukuran kotak voucher: Lebar ~36 mm agar muat 5 kolom di A4 (210mm lebar total, sisa untuk margin & spasi).
-    final boxWidth = 36 * PdfPageFormat.mm;
+    final boxWidth = 34 * PdfPageFormat.mm;
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(10 * PdfPageFormat.mm), // Margin 10mm
+        margin: const pw.EdgeInsets.all(10 * PdfPageFormat.mm),
         build: (pw.Context context) {
           return [
             pw.Wrap(
-              spacing: 2 * PdfPageFormat.mm, // Spasi horizontal 2mm
-              runSpacing: 2 * PdfPageFormat.mm, // Spasi vertikal 2mm
-              children: listToPrint.map((voucher) {
+              spacing: 2 * PdfPageFormat.mm,
+              runSpacing: 2 * PdfPageFormat.mm,
+              children: listToPrint.asMap().entries.map((entry) {
+                final index = entry.key + 1;
+                final voucher = entry.value;
+
+                final String priceStr = voucher.harga > 0
+                    ? NumberFormat.currency(
+                        locale: 'id_ID',
+                        symbol: 'Rp ',
+                        decimalDigits: 0,
+                      ).format(voucher.harga)
+                    : '';
+                final String footerText = '${voucher.durasi} $priceStr'.trim();
+
                 return pw.Container(
                   width: boxWidth,
-                  padding: const pw.EdgeInsets.all(3 * PdfPageFormat.mm), // Padding diperkecil
+                  padding: const pw.EdgeInsets.all(2 * PdfPageFormat.mm),
                   decoration: pw.BoxDecoration(
-                    border: pw.Border.all(
-                      color: PdfColors.black,
-                      width: 0.5,
-                      style: pw.BorderStyle.dashed, // Garis putus-putus untuk gunting
-                    ),
+                    border: pw.Border.all(color: PdfColors.black, width: 1.2),
                   ),
                   child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.center,
+                    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                     children: [
-                      // Header
-                      pw.Text(
-                        'hotspotsio',
-                        style: pw.TextStyle(
-                          font: fontBold,
-                          fontSize: 10,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text(
+                            (voucher.namaServer.isNotEmpty &&
+                                    voucher.namaServer != 'Semua Hotspot')
+                                ? voucher.namaServer
+                                : 'hotspotsio',
+                            style: pw.TextStyle(
+                              font: fontBold,
+                              fontSize: 7,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                          ),
+                          pw.Text(
+                            '[$index]',
+                            style: pw.TextStyle(
+                              font: fontBold,
+                              fontSize: 7,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                       pw.SizedBox(height: 1),
-                      pw.Divider(thickness: 1.0),
-                      pw.SizedBox(height: 1),
-
-                      // Body — voucher data
-                      pw.Text(
-                        'DATA LOGIN VOUCHER',
-                        style: pw.TextStyle(
-                          font: fontBold,
-                          fontSize: 5,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
+                      pw.Divider(thickness: 1.0, color: PdfColors.black),
                       pw.SizedBox(height: 2),
 
-                      pw.Text(
-                        'USERNAME / KODE',
-                        style: pw.TextStyle(
-                          font: font,
-                          fontSize: 4,
-                          color: PdfColors.grey600,
-                        ),
-                      ),
-                      pw.SizedBox(height: 0.5),
-                      pw.Text(
-                        voucher.kodeVoucher,
-                        style: pw.TextStyle(
-                          font: fontBold,
-                          fontSize: 8,
-                          fontWeight: pw.FontWeight.bold,
-                          letterSpacing: 1.0,
-                        ),
+                      pw.Row(
+                        children: [
+                          pw.Expanded(
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.center,
+                              children: [
+                                pw.Text(
+                                  'Username',
+                                  style: pw.TextStyle(font: font, fontSize: 5),
+                                ),
+                                pw.SizedBox(height: 1),
+                                pw.Text(
+                                  voucher.kodeVoucher,
+                                  style: pw.TextStyle(
+                                    font: fontBold,
+                                    fontSize: 8,
+                                    fontWeight: pw.FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          pw.Expanded(
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.center,
+                              children: [
+                                pw.Text(
+                                  'Password',
+                                  style: pw.TextStyle(font: font, fontSize: 5),
+                                ),
+                                pw.SizedBox(height: 1),
+                                pw.Text(
+                                  voucher.passwordVoucher.isNotEmpty
+                                      ? voucher.passwordVoucher
+                                      : voucher.kodeVoucher,
+                                  style: pw.TextStyle(
+                                    font: fontBold,
+                                    fontSize: 8,
+                                    fontWeight: pw.FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
 
-                      if (voucher.passwordVoucher.isNotEmpty &&
-                          voucher.passwordVoucher != voucher.kodeVoucher) ...[
-                        pw.SizedBox(height: 3),
-                        pw.Text(
-                          'PASSWORD',
-                          style: pw.TextStyle(
-                            font: font,
-                            fontSize: 4,
-                            color: PdfColors.grey600,
+                      pw.SizedBox(height: 4),
+
+                      pw.Container(
+                        width: double.infinity,
+                        padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                        decoration: pw.BoxDecoration(
+                          border: pw.Border.all(
+                            color: PdfColors.black,
+                            width: 0.8,
                           ),
                         ),
-                        pw.SizedBox(height: 0.5),
-                        pw.Text(
-                          voucher.passwordVoucher,
+                        alignment: pw.Alignment.center,
+                        child: pw.Text(
+                          footerText.isEmpty ? 'Terima Kasih' : footerText,
                           style: pw.TextStyle(
                             font: fontBold,
-                            fontSize: 8,
+                            fontSize: 6,
                             fontWeight: pw.FontWeight.bold,
-                            letterSpacing: 1.0,
                           ),
                         ),
-                      ],
-
-                      // Footer
-                      pw.SizedBox(height: 4),
-                      pw.Divider(thickness: 0.5),
-
-                      pw.SizedBox(height: 2),
-                      pw.Text(
-                        'Terima Kasih',
-                        style: pw.TextStyle(
-                          font: fontBold,
-                          fontSize: 5,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
                       ),
-                      pw.SizedBox(height: 1),
-                      pw.Text(dateStr, style: pw.TextStyle(font: font, fontSize: 4)),
                     ],
                   ),
                 );

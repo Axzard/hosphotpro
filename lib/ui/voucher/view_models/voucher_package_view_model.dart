@@ -24,7 +24,7 @@ class VoucherPackageViewModel extends GetxController {
 
   final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
   final Rxn<HotspotModel> selectedHotspot = Rxn<HotspotModel>();
-  final Rxn<HotspotModel> formSelectedHotspot = Rxn<HotspotModel>(); // Separate state for form
+  final Rxn<HotspotModel> formSelectedHotspot = Rxn<HotspotModel>();
   final RxBool isLoading = false.obs;
   final RxBool _isInitialLoad = true.obs;
   final RxSet<int> deletingPackageIds = <int>{}.obs;
@@ -62,7 +62,6 @@ class VoucherPackageViewModel extends GetxController {
     super.onInit();
     final dashboardVM = Get.find<DashboardViewModel>();
 
-    // Listen to subscription status changes
     ever(dashboardVM.isActiveSubscription, (bool isActive) {
       if (isActive && (routers.isEmpty || _isInitialLoad.value)) {
         loadRouters();
@@ -94,9 +93,49 @@ class VoucherPackageViewModel extends GetxController {
   void _initRealtimeListeners() {
     print('[VoucherPackageVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
-      final event = eventData['event'] ?? '';
-      print('[VoucherPackageVM] Refreshing due to Event: $event');
-      loadPackages();
+      final event = eventData['event']?.toString() ?? '';
+      final data = eventData['data'];
+      final normEvent = event.replaceAll(':', '_');
+      const hotspotEvents = [
+        'hotspot_added',
+        'hotspot_updated',
+        'hotspot_deleted',
+        'hotspot_created',
+      ];
+      const routerEvents = ['router_added', 'router_updated', 'router_deleted'];
+
+      if (normEvent == 'voucher_package_added' && data != null) {
+        try {
+          final newPkg = VoucherPackageModel.fromJson(data);
+
+          if (selectedHotspot.value?.idHotspot == -1 ||
+              newPkg.idHotspot == selectedHotspot.value?.idHotspot) {
+            packages.insert(0, newPkg);
+            _syncWithCache(packages);
+          }
+        } catch (_) {}
+      } else if (normEvent == 'voucher_package_updated' && data != null) {
+        try {
+          final updated = VoucherPackageModel.fromJson(data);
+          final idx = packages.indexWhere((p) => p.id == updated.id);
+          if (idx != -1) {
+            packages[idx] = updated;
+            _syncWithCache(packages);
+          }
+        } catch (_) {}
+      } else if (normEvent == 'voucher_package_deleted' && data != null) {
+        final id = data['id_paket'];
+        if (id != null) {
+          final intId = id is int ? id : int.tryParse(id.toString());
+          if (intId != null) {
+            packages.removeWhere((p) => p.id == intId);
+            _syncWithCache(packages);
+          }
+        }
+      } else if (hotspotEvents.contains(normEvent) ||
+          routerEvents.contains(normEvent)) {
+        loadRouters();
+      }
     });
   }
 
@@ -125,24 +164,23 @@ class VoucherPackageViewModel extends GetxController {
 
     try {
       if (routers.isEmpty) isLoading.value = true;
-      
-      // 1. Load Routers from Cache first
+
       final cachedRouters = await _routerRepository.getRoutersFromCache();
       if (cachedRouters.isNotEmpty) {
         routers.assignAll([RouterModel.semua, ...cachedRouters]);
       }
 
-      // 2. Fetch Routers from Network
       final result = await _routerRepository.getRouters();
       final allRouters = [RouterModel.semua, ...result];
       routers.assignAll(allRouters);
 
-      // Determine selected router
       RouterModel? nextRouter = selectedRouter.value;
       if (nextRouter == null) {
         final savedRouterId = _sessionService.selectedRouterId.value;
         if (savedRouterId != null) {
-          nextRouter = allRouters.firstWhereOrNull((r) => r.id == savedRouterId);
+          nextRouter = allRouters.firstWhereOrNull(
+            (r) => r.id == savedRouterId,
+          );
         }
       }
       if (nextRouter == null && allRouters.isNotEmpty) {
@@ -150,12 +188,10 @@ class VoucherPackageViewModel extends GetxController {
       }
       selectedRouter.value = nextRouter;
 
-      // 2. Fetch Hotspots
       final idRouter = int.tryParse(nextRouter?.id ?? '') ?? 0;
       final hotspotList = await _routerRepository.getHotspots(idRouter);
       final allHotspots = [HotspotModel.semua, ...hotspotList];
 
-      // Determine selected hotspot
       HotspotModel? nextHotspot = selectedHotspot.value;
       bool currentStillValid = allHotspots.any(
         (h) => h.idHotspot == nextHotspot?.idHotspot,
@@ -164,25 +200,24 @@ class VoucherPackageViewModel extends GetxController {
       if (nextHotspot == null || !currentStillValid) {
         final savedHotspotId = _sessionService.packageHotspotId.value;
         if (savedHotspotId != null) {
-          nextHotspot = allHotspots.firstWhereOrNull((h) => h.idHotspot == savedHotspotId);
+          nextHotspot = allHotspots.firstWhereOrNull(
+            (h) => h.idHotspot == savedHotspotId,
+          );
         }
       }
-      
+
       if (nextHotspot == null && allHotspots.isNotEmpty) {
         nextHotspot = HotspotModel.semua;
       }
 
-      // 3. Fetch Packages
       final idHotspot = nextHotspot?.idHotspot ?? 0;
       final pList = await _voucherRepository.getVoucherPackages(idHotspot);
 
-      // 4. Update states
       routers.assignAll(allRouters);
       selectedRouter.value = nextRouter;
       hotspots.assignAll(allHotspots);
       selectedHotspot.value = nextHotspot;
       packages.assignAll(pList);
-
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal memuat data: $e');
     } finally {
@@ -190,10 +225,11 @@ class VoucherPackageViewModel extends GetxController {
       _isInitialLoad.value = false;
     }
   }
+
   Future<void> loadHotspots(int idRouter) async {
     try {
       List<HotspotModel> result = await _routerRepository.getHotspots(idRouter);
-      
+
       hotspots.assignAll([HotspotModel.semua, ...result]);
 
       final currentHotspot = selectedHotspot.value;
@@ -231,9 +267,10 @@ class VoucherPackageViewModel extends GetxController {
 
     final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
 
-    // 1. Load from cache first
     try {
-      final cached = await _voucherRepository.getVoucherPackagesFromCache(idHotspot);
+      final cached = await _voucherRepository.getVoucherPackagesFromCache(
+        idHotspot,
+      );
       if (cached.isNotEmpty) {
         packages.assignAll(cached);
       }
@@ -241,7 +278,6 @@ class VoucherPackageViewModel extends GetxController {
       print('Cache load error: $e');
     }
 
-    // 2. Load from network
     try {
       if (packages.isEmpty) isLoading.value = true;
       final result = await _voucherRepository.getVoucherPackages(idHotspot);
@@ -282,7 +318,6 @@ class VoucherPackageViewModel extends GetxController {
     }
   }
 
-
   Future<void> createPackage() async {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) {
@@ -318,10 +353,20 @@ class VoucherPackageViewModel extends GetxController {
         gunakanSsl: gunakanSsl.value,
       );
 
-      await _voucherRepository.createVoucherPackage(package);
+      final future = _voucherRepository.createVoucherPackage(package);
+
       Get.back();
-      SnackbarUtils.showSuccess('Berhasil', 'Paket voucher berhasil dibuat');
-      loadPackages();
+      SnackbarUtils.showSuccess('Proses...', 'Sedang membuat paket voucher');
+
+      final response = await future;
+
+      if (response != null) {
+        packages.insert(0, response);
+        _syncWithCache(packages);
+      } else {
+        loadPackages();
+      }
+
       _clearForm();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal membuat paket: $e');
@@ -356,13 +401,21 @@ class VoucherPackageViewModel extends GetxController {
         gunakanSsl: gunakanSsl.value,
       );
 
-      await _voucherRepository.updateVoucherPackage(id, package);
+      final future = _voucherRepository.updateVoucherPackage(id, package);
+
       Get.back();
-      SnackbarUtils.showSuccess(
-        'Berhasil',
-        'Paket voucher berhasil diperbarui',
-      );
-      loadPackages();
+      SnackbarUtils.showSuccess('Proses...', 'Sedang memperbarui paket');
+
+      await future;
+
+      final index = packages.indexWhere((p) => p.id == id);
+      if (index != -1) {
+        packages[index] = package.copyWith(id: id);
+        _syncWithCache(packages);
+      } else {
+        loadPackages();
+      }
+
       _clearForm();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal memperbarui paket: $e');
@@ -376,10 +429,12 @@ class VoucherPackageViewModel extends GetxController {
 
     try {
       deletingPackageIds.add(id);
-      isLoading.value = true;
+
+      packages.removeWhere((p) => p.id == id);
+      _syncWithCache(packages);
+
       await _voucherRepository.deleteVoucherPackage(id);
       SnackbarUtils.showSuccess('Berhasil', 'Paket voucher berhasil dihapus');
-      loadPackages();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal menghapus paket: $e');
     } finally {
@@ -398,7 +453,6 @@ class VoucherPackageViewModel extends GetxController {
     rateLimitController.text = package.rateLimit ?? '';
     dnsLoginController.text = package.dnsLogin ?? '';
     gunakanSsl.value = package.gunakanSsl;
-
 
     selectedFormatKarakter.value = package.formatKarakter;
 
@@ -429,9 +483,23 @@ class VoucherPackageViewModel extends GetxController {
     formSelectedHotspot.value = null;
   }
 
+  void _syncWithCache(List<VoucherPackageModel> list) {
+    if (selectedHotspot.value != null &&
+        selectedHotspot.value!.idHotspot > 0 &&
+        list.isNotEmpty) {
+      _voucherRepository
+          .updateVoucherPackageCache(selectedHotspot.value!.idHotspot, list)
+          .catchError((e) => print('Cache sync error: $e'));
+    }
+  }
+
   bool _validateForm() {
-    if (formSelectedHotspot.value == null || formSelectedHotspot.value?.idHotspot == -1) {
-      SnackbarUtils.showError('Error', 'Hotspot harus dipilih secara spesifik untuk membuat paket');
+    if (formSelectedHotspot.value == null ||
+        formSelectedHotspot.value?.idHotspot == -1) {
+      SnackbarUtils.showError(
+        'Error',
+        'Hotspot harus dipilih secara spesifik untuk membuat paket',
+      );
       return false;
     }
     if (namaPaketController.text.isEmpty ||

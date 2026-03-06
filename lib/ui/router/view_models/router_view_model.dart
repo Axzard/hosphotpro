@@ -49,9 +49,34 @@ class RouterViewModel extends GetxController {
   void _initRealtimeListeners() {
     print('[RouterVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
-      final event = eventData['event'] ?? '';
+      final event = eventData['event']?.toString() ?? '';
+      final data = eventData['data'];
       print('[RouterVM] Refreshing due to Event: $event');
-      loadRouters();
+
+      if (event == 'router_added' && data != null) {
+        try {
+          final newRouter = RouterModel.fromJson(data);
+          routers.add(newRouter);
+          _syncWithCache();
+        } catch (_) {}
+      } else if (event == 'router_updated' && data != null) {
+        try {
+          final updated = RouterModel.fromJson(data);
+          final idx = routers.indexWhere((r) => r.id == updated.id);
+          if (idx != -1) {
+            routers[idx] = updated;
+            _syncWithCache();
+          }
+        } catch (_) {}
+      } else if (event == 'router_deleted' && data != null) {
+        final id = data['id_router']?.toString();
+        if (id != null) {
+          routers.removeWhere((r) => r.id == id);
+          _syncWithCache();
+        }
+      } else if (event.startsWith('router_')) {
+         loadRouters();
+      }
     });
   }
 
@@ -96,18 +121,28 @@ class RouterViewModel extends GetxController {
         statusRouter: isEditing.value ? editingStatus.value : 'aktif',
       );
 
-      if (isEditing.value) {
-        await _routerRepository.updateRouter(routerData);
-        SnackbarUtils.showSuccess('Berhasil', 'Router berhasil diperbarui');
-      } else {
-        await _routerRepository.createRouter(routerData);
-        SnackbarUtils.showSuccess('Berhasil', 'Router berhasil ditambahkan');
-      }
+      final future = isEditing.value
+          ? _routerRepository.updateRouter(routerData)
+          : _routerRepository.createRouter(routerData);
+          
+      Get.back(); // Tutup dialog segera
+      SnackbarUtils.showSuccess('Proses...', 'Menyimpan router');
+      
+      await future;
 
+      // Optimistic save
+      if (!isEditing.value) {
+        routers.add(routerData);
+      } else {
+         final idx = routers.indexWhere((r) => r.id == routerData.id);
+         if (idx != -1) routers[idx] = routerData;
+      }
+      _syncWithCache();
+      
       clearForm();
-      loadRouters();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal menyimpan router: $e');
+      loadRouters(); // Fallback
     } finally {
       isLoading.value = false;
     }
@@ -115,15 +150,21 @@ class RouterViewModel extends GetxController {
 
   Future<void> deleteRouter(String id) async {
     try {
-      isLoading.value = true;
+      // Optimistic delete
+      routers.removeWhere((r) => r.id == id);
+      _syncWithCache();
+      
       await _routerRepository.deleteRouter(id);
       SnackbarUtils.showSuccess('Berhasil', 'Router berhasil dihapus');
-      loadRouters();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal menghapus router: $e');
-    } finally {
-      isLoading.value = false;
+      loadRouters(); // Fallback resync
     }
+  }
+
+  void _syncWithCache() {
+    _routerRepository.updateRouterCache(routers.toList())
+        .catchError((e) => print('[RouterVM] Cache sync error: $e'));
   }
 
   void prepareEdit(RouterModel router) {

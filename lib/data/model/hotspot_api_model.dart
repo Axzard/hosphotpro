@@ -49,4 +49,14 @@ class HotspotApiModel {
       'dibuat_pada': dibuatPada,
     };
   }
+  factory HotspotApiModel.fromDomain(HotspotModel domain) {
+    return HotspotApiModel(
+      idHotspot: domain.idHotspot,
+      idRouter: domain.idRouter,
+      namaServer: domain.namaServer,
+      interface: domain.interface,
+      statusHotspot: domain.statusHotspot,
+      dibuatPada: domain.dibuatPada.toIso8601String(),
+    );
+  }
 }

@@ -17,4 +17,6 @@ abstract class RouterRepository {
   // Cache methods
   Future<List<RouterModel>> getRoutersFromCache();
   Future<List<HotspotModel>> getHotspotsFromCache(int idRouter);
+  Future<void> updateRouterCache(List<RouterModel> routers);
+  Future<void> updateHotspotCache(int idRouter, List<HotspotModel> hotspots);
 }

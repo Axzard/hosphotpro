@@ -106,20 +106,24 @@ class VoucherViewModel extends GetxController {
 
       print('[VoucherVM] Event Received: $event');
 
-      if (event == 'voucher:created' && data != null) {
+      // Normalisasi nama event untuk mendukung pattern voucher_added atau voucher:added
+      final normEvent = event.replaceAll(':', '_');
+
+      if (normEvent == 'voucher_added' && data != null) {
         try {
           final parsed = VoucherApiModel.fromJson(data).toDomain();
           final enriched = _enrichVoucher(parsed);
           vouchers.insert(0, enriched);
+          _syncWithCache(vouchers);
         } catch (e) {
-          print('Error parsing voucher:created: $e');
+          print('Error parsing voucher_added: $e');
         }
         return;
       }
 
-      if (event == 'voucher:bulkcreated' && data != null) {
+      if (normEvent == 'voucher_bulk_added' || normEvent == 'voucher_bulkcreated') {
         try {
-          final listData = data['data'] as List?;
+          final listData = data is List ? data : (data['data'] as List?);
           if (listData != null) {
             final newVouchers = listData
                 .map(
@@ -127,40 +131,90 @@ class VoucherViewModel extends GetxController {
                 )
                 .toList();
             vouchers.insertAll(0, newVouchers);
+            _syncWithCache(vouchers);
           }
         } catch (e) {
-          print('Error parsing voucher:bulkcreated: $e');
+          print('Error parsing bulk added: $e');
         }
         return;
       }
 
-      if (event == 'voucher:deleted' && data != null) {
-        final id = data['id_voucher'] as int?;
+      if (normEvent == 'voucher_deleted' && data != null) {
+        final id = data['id_voucher'];
         if (id != null) {
-          vouchers.removeWhere((v) => v.idVoucher == id);
-        }
-        return;
-      }
-
-      if ((event == 'voucher:updated' || event == 'voucher:sold') &&
-          data != null) {
-        final id = data['id_voucher'] as int?;
-        final statusStr = data['status_voucher']?.toString();
-        if (id != null && statusStr != null) {
-          final index = vouchers.indexWhere((v) => v.idVoucher == id);
-          if (index != -1) {
-            vouchers[index] = vouchers[index].copyWith(
-              statusVoucher: VoucherStatus.fromString(statusStr),
-            );
+          final intId = id is int ? id : int.tryParse(id.toString());
+          if (intId != null) {
+            vouchers.removeWhere((v) => v.idVoucher == intId);
+            _syncWithCache(vouchers);
           }
         }
         return;
       }
 
-      const relevantEvents = ['hotspot_updated', 'router_updated'];
-      if (relevantEvents.contains(event)) {
-        loadVoucherPackages();
-        loadVouchers();
+      if ((normEvent == 'voucher_updated' || normEvent == 'voucher_sold') && data != null) {
+        final id = data['id_voucher'];
+        final statusStr = data['status_voucher']?.toString();
+        if (id != null && statusStr != null) {
+          final intId = id is int ? id : int.tryParse(id.toString());
+          if (intId != null) {
+            final index = vouchers.indexWhere((v) => v.idVoucher == intId);
+            if (index != -1) {
+              vouchers[index] = vouchers[index].copyWith(
+                statusVoucher: VoucherStatus.fromString(statusStr),
+              );
+              _syncWithCache(vouchers);
+            }
+          }
+        }
+        return;
+      }
+
+      if (normEvent == 'voucher_package_added' && data != null) {
+        try {
+          final newPkg = VoucherPackageModel.fromJson(data);
+          if (!_allPackages.any((p) => p.id == newPkg.id)) {
+            _allPackages.insert(0, newPkg);
+            _applyLocalPackageFilter();
+          }
+        } catch (_) {}
+        return;
+      }
+
+      if (normEvent == 'voucher_package_updated' && data != null) {
+        try {
+          final updated = VoucherPackageModel.fromJson(data);
+          final idx = _allPackages.indexWhere((p) => p.id == updated.id);
+          if (idx != -1) {
+            _allPackages[idx] = updated;
+            _applyLocalPackageFilter();
+          }
+        } catch (_) {}
+        return;
+      }
+
+      if (normEvent == 'voucher_package_deleted' && data != null) {
+        final id = data['id_paket'];
+        if (id != null) {
+          final intId = id is int ? id : int.tryParse(id.toString());
+          if (intId != null) {
+            _allPackages.removeWhere((p) => p.id == intId);
+            _applyLocalPackageFilter();
+            if (selectedPaketId.value == intId) selectedPaketId.value = null;
+            if (filterPaketId.value == intId) filterPaketId.value = null;
+          }
+        }
+        return;
+      }
+
+      const structuralEvents = [
+        'hotspot_added',
+        'hotspot_created',
+        'hotspot_updated', 
+        'router_added',
+        'router_updated',
+      ];
+      if (structuralEvents.contains(normEvent)) {
+        loadRouters(); 
       }
     });
   }
@@ -664,5 +718,16 @@ class VoucherViewModel extends GetxController {
       transition: Transition.fadeIn,
       duration: const Duration(milliseconds: 200),
     );
+  }
+
+  void _syncWithCache(List<VoucherModel> list) {
+    if (selectedHotspot.value != null && 
+        selectedHotspot.value!.idHotspot > 0 && 
+        list.isNotEmpty) {
+       _voucherRepository.updateVoucherCache(
+         selectedHotspot.value!.idHotspot, 
+         list
+       ).catchError((e) => print('Cache sync error: $e'));
+    }
   }
 }

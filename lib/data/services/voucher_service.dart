@@ -1,10 +1,27 @@
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../model/api_response.dart';
 import '../../config/api_config.dart';
 import '../model/voucher_api_model.dart';
 import '../model/voucher_package_api_model.dart';
 import 'token_service.dart';
+
+List<VoucherPackageApiModel> _parseVoucherPackages(dynamic data) {
+  final list = data as List<dynamic>;
+  return list
+      .where((e) => e is Map)
+      .map((json) => VoucherPackageApiModel.fromJson(json as Map<String, dynamic>))
+      .toList();
+}
+
+List<VoucherApiModel> _parseVouchers(dynamic data) {
+  final list = data as List<dynamic>;
+  return list
+      .where((e) => e is Map)
+      .map((json) => VoucherApiModel.fromJson(json as Map<String, dynamic>))
+      .toList();
+}
 
 class VoucherService extends GetxService {
   final Dio _dio = Dio(
@@ -52,10 +69,7 @@ class VoucherService extends GetxService {
           listData = rawData;
         }
 
-        final packages = listData
-            .where((e) => e is Map)
-            .map((json) => VoucherPackageApiModel.fromJson(json as Map<String, dynamic>))
-            .toList();
+        final packages = await compute(_parseVoucherPackages, listData);
 
         return ApiResponse(
           success: true,
@@ -104,10 +118,7 @@ class VoucherService extends GetxService {
           listData = rawData;
         }
 
-        final packages = listData
-            .where((e) => e is Map)
-            .map((json) => VoucherPackageApiModel.fromJson(json as Map<String, dynamic>))
-            .toList();
+        final packages = await compute(_parseVoucherPackages, listData);
 
         return ApiResponse(
           success: true,
@@ -312,10 +323,7 @@ class VoucherService extends GetxService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final respData = response.data;
         final List<dynamic> data = (respData is Map ? respData['data'] : null) ?? [];
-        final vouchers = data
-            .where((e) => e is Map)
-            .map((json) => VoucherApiModel.fromJson(json as Map<String, dynamic>))
-            .toList();
+        final vouchers = await compute(_parseVouchers, data);
         return ApiResponse(
           success: true,
           message: _getErrorMsg(respData, 'Vouchers fetched'),
@@ -376,10 +384,7 @@ class VoucherService extends GetxService {
           listData = rawData;
         }
 
-        final vouchers = listData
-            .where((e) => e is Map)
-            .map((json) => VoucherApiModel.fromJson(json as Map<String, dynamic>))
-            .toList();
+        final vouchers = await compute(_parseVouchers, listData);
         return ApiResponse(
           success: true,
           message: 'Vouchers fetched',
@@ -515,10 +520,7 @@ class VoucherService extends GetxService {
         List<VoucherApiModel> vouchers = [];
         final rawData = response.data['data'];
         if (rawData is List) {
-          vouchers = rawData
-              .where((e) => e is Map)
-              .map((json) => VoucherApiModel.fromJson(json as Map<String, dynamic>))
-              .toList();
+          vouchers = await compute(_parseVouchers, rawData);
         }
         return ApiResponse(
           success: true,

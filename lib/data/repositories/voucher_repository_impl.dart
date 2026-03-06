@@ -219,4 +219,15 @@ class VoucherRepositoryImpl implements VoucherRepository {
       vouchers.map((e) => VoucherApiModel.fromDomain(e).toJson()).toList(),
     );
   }
+
+  @override
+  Future<void> updateVoucherPackageCache(
+    int idHotspot,
+    List<VoucherPackageModel> packages,
+  ) async {
+    await _cacheService.saveVoucherPackages(
+      idHotspot,
+      packages.map((e) => VoucherPackageApiModel.fromDomain(e).toJson()).toList(),
+    );
+  }
 }

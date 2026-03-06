@@ -58,15 +58,51 @@ class HotspotViewModel extends GetxController {
       final event = (eventData['event'] ?? '').toString().toLowerCase();
 
       const relevantEvents = [
-        'hotspot_updated',
         'router_updated',
-        'hotspot_created',
+        'hotspot_added',
+        'hotspot_updated',
         'hotspot_deleted',
       ];
       if (!relevantEvents.contains(event)) return;
 
       print('[HotspotVM] Refreshing due to Event: $event');
-      loadHotspots();
+      final data = eventData['data'];
+
+      if (event == 'hotspot_added' && data != null) {
+        try {
+          final newHotspot = HotspotModel.fromJson(data);
+          // Only add if it belongs to selected router, or if 'semua' is selected
+          if (selectedRouter.value?.id == 'all' || 
+              newHotspot.idRouter.toString() == selectedRouter.value?.id) {
+            hotspots.add(newHotspot);
+            _syncWithCache(newHotspot.idRouter);
+          }
+        } catch (_) {}
+      } else if (event == 'hotspot_updated' && data != null) {
+        try {
+          final updated = HotspotModel.fromJson(data);
+          final idx = hotspots.indexWhere((h) => h.idHotspot == updated.idHotspot);
+          if (idx != -1) {
+            hotspots[idx] = updated;
+            _syncWithCache(updated.idRouter);
+          }
+        } catch (_) {}
+      } else if (event == 'hotspot_deleted' && data != null) {
+        final id = data['id_hotspot'];
+        if (id != null) {
+          final intId = id is int ? id : int.tryParse(id.toString());
+          if (intId != null) {
+            final victim = hotspots.firstWhereOrNull((h) => h.idHotspot == intId);
+            if (victim != null) {
+              final routerId = victim.idRouter;
+              hotspots.removeWhere((h) => h.idHotspot == intId);
+              _syncWithCache(routerId);
+            }
+          }
+        }
+      } else {
+         loadHotspots();
+      }
     });
   }
 
@@ -144,21 +180,34 @@ class HotspotViewModel extends GetxController {
     }
 
     try {
-      isLoading.value = true;
+      Get.back(); // Pindahkan ke awal biar UI snappier
+      SnackbarUtils.showSuccess('Proses...', 'Sedang memperbarui');
+      
       final data = {
         'nama_server': namaServerController.text,
         'interface': interfaceController.text,
       };
+      
       await _routerRepository.updateHotspot(idHotspot, data);
+
+      // Optimistic Update
+      final idx = hotspots.indexWhere((h) => h.idHotspot == idHotspot);
+      if (idx != -1) {
+        hotspots[idx] = hotspots[idx].copyWith(
+          namaServer: namaServerController.text,
+          interface: interfaceController.text,
+        );
+        _syncWithCache(hotspots[idx].idRouter);
+      }
+      
       SnackbarUtils.showSuccess('Berhasil', 'Hotspot berhasil diperbarui');
-      loadHotspots();
-      Get.back();
     } catch (e) {
       print('[HotspotVM] Update Hotspot Error: $e');
       SnackbarUtils.showError(
         'Error',
         'Gagal memperbarui data hotspot. Terjadi gangguan pada server atau router.',
       );
+      loadHotspots(); // Fallback on error
     } finally {
       isLoading.value = false;
     }
@@ -166,19 +215,29 @@ class HotspotViewModel extends GetxController {
 
   Future<void> deleteHotspot(int idHotspot) async {
     try {
-      isLoading.value = true;
+      // Optimistic delete
+      final victim = hotspots.firstWhereOrNull((h) => h.idHotspot == idHotspot);
+      if (victim != null) {
+        final routerId = victim.idRouter;
+        hotspots.removeWhere((h) => h.idHotspot == idHotspot);
+        _syncWithCache(routerId);
+      }
+
       await _routerRepository.deleteHotspot(idHotspot);
       SnackbarUtils.showSuccess('Berhasil', 'Hotspot berhasil dihapus');
-      loadHotspots();
     } catch (e) {
       print('[HotspotVM] Delete Hotspot Error: $e');
       SnackbarUtils.showError(
         'Error',
-        'Gagal menghapus hotspot. Silakan coba lagi beberapa saat lagi.',
+        'Gagal menghapus hotspot. Silakan coba lagi.',
       );
-    } finally {
-      isLoading.value = false;
+      loadHotspots(); // Fallback
     }
+  }
+
+  void _syncWithCache(int idRouter) {
+    _routerRepository.updateHotspotCache(idRouter, hotspots.where((h) => h.idRouter == idRouter).toList())
+        .catchError((e) => print('[HotspotVM] Cache sync error: $e'));
   }
 
   Future<void> syncHotspots() async {

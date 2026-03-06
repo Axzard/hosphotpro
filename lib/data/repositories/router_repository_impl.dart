@@ -136,4 +136,19 @@ class RouterRepositoryImpl implements RouterRepository {
             .toDomain(idRouterOverride: idRouter))
         .toList();
   }
+
+  @override
+  Future<void> updateRouterCache(List<RouterModel> routers) async {
+    await _cacheService.saveRouters(
+      routers.map((e) => RouterApiModel.fromDomain(e).toJson()).toList(),
+    );
+  }
+
+  @override
+  Future<void> updateHotspotCache(int idRouter, List<HotspotModel> hotspots) async {
+    await _cacheService.saveHotspots(
+      idRouter,
+      hotspots.map((e) => HotspotApiModel.fromDomain(e).toJson()).toList(),
+    );
+  }
 }

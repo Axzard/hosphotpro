@@ -1,9 +1,25 @@
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../model/api_response.dart';
 import '../../config/api_config.dart';
 import '../model/report_api_model.dart';
 import 'token_service.dart';
+
+List<DailyReportApiModel> _parseDailyReports(dynamic data) {
+  final list = data as List<dynamic>;
+  return list.map((json) => DailyReportApiModel.fromJson(json as Map<String, dynamic>)).toList();
+}
+
+List<MonthlyReportApiModel> _parseMonthlyReports(dynamic data) {
+  final list = data as List<dynamic>;
+  return list.map((json) => MonthlyReportApiModel.fromJson(json as Map<String, dynamic>)).toList();
+}
+
+List<YearlyReportApiModel> _parseYearlyReports(dynamic data) {
+  final list = data as List<dynamic>;
+  return list.map((json) => YearlyReportApiModel.fromJson(json as Map<String, dynamic>)).toList();
+}
 
 class ReportService extends GetxService {
   final Dio _dio = Dio(
@@ -95,7 +111,7 @@ class ReportService extends GetxService {
         return ApiResponse(
           success: true,
           message: 'Success',
-          data: data.map((json) => DailyReportApiModel.fromJson(json)).toList(),
+          data: await compute(_parseDailyReports, data),
         );
       }
       return ApiResponse(success: false, message: 'Failed');
@@ -121,7 +137,7 @@ class ReportService extends GetxService {
         return ApiResponse(
           success: true,
           message: 'Success',
-          data: data.map((json) => DailyReportApiModel.fromJson(json)).toList(),
+          data: await compute(_parseDailyReports, data),
         );
       }
       return ApiResponse(success: false, message: 'Failed');
@@ -181,7 +197,7 @@ class ReportService extends GetxService {
         return ApiResponse(
           success: true,
           message: 'Success',
-          data: data.map((json) => DailyReportApiModel.fromJson(json)).toList(),
+          data: await compute(_parseDailyReports, data),
         );
       } else {
         return ApiResponse(success: false, message: 'Failed');
@@ -213,9 +229,7 @@ class ReportService extends GetxService {
         return ApiResponse(
           success: true,
           message: 'Success',
-          data: data
-              .map((json) => MonthlyReportApiModel.fromJson(json))
-              .toList(),
+          data: await compute(_parseMonthlyReports, data),
         );
       } else {
         return ApiResponse(success: false, message: 'Failed');
@@ -241,9 +255,7 @@ class ReportService extends GetxService {
         return ApiResponse(
           success: true,
           message: 'Success',
-          data: data
-              .map((json) => YearlyReportApiModel.fromJson(json))
-              .toList(),
+          data: await compute(_parseYearlyReports, data),
         );
       } else {
         return ApiResponse(success: false, message: 'Failed');
