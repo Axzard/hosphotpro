@@ -50,7 +50,9 @@ class GlobalBinding extends Bindings {
     Get.put<RouterService>(RouterService());
     Get.put<VoucherService>(VoucherService());
     Get.put<ReportService>(ReportService());
-    Get.put<SessionService>(SessionService());
+    final sessionService = SessionService();
+    await sessionService.init();
+    Get.put<SessionService>(sessionService);
 
     // Repositories
     Get.put<AuthRepository>(AuthRepositoryImpl());

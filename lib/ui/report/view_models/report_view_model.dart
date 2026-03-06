@@ -5,6 +5,7 @@ import '../../../domain/models/report_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/services/websocket_service.dart';
 import '../../../config/routing/app_routes.dart' as app_routes;
+import '../../../data/model/report_api_model.dart';
 import '../../../core/services/cache_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
 
@@ -20,6 +21,22 @@ class ReportViewModel extends GetxController {
   final monthlyReports = <MonthlyReportModel>[].obs;
   final yearlyReports = <YearlyReportModel>[].obs;
   final isLoading = false.obs;
+
+  List<DailyReportModel> get filteredDailyReports {
+    if (selectedDate.value == null) return dailyReports;
+    final date = selectedDate.value!;
+    return dailyReports.where((e) =>
+      e.tanggal.year == date.year &&
+      e.tanggal.month == date.month &&
+      e.tanggal.day == date.day
+    ).toList();
+  }
+
+  List<MonthlyReportModel> get filteredMonthlyReports {
+    if (selectedDate.value == null) return monthlyReports;
+    final date = selectedDate.value!;
+    return monthlyReports.where((e) => e.bulan == date.month).toList();
+  }
 
   final selectedDate = Rxn<DateTime>();
   final selectedYear = DateTime.now().year.obs;
@@ -45,19 +62,15 @@ class ReportViewModel extends GetxController {
 
   Future<void> loadCachedData() async {
     try {
-      final now = DateTime.now();
-      final year = selectedYear.value;
-      final month = selectedDate.value?.month ?? now.month;
-
-      final cachedDaily = await _reportRepository.getDailyReportsFromCache(
-        year: year,
-        month: month,
-      );
+      final cached = _cacheService.getReports();
       
-      if (cachedDaily.isNotEmpty) {
-        final sortedDaily = List<DailyReportModel>.from(cachedDaily);
-        sortedDaily.sort((a, b) => b.tanggal.compareTo(a.tanggal));
-        dailyReports.assignAll(sortedDaily);
+      if (cached != null) {
+        if (cached['daily'] != null) {
+          final list = (cached['daily'] as List)
+              .map((e) => DailyReportApiModel.fromJson(e as Map<String, dynamic>).toDomain())
+              .toList();
+          dailyReports.assignAll(list);
+        }
       }
     } catch (e) {
       print('[ReportVM] Error loading cache: $e');
@@ -125,69 +138,43 @@ class ReportViewModel extends GetxController {
       final year = selectedYear.value;
       final month = selectedDate.value?.month ?? now.month;
 
-      // 1. Fetch Daily Reports (for the selected month)
-      final firstDayOfMonth = DateTime(year, month, 1);
-      final lastDayOfMonth = DateTime(year, month + 1, 0);
-      
-      final dailyData = await _reportRepository.getDailyReports(
+      // Use dashboard endpoint instead of separate calls
+      final dashboardData = await _reportRepository.getDashboardReport(
         year: year,
         month: month,
       );
-      
-      // Sort newest first for the list
-      final sortedDaily = List<DailyReportModel>.from(dailyData);
-      sortedDaily.sort((a, b) => b.tanggal.compareTo(a.tanggal));
-      dailyReports.assignAll(sortedDaily);
 
-      // 2. Fetch Monthly Reports (for the selected year)
-      final firstDayOfYear = DateTime(year, 1, 1);
-      final lastDayOfYear = DateTime(year, 12, 31);
-      final monthlyData = await _reportRepository.getGroupedReport(
-        type: 'month',
-        start: _formatDate(firstDayOfYear),
-        end: _formatDate(lastDayOfYear),
-      );
-      
-      // Convert e.tanggal to MonthlyReportModel
-      monthlyReports.assignAll(monthlyData.map((e) => MonthlyReportModel(
-        bulan: e.tanggal.month,
-        totalPendapatan: e.totalPendapatan,
-        totalTransaksi: e.totalTransaksi,
-      )).toList());
+      if (dashboardData != null) {
+        // 1. Daily Reports
+        final sortedDaily = List<DailyReportModel>.from(dashboardData.perHari);
+        sortedDaily.sort((a, b) => b.tanggal.compareTo(a.tanggal));
+        dailyReports.assignAll(sortedDaily);
 
-      // 3. Fetch Yearly Reports (last 5 years)
-      final firstDayOfFiveYears = DateTime(year - 4, 1, 1);
-      final lastDayOfFiveYears = DateTime(year, 12, 31);
-      final yearlyData = await _reportRepository.getGroupedReport(
-        type: 'year',
-        start: _formatDate(firstDayOfFiveYears),
-        end: _formatDate(lastDayOfFiveYears),
-      );
+        // 2. Monthly Reports
+        monthlyReports.assignAll(dashboardData.perBulan);
 
-      yearlyReports.assignAll(yearlyData.map((e) => YearlyReportModel(
-        tahun: e.tanggal.year,
-        totalPendapatan: e.totalPendapatan,
-        totalTransaksi: e.totalTransaksi,
-      )).toList());
+        // 3. Yearly Reports
+        yearlyReports.assignAll(dashboardData.perTahun);
 
-      // Update cache
-      _cacheService.saveReports({
-        'daily': dailyReports.map((e) => {
-          'tanggal': e.tanggal.toIso8601String(),
-          'total_pendapatan': e.totalPendapatan,
-          'total_transaksi': e.totalTransaksi,
-        }).toList(),
-        'monthly': monthlyReports.map((e) => {
-          'bulan': e.bulan,
-          'total_pendapatan': e.totalPendapatan,
-          'total_transaksi': e.totalTransaksi,
-        }).toList(),
-        'yearly': yearlyReports.map((e) => {
-          'tahun': e.tahun,
-          'total_pendapatan': e.totalPendapatan,
-          'total_transaksi': e.totalTransaksi,
-        }).toList(),
-      });
+        // Update cache
+        _cacheService.saveReports({
+          'daily': dailyReports.map((e) => {
+            'tanggal': e.tanggal.toIso8601String(),
+            'total_pendapatan': e.totalPendapatan,
+            'total_transaksi': e.totalTransaksi,
+          }).toList(),
+          'monthly': monthlyReports.map((e) => {
+            'bulan': e.bulan,
+            'total_pendapatan': e.totalPendapatan,
+            'total_transaksi': e.totalTransaksi,
+          }).toList(),
+          'yearly': yearlyReports.map((e) => {
+            'tahun': e.tahun,
+            'total_pendapatan': e.totalPendapatan,
+            'total_transaksi': e.totalTransaksi,
+          }).toList(),
+        });
+      }
 
     } catch (e) {
       if (!isSilent) {
@@ -201,9 +188,7 @@ class ReportViewModel extends GetxController {
     }
   }
 
-  String _formatDate(DateTime date) {
-    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-  }
+
 
   void setDate(DateTime? date) {
     if (date != null) {

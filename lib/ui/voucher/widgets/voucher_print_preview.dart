@@ -438,20 +438,7 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
     });
 
     try {
-      var toPrint = _vouchersToPrint;
-
-      // Auto-sell voucher stok sebelum print (sama seperti print single)
-      final hasStokVouchers = toPrint.any(
-        (v) => v.statusVoucher == VoucherStatus.stok,
-      );
-      if (hasStokVouchers) {
-        try {
-          final voucherVM = Get.find<VoucherViewModel>();
-          toPrint = await voucherVM.sellBulkVouchersForPrint(toPrint);
-        } catch (e) {
-          print('[PrintPreview] Error selling bulk vouchers: $e');
-        }
-      }
+      final toPrint = _vouchersToPrint;
 
       for (int i = 0; i < toPrint.length; i++) {
         setState(() {
@@ -461,10 +448,27 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
         // Slight delay between print commands for buffer safety
         await Future.delayed(const Duration(milliseconds: 600));
       }
+
+      // Update status voucher ke terjual hanya SETELAH berhasil cetak
+      final hasStokVouchers = toPrint.any(
+        (v) => v.statusVoucher == VoucherStatus.stok,
+      );
+      if (hasStokVouchers) {
+        try {
+          final voucherVM = Get.find<VoucherViewModel>();
+          await voucherVM.sellBulkVouchersForPrint(toPrint);
+        } catch (e) {
+          print('[PrintPreview] Error updating status after print: $e');
+        }
+      }
+
       SnackbarUtils.showSuccess(
         'Berhasil',
         'Semua voucher ($selectedQuantity) berhasil dicetak',
       );
+
+      // Tutup halaman cetak otomatis setelah berhasil
+      Get.back();
     } catch (e) {
       SnackbarUtils.showError(
         'Gagal',

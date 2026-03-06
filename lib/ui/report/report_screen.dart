@@ -146,7 +146,6 @@ class ReportScreen extends GetView<ReportViewModel> {
           ),
           body: Column(
             children: [
-              // Date filter banner
               Obx(
                 () => controller.selectedDate.value != null
                     ? Container(
@@ -156,23 +155,37 @@ class ReportScreen extends GetView<ReportViewModel> {
                         ),
                         width: double.infinity,
                         color: accentColor.withValues(alpha: 0.1),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.filter_list,
-                              color: accentColor,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Filter: ${DateFormat('dd MMM yyyy', 'id_ID').format(controller.selectedDate.value!)}',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: accentColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                        child: Builder(
+                          builder: (context) {
+                            final tabIndex = DefaultTabController.of(context).index;
+                            String filterText = '';
+                            if (tabIndex == 0) {
+                              filterText = 'Filter: ${DateFormat('dd MMM yyyy', 'id_ID').format(controller.selectedDate.value!)}';
+                            } else if (tabIndex == 1) {
+                              filterText = 'Filter: ${DateFormat('MMMM yyyy', 'id_ID').format(controller.selectedDate.value!)}';
+                            } else {
+                              filterText = 'Filter: Tahun ${controller.selectedYear.value}';
+                            }
+
+                            return Row(
+                              children: [
+                                const Icon(
+                                  Icons.filter_list,
+                                  color: accentColor,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  filterText,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: accentColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
                         ),
                       )
                     : const SizedBox.shrink(),
@@ -213,9 +226,9 @@ class ReportScreen extends GetView<ReportViewModel> {
           'daily',
         ),
         Expanded(
-          child: controller.dailyReports.isEmpty
+          child: controller.filteredDailyReports.isEmpty
               ? _buildEmptyState()
-              : _buildReportList(context, controller.dailyReports, 'daily'),
+              : _buildReportList(context, controller.filteredDailyReports, 'daily'),
         ),
       ],
     );
@@ -231,9 +244,9 @@ class ReportScreen extends GetView<ReportViewModel> {
           'monthly',
         ),
         Expanded(
-          child: controller.monthlyReports.isEmpty
+          child: controller.filteredMonthlyReports.isEmpty
               ? _buildEmptyState()
-              : _buildReportList(context, controller.monthlyReports, 'monthly'),
+              : _buildReportList(context, controller.filteredMonthlyReports, 'monthly'),
         ),
       ],
     );

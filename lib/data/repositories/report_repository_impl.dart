@@ -17,7 +17,16 @@ class ReportRepositoryImpl implements ReportRepository {
       month: month,
     );
     if (response.success && response.data != null) {
-      return response.data!.toDomain();
+      final domain = response.data!.toDomain();
+      // Cache the result
+      await _cacheService.saveReports({
+        'daily': domain.perHari.map((e) => {
+          'tanggal': e.tanggal.toIso8601String(),
+          'total_pendapatan': e.totalPendapatan,
+          'total_transaksi': e.totalTransaksi,
+        }).toList(),
+      });
+      return domain;
     }
     return null;
   }

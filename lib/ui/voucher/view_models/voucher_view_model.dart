@@ -100,20 +100,9 @@ class VoucherViewModel extends GetxController {
 
       if (event == 'voucher:created' && data != null) {
         try {
-          final idPaket = int.tryParse(data['id_paket']?.toString() ?? '') ?? 0;
-
-          final package = voucherPackages.firstWhereOrNull(
-            (p) => p.id == idPaket,
-          );
-
-          if (package != null) {
-            final parsed = VoucherApiModel.fromJson(data).toDomain();
-            final newVoucher = parsed.copyWith(
-              namaPaket: package.namaPaket,
-              harga: parsed.harga > 0 ? parsed.harga : package.harga,
-            );
-            vouchers.insert(0, newVoucher);
-          }
+          final parsed = VoucherApiModel.fromJson(data).toDomain();
+          final enriched = _enrichVoucher(parsed);
+          vouchers.insert(0, enriched);
         } catch (e) {
           print('Error parsing voucher:created: $e');
         }
@@ -122,27 +111,12 @@ class VoucherViewModel extends GetxController {
 
       if (event == 'voucher:bulkcreated' && data != null) {
         try {
-          final idPaket = int.tryParse(data['id_paket']?.toString() ?? '') ?? 0;
-          final package = voucherPackages.firstWhereOrNull(
-            (p) => p.id == idPaket,
-          );
-
-          if (package != null) {
-            final listData = data['data'] as List?;
-            if (listData != null) {
-              final newVouchers = listData
-                  .map(
-                    (e) {
-                      final parsed = VoucherApiModel.fromJson(e).toDomain();
-                      return parsed.copyWith(
-                        namaPaket: package.namaPaket,
-                        harga: parsed.harga > 0 ? parsed.harga : package.harga,
-                      );
-                    },
-                  )
-                  .toList();
-              vouchers.insertAll(0, newVouchers);
-            }
+          final listData = data['data'] as List?;
+          if (listData != null) {
+            final newVouchers = listData
+                .map((e) => _enrichVoucher(VoucherApiModel.fromJson(e).toDomain()))
+                .toList();
+            vouchers.insertAll(0, newVouchers);
           }
         } catch (e) {
           print('Error parsing voucher:bulkcreated: $e');
@@ -179,6 +153,27 @@ class VoucherViewModel extends GetxController {
         loadVouchers();
       }
     });
+  }
+
+  VoucherModel _enrichVoucher(VoucherModel v) {
+    // Fill missing data from currently selected package/hotspot/router
+    final pkg = voucherPackages.firstWhereOrNull((p) => p.id == v.idPaket);
+    final router = selectedRouter.value;
+    final hotspot = selectedHotspot.value;
+
+    return v.copyWith(
+      namaPaket: v.namaPaket.isEmpty ? (pkg?.namaPaket ?? '') : v.namaPaket,
+      harga: v.harga <= 0 ? (pkg?.harga ?? 0) : v.harga,
+      durasi: v.durasi.isEmpty ? (pkg?.durasi ?? '') : v.durasi,
+      namaProfileMikrotik: v.namaProfileMikrotik.isEmpty 
+          ? (pkg?.namaProfileMikrotik ?? '') : v.namaProfileMikrotik,
+      namaServer: v.namaServer.isEmpty ? (hotspot?.namaServer ?? '') : v.namaServer,
+      namaRouter: v.namaRouter.isEmpty ? (router?.namaRouter ?? '') : v.namaRouter,
+      alamatIp: v.alamatIp ?? (router?.alamatIp),
+      portApi: v.portApi ?? (router?.portApi),
+      dnsLogin: v.dnsLogin ?? (pkg?.dnsLogin ?? router?.keterangan), // fallback to some info
+      gunakanSsl: v.gunakanSsl || (pkg?.gunakanSsl ?? false),
+    );
   }
 
   @override
@@ -285,8 +280,6 @@ class VoucherViewModel extends GetxController {
     if (!dashboardVM.isActiveSubscription.value) return;
 
     final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
-    if (idHotspot == 0) return;
-
     // 1. First load from cache for fast display
     try {
       final cached = await _voucherRepository.getVouchersByHotspotFromCache(idHotspot);
@@ -334,11 +327,17 @@ class VoucherViewModel extends GetxController {
 
     isGenerating.value = true;
     try {
-      await _voucherRepository.createVoucher(idPaket);
+      final result = await _voucherRepository.createVoucher(idPaket);
       Get.back();
       SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dibuat');
-      // Reload data agar harga dan data lengkap langsung tampil
-      await loadVouchers();
+      
+      if (result != null) {
+        final enriched = _enrichVoucher(result);
+        vouchers.insert(0, enriched);
+      }
+      
+      // Reload in background for full server data
+      loadVouchers();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal membuat voucher: $e');
     } finally {
@@ -373,40 +372,13 @@ class VoucherViewModel extends GetxController {
       );
 
       if (result.isNotEmpty) {
-        final selectedPackage = voucherPackages.firstWhereOrNull(
-          (p) => p.id == idPaket,
-        );
-        if (selectedPackage != null) {
-          final fixedVouchers = result.map((v) {
-            if (v.harga == 0) {
-              return VoucherModel(
-                idVoucher: v.idVoucher,
-                kodeVoucher: v.kodeVoucher,
-                passwordVoucher: v.passwordVoucher,
-                idPaket: v.idPaket,
-                idRouter: v.idRouter,
-                statusVoucher: v.statusVoucher,
-                tanggalAktif: v.tanggalAktif,
-                tanggalExpired: v.tanggalExpired,
-                dibuatPada: v.dibuatPada,
-                namaPaket: v.namaPaket,
-                harga: selectedPackage.harga,
-                namaProfileMikrotik: v.namaProfileMikrotik,
-                idHotspot: v.idHotspot,
-                namaServer: v.namaServer,
-                durasi: v.durasi,
-                namaRouter: v.namaRouter,
-                alamatIp: v.alamatIp,
-                portApi: v.portApi,
-              );
-            }
-            return v;
-          }).toList();
-          _openPrintPreview(fixedVouchers);
-        } else {
-          _openPrintPreview(result);
-        }
+        final fixedVouchers = result.map((v) => _enrichVoucher(v)).toList();
+        vouchers.insertAll(0, fixedVouchers);
+        _openPrintPreview(fixedVouchers);
       }
+      
+      // Sync with server in background
+      loadVouchers();
     } catch (e) {
       SnackbarUtils.showError('Error', 'Gagal membuat voucher bulk: $e');
     } finally {
@@ -458,6 +430,10 @@ class VoucherViewModel extends GetxController {
     try {
       final success = await _voucherRepository.deleteVoucher(idVoucher);
       if (success) {
+        final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
+        if (idHotspot != 0) {
+          await _voucherRepository.updateVoucherCache(idHotspot, vouchers);
+        }
         SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dihapus');
       } else {
         // Rollback: kembalikan voucher ke list jika gagal
@@ -518,6 +494,10 @@ class VoucherViewModel extends GetxController {
     } finally {
       isDeletingAll.value = false;
       bulkDeletingCategory.value = null;
+      final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
+      if (idHotspot != 0) {
+        await _voucherRepository.updateVoucherCache(idHotspot, vouchers);
+      }
       await loadVouchers();
     }
   }
@@ -601,9 +581,6 @@ class VoucherViewModel extends GetxController {
   }
 
   void printVoucher(VoucherModel voucher) async {
-    if (voucher.statusVoucher == VoucherStatus.stok) {
-      await sellVoucher(voucher, 'cash');
-    }
     _openPrintPreview([voucher]);
   }
 

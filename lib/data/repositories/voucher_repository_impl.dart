@@ -14,33 +14,24 @@ class VoucherRepositoryImpl implements VoucherRepository {
 
   @override
   Future<List<VoucherModel>> getVouchersByHotspot(int idHotspot) async {
-    final packagesResponse = await _voucherService.getVoucherPackages(
-      idHotspot,
-    );
-    if (!packagesResponse.success || packagesResponse.data == null) {
-      throw Exception(packagesResponse.message);
+    // Gunakan endpoint yang dioptimalkan, jangan ambil per paket (lambat)
+    final response = await _voucherService.getVouchersByHotspot(idHotspot);
+    
+    if (!response.success && idHotspot > 0) {
+      throw Exception(response.message);
     }
 
-    final packages = packagesResponse.data!;
-    final List<VoucherModel> allVouchers = [];
+    final vouchers = response.data ?? [];
+    final List<VoucherModel> domainVouchers = vouchers.map((apiModel) => apiModel.toDomain()).toList();
 
-    final voucherFutures = packages.map(
-      (pkg) => _voucherService.getVouchersByPackage(pkg.id),
-    );
-    final voucherResponses = await Future.wait(voucherFutures);
-
-    for (var response in voucherResponses) {
-      if (response.success && response.data != null) {
-        allVouchers.addAll(
-          response.data!.map((apiModel) => apiModel.toDomain()),
-        );
-      }
+    if (idHotspot > 0 && domainVouchers.isNotEmpty) {
+      await _cacheService.saveVouchers(
+        idHotspot,
+        domainVouchers.map((e) => VoucherApiModel.fromDomain(e).toJson()).toList(),
+      );
     }
-
-    if (allVouchers.isNotEmpty) {
-      await _cacheService.saveVouchers(idHotspot, allVouchers.map((e) => VoucherApiModel.fromDomain(e).toJson()).toList());
-    }
-    return allVouchers;
+    
+    return domainVouchers;
   }
 
   @override
@@ -178,5 +169,13 @@ class VoucherRepositoryImpl implements VoucherRepository {
     return cached
         .map((json) => VoucherApiModel.fromJson(json as Map<String, dynamic>).toDomain())
         .toList();
+  }
+
+  @override
+  Future<void> updateVoucherCache(int idHotspot, List<VoucherModel> vouchers) async {
+    await _cacheService.saveVouchers(
+      idHotspot,
+      vouchers.map((e) => VoucherApiModel.fromDomain(e).toJson()).toList(),
+    );
   }
 }

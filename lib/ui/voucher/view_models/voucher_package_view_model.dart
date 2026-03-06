@@ -230,7 +230,6 @@ class VoucherPackageViewModel extends GetxController {
     if (!dashboardVM.isActiveSubscription.value) return;
 
     final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
-    if (idHotspot == 0) return;
 
     // 1. Load from cache first
     try {
