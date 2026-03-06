@@ -1,6 +1,6 @@
 {
-    "name": "hosphotpro",
-    "short_name": "hosphotpro",
+    "name": "hotspotsio",
+    "short_name": "hotspotsio",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

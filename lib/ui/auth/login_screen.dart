@@ -17,7 +17,7 @@ class LoginScreen extends GetView<AuthViewModel> {
             child: CircularProgressIndicator(color: Colors.cyan),
           );
         }
-        
+
         return SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -26,9 +26,9 @@ class LoginScreen extends GetView<AuthViewModel> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 20),
-                  const AuthLogo(title: 'Hosphotpro'),
+                  const AuthLogo(title: 'Hotspotsio'),
                   const SizedBox(height: 60),
-                  
+
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Column(
@@ -45,26 +45,23 @@ class LoginScreen extends GetView<AuthViewModel> {
                         SizedBox(height: 8),
                         Text(
                           'Silakan masuk untuk melanjutkan',
-                          style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.white38, fontSize: 14),
                         ),
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   AuthTextField(
                     controller: controller.usernameController,
                     label: 'Username',
                     hint: 'Masukkan username',
                     prefixIcon: Icons.person_outline,
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   AuthTextField(
                     controller: controller.passwordController,
                     label: 'Kata Sandi',
@@ -72,17 +69,19 @@ class LoginScreen extends GetView<AuthViewModel> {
                     prefixIcon: Icons.lock_outline,
                     isPassword: true,
                   ),
-                  
+
                   const SizedBox(height: 48),
-                  
-                  Obx(() => AuthButton(
-                    text: 'Masuk',
-                    isLoading: controller.isLoading.value,
-                    onPressed: () => controller.login(),
-                  )),
-                  
+
+                  Obx(
+                    () => AuthButton(
+                      text: 'Masuk',
+                      isLoading: controller.isLoading.value,
+                      onPressed: () => controller.login(),
+                    ),
+                  ),
+
                   const SizedBox(height: 48),
-                  
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

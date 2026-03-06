@@ -151,7 +151,7 @@ class PrinterService extends GetxService {
     List<int> bytes = [];
 
     bytes += generator.text(
-      'HosphotPro',
+      'Hotspotsio',
       styles: const PosStyles(
         align: PosAlign.center,
         bold: true,
