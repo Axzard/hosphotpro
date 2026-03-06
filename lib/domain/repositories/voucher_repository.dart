@@ -19,4 +19,8 @@ abstract class VoucherRepository {
   );
   Future<void> updateVoucherPackage(int id, VoucherPackageModel package);
   Future<void> deleteVoucherPackage(int id);
+
+  // Cache methods
+  Future<List<VoucherPackageModel>> getVoucherPackagesFromCache(int idHotspot);
+  Future<List<VoucherModel>> getVouchersByHotspotFromCache(int idHotspot);
 }

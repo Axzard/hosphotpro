@@ -1,12 +1,16 @@
-import 'package:get/get.dart';
 import '../../domain/models/voucher_model.dart';
 import '../../domain/models/voucher_package_model.dart';
 import '../../domain/repositories/voucher_repository.dart';
 import '../model/voucher_package_api_model.dart';
 import '../services/voucher_service.dart';
+import '../../core/services/cache_service.dart';
+import '../model/voucher_api_model.dart';
 
 class VoucherRepositoryImpl implements VoucherRepository {
-  final VoucherService _voucherService = Get.find<VoucherService>();
+  final VoucherService _voucherService;
+  final CacheService _cacheService;
+
+  VoucherRepositoryImpl(this._voucherService, this._cacheService);
 
   @override
   Future<List<VoucherModel>> getVouchersByHotspot(int idHotspot) async {
@@ -33,6 +37,9 @@ class VoucherRepositoryImpl implements VoucherRepository {
       }
     }
 
+    if (allVouchers.isNotEmpty) {
+      await _cacheService.saveVouchers(idHotspot, allVouchers.map((e) => VoucherApiModel.fromDomain(e).toJson()).toList());
+    }
     return allVouchers;
   }
 
@@ -82,6 +89,7 @@ class VoucherRepositoryImpl implements VoucherRepository {
   Future<List<VoucherPackageModel>> getVoucherPackages(int idHotspot) async {
     final response = await _voucherService.getVoucherPackages(idHotspot);
     if (response.success && response.data != null) {
+      await _cacheService.saveVoucherPackages(idHotspot, response.data!.map((e) => e.toJson()).toList());
       return response.data!.map((apiModel) => apiModel.toDomain()).toList();
     }
     throw Exception(response.message);
@@ -153,5 +161,22 @@ class VoucherRepositoryImpl implements VoucherRepository {
       return response.data ?? 0;
     }
     throw Exception(response.message);
+  }
+  @override
+  Future<List<VoucherPackageModel>> getVoucherPackagesFromCache(int idHotspot) async {
+    final cached = _cacheService.getVoucherPackages(idHotspot);
+    if (cached == null) return [];
+    return cached
+        .map((json) => VoucherPackageApiModel.fromJson(json as Map<String, dynamic>).toDomain())
+        .toList();
+  }
+
+  @override
+  Future<List<VoucherModel>> getVouchersByHotspotFromCache(int idHotspot) async {
+    final cached = _cacheService.getVouchers(idHotspot);
+    if (cached == null) return [];
+    return cached
+        .map((json) => VoucherApiModel.fromJson(json as Map<String, dynamic>).toDomain())
+        .toList();
   }
 }

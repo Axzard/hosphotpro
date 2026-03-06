@@ -5,7 +5,6 @@ import '../../../domain/models/report_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/services/websocket_service.dart';
 import '../../../config/routing/app_routes.dart' as app_routes;
-import '../../../data/model/report_api_model.dart';
 import '../../../core/services/cache_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
 
@@ -44,25 +43,24 @@ class ReportViewModel extends GetxController {
     _initRealtimeListeners();
   }
 
-  void loadCachedData() {
-    final cachedData = _cacheService.getReports();
-    if (cachedData != null) {
-      try {
-        if (cachedData['daily'] != null) {
-          final List list = cachedData['daily'];
-          dailyReports.assignAll(list.map((i) => DailyReportApiModel.fromJson(i).toDomain()).toList());
-        }
-        if (cachedData['monthly'] != null) {
-          final List list = cachedData['monthly'];
-          monthlyReports.assignAll(list.map((i) => MonthlyReportApiModel.fromJson(i).toDomain()).toList());
-        }
-        if (cachedData['yearly'] != null) {
-          final List list = cachedData['yearly'];
-          yearlyReports.assignAll(list.map((i) => YearlyReportApiModel.fromJson(i).toDomain()).toList());
-        }
-      } catch (e) {
-        print('[ReportVM] Error loading cache: $e');
+  Future<void> loadCachedData() async {
+    try {
+      final now = DateTime.now();
+      final year = selectedYear.value;
+      final month = selectedDate.value?.month ?? now.month;
+
+      final cachedDaily = await _reportRepository.getDailyReportsFromCache(
+        year: year,
+        month: month,
+      );
+      
+      if (cachedDaily.isNotEmpty) {
+        final sortedDaily = List<DailyReportModel>.from(cachedDaily);
+        sortedDaily.sort((a, b) => b.tanggal.compareTo(a.tanggal));
+        dailyReports.assignAll(sortedDaily);
       }
+    } catch (e) {
+      print('[ReportVM] Error loading cache: $e');
     }
   }
 
@@ -130,10 +128,10 @@ class ReportViewModel extends GetxController {
       // 1. Fetch Daily Reports (for the selected month)
       final firstDayOfMonth = DateTime(year, month, 1);
       final lastDayOfMonth = DateTime(year, month + 1, 0);
-      final dailyData = await _reportRepository.getGroupedReport(
-        type: 'day',
-        start: _formatDate(firstDayOfMonth),
-        end: _formatDate(lastDayOfMonth),
+      
+      final dailyData = await _reportRepository.getDailyReports(
+        year: year,
+        month: month,
       );
       
       // Sort newest first for the list

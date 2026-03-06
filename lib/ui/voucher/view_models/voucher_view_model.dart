@@ -50,6 +50,7 @@ class VoucherViewModel extends GetxController {
   final _isInitialLoad = true.obs;
   final isGenerating = false.obs;
   final isDeletingAll = false.obs;
+  final bulkDeletingCategory = Rxn<VoucherStatus>();
   final deletingVoucherIds = <int>{}.obs;
   final count = 1.obs;
 
@@ -283,16 +284,31 @@ class VoucherViewModel extends GetxController {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) return;
 
+    final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
+    if (idHotspot == 0) return;
+
+    // 1. First load from cache for fast display
+    try {
+      final cached = await _voucherRepository.getVouchersByHotspotFromCache(idHotspot);
+      if (cached.isNotEmpty) {
+        vouchers.value = cached;
+      }
+    } catch (e) {
+      print('Cache load error: $e');
+    }
+
+    // 2. Then load from network
     if (vouchers.isEmpty) isLoading.value = true;
     try {
-      final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
       final result = await _voucherRepository.getVouchersByHotspot(idHotspot);
       vouchers.value = result;
     } catch (e) {
-      Get.toNamed(
-        Routes.ERROR,
-        arguments: 'Gagal memuat daftar voucher, terjadi gangguan pada server.',
-      );
+      if (vouchers.isEmpty) {
+        Get.toNamed(
+          Routes.ERROR,
+          arguments: 'Gagal memuat daftar voucher, terjadi gangguan pada server.',
+        );
+      }
     } finally {
       isLoading.value = false;
     }
@@ -465,6 +481,7 @@ class VoucherViewModel extends GetxController {
     if (vouchers.isEmpty) return;
 
     isDeletingAll.value = true;
+    bulkDeletingCategory.value = status;
     try {
       int successCount = 0;
 
@@ -500,6 +517,7 @@ class VoucherViewModel extends GetxController {
       SnackbarUtils.showError('Error', 'Gagal menghapus beberapa voucher: $e');
     } finally {
       isDeletingAll.value = false;
+      bulkDeletingCategory.value = null;
       await loadVouchers();
     }
   }

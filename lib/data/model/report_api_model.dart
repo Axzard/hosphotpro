@@ -29,6 +29,15 @@ class DailyReportApiModel {
       totalTransaksi: totalTransaksi,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (tanggal != null) 'tanggal': tanggal,
+      if (periode != null) 'periode': periode,
+      'total_pendapatan': totalPendapatan,
+      'total_transaksi': totalTransaksi,
+    };
+  }
 }
 
 class MonthlyReportApiModel {

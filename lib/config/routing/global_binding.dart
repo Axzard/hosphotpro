@@ -55,9 +55,9 @@ class GlobalBinding extends Bindings {
     // Repositories
     Get.put<AuthRepository>(AuthRepositoryImpl());
     Get.put<SubscriptionRepository>(SubscriptionRepositoryImpl());
-    Get.put<RouterRepository>(RouterRepositoryImpl(Get.find()));
-    Get.put<VoucherRepository>(VoucherRepositoryImpl());
-    Get.put<ReportRepository>(ReportRepositoryImpl());
+    Get.put<RouterRepository>(RouterRepositoryImpl(Get.find(), Get.find()));
+    Get.put<VoucherRepository>(VoucherRepositoryImpl(Get.find(), Get.find()));
+    Get.put<ReportRepository>(ReportRepositoryImpl(Get.find(), Get.find()));
 
     // ViewModels
     Get.put<AuthViewModel>(AuthViewModel(Get.find()), permanent: true);

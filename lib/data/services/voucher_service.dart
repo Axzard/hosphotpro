@@ -149,6 +149,9 @@ class VoucherService extends GetxService {
             panjangUsername: package.panjangUsername,
             formatKarakter: package.formatKarakter,
             dataLimitMb: package.dataLimitMb,
+            rateLimit: package.rateLimit,
+            dnsLogin: package.dnsLogin,
+            gunakanSsl: package.gunakanSsl,
           );
         } else if (response.data['data'] != null) {
           createdPackage = VoucherPackageApiModel.fromJson(

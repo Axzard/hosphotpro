@@ -54,14 +54,16 @@ class VoucherPackageApiModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'id_hotspot': idHotspot,
+      'id_router': idRouter,
       'nama_paket': namaPaket,
       'prefix': prefix,
       'panjang_username': panjangUsername,
       'format_karakter': formatKarakter,
       'durasi': durasi,
       'data_limit_mb': dataLimitMb,
-      'harga': harga.toInt() == harga ? harga.toInt() : harga,
+      'harga': harga,
       'nama_profile_mikrotik': namaProfileMikrotik,
       'rate_limit': rateLimit,
       'dns_login': dnsLogin,

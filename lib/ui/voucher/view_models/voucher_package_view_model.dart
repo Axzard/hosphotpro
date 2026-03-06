@@ -126,9 +126,16 @@ class VoucherPackageViewModel extends GetxController {
     try {
       if (routers.isEmpty) isLoading.value = true;
       
-      // 1. Fetch Routers
+      // 1. Load Routers from Cache first
+      final cachedRouters = await _routerRepository.getRoutersFromCache();
+      if (cachedRouters.isNotEmpty) {
+        routers.assignAll([RouterModel.semua, ...cachedRouters]);
+      }
+
+      // 2. Fetch Routers from Network
       final result = await _routerRepository.getRouters();
       final allRouters = [RouterModel.semua, ...result];
+      routers.assignAll(allRouters);
 
       // Determine selected router
       RouterModel? nextRouter = selectedRouter.value;
@@ -141,6 +148,7 @@ class VoucherPackageViewModel extends GetxController {
       if (nextRouter == null && allRouters.isNotEmpty) {
         nextRouter = RouterModel.semua;
       }
+      selectedRouter.value = nextRouter;
 
       // 2. Fetch Hotspots
       final idRouter = int.tryParse(nextRouter?.id ?? '') ?? 0;
@@ -221,16 +229,28 @@ class VoucherPackageViewModel extends GetxController {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) return;
 
-    if (selectedHotspot.value == null) return;
+    final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
+    if (idHotspot == 0) return;
 
+    // 1. Load from cache first
+    try {
+      final cached = await _voucherRepository.getVoucherPackagesFromCache(idHotspot);
+      if (cached.isNotEmpty) {
+        packages.assignAll(cached);
+      }
+    } catch (e) {
+      print('Cache load error: $e');
+    }
+
+    // 2. Load from network
     try {
       if (packages.isEmpty) isLoading.value = true;
-
-      final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
       final result = await _voucherRepository.getVoucherPackages(idHotspot);
       packages.assignAll(result);
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat paket: $e');
+      if (packages.isEmpty) {
+        SnackbarUtils.showError('Error', 'Gagal memuat paket: $e');
+      }
     } finally {
       isLoading.value = false;
     }

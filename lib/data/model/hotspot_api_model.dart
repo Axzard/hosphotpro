@@ -38,4 +38,15 @@ class HotspotApiModel {
       dibuatPada: DateTime.parse(dibuatPada),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id_hotspot': idHotspot,
+      'id_router': idRouter,
+      'nama_server': namaServer,
+      'interface': interface,
+      'status_hotspot': statusHotspot,
+      'dibuat_pada': dibuatPada,
+    };
+  }
 }

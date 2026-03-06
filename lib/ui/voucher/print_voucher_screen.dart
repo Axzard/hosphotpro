@@ -48,24 +48,28 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                         accentColor,
                         cardColor,
                         'Belum ada voucher stok',
+                        VoucherStatus.stok,
                       ),
                       _buildVoucherList(
                         controller.soldVouchers,
                         accentColor,
                         cardColor,
                         'Belum ada voucher terjual',
+                        VoucherStatus.terjual,
                       ),
                       _buildVoucherList(
                         controller.activeVouchers,
                         accentColor,
                         cardColor,
                         'Belum ada voucher aktif',
+                        VoucherStatus.aktif,
                       ),
                       _buildVoucherList(
                         controller.expiredVouchers,
                         accentColor,
                         cardColor,
                         'Belum ada voucher expired',
+                        VoucherStatus.expired,
                       ),
                     ],
                   ),
@@ -162,6 +166,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
     Color accentColor,
     Color cardColor,
     String emptyMessage,
+    VoucherStatus listStatus,
   ) {
     return Column(
       children: [
@@ -498,119 +503,121 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
         break;
     }
 
-    return GestureDetector(
-      onTap: () {
-        if (!controller.isDeletingAll.value &&
-            !controller.deletingVoucherIds.contains(voucher.idVoucher)) {
-          controller.navigateToDetail(voucher);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+    return Obx(() {
+      final isBulkDeletingThis = controller.isDeletingAll.value &&
+          (controller.bulkDeletingCategory.value == null ||
+              controller.bulkDeletingCategory.value == voucher.statusVoucher);
+      final isInteractionDisabled = isBulkDeletingThis ||
+          controller.deletingVoucherIds.contains(voucher.idVoucher);
+
+      return GestureDetector(
+        onTap: isInteractionDisabled
+            ? null
+            : () => controller.navigateToDetail(voucher),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.confirmation_number_rounded,
+                      color: accentColor,
+                      size: 20,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.confirmation_number_rounded,
-                    color: accentColor,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        voucher.namaPaket.toUpperCase(),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'User: ${voucher.kodeVoucher}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: accentColor.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      if (voucher.dnsLogin != null &&
-                          voucher.dnsLogin!.isNotEmpty)
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          'DNS: ${voucher.dnsLogin}',
+                          voucher.namaPaket.toUpperCase(),
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            color: Colors.white54,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'User: ${voucher.kodeVoucher}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: accentColor.withValues(alpha: 0.7),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: statusColor.withValues(alpha: 0.3),
+                        if (voucher.dnsLogin != null &&
+                            voucher.dnsLogin!.isNotEmpty)
+                          Text(
+                            'DNS: ${voucher.dnsLogin}',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              color: Colors.white54,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  child: Text(
-                    statusLabel,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Divider(color: Colors.white.withValues(alpha: 0.05)),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    currencyFormat.format(voucher.harga),
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: statusColor,
+                      color: Colors.white,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Divider(color: Colors.white.withValues(alpha: 0.05)),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  currencyFormat.format(voucher.harga),
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                Row(
-                  children: [
-                    // Hapus button (Dahulukan agar Print di sisi kanan)
-                    Obx(() {
-                      final isDeleting = controller.deletingVoucherIds.contains(voucher.idVoucher) || 
-                                         controller.isDeletingAll.value;
-                      return IconButton(
-                        icon: isDeleting
+                  Row(
+                    children: [
+                      // Hapus button (Dahulukan agar Print di sisi kanan)
+                      IconButton(
+                        icon: controller.deletingVoucherIds.contains(voucher.idVoucher) ||
+                                (controller.isDeletingAll.value && (controller.bulkDeletingCategory.value == null || controller.bulkDeletingCategory.value == voucher.statusVoucher))
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
@@ -624,7 +631,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                                 size: 20,
                                 color: Colors.redAccent,
                               ),
-                        onPressed: isDeleting
+                        onPressed: isInteractionDisabled
                             ? null
                             : () {
                                 showDialog(
@@ -672,65 +679,69 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                                   },
                                 );
                               },
-                      );
-                    }),
-                    
-                    // Print button (Sekarang di sisi paling kanan)
-                    if (voucher.statusVoucher == VoucherStatus.stok)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: TextButton.icon(
-                          onPressed: () => controller.printVoucher(voucher),
-                          icon: const Icon(
-                            Icons.print_outlined,
-                            size: 18,
-                            color: Colors.white70,
-                          ),
-                          label: const Text(
-                            'Print',
-                            style: TextStyle(
+                      ),
+
+                      // Print button (Sekarang di sisi paling kanan)
+                      if (voucher.statusVoucher == VoucherStatus.stok)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: TextButton.icon(
+                            onPressed: isInteractionDisabled
+                                ? null
+                                : () => controller.printVoucher(voucher),
+                            icon: const Icon(
+                              Icons.print_outlined,
+                              size: 18,
                               color: Colors.white70,
-                              fontWeight: FontWeight.bold,
+                            ),
+                            label: const Text(
+                              'Print',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.white.withValues(alpha: 0.1),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
                             ),
                           ),
-                          style: TextButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: 0.1),
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                          ),
                         ),
-                      ),
-                    if (voucher.statusVoucher == VoucherStatus.terjual ||
-                        voucher.statusVoucher == VoucherStatus.aktif)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: TextButton.icon(
-                          onPressed: () => controller.printVoucher(voucher),
-                          icon: const Icon(
-                            Icons.print_outlined,
-                            size: 18,
-                            color: Colors.white70,
-                          ),
-                          label: const Text(
-                            'Print',
-                            style: TextStyle(
+                      if (voucher.statusVoucher == VoucherStatus.terjual ||
+                          voucher.statusVoucher == VoucherStatus.aktif)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: TextButton.icon(
+                            onPressed: isInteractionDisabled
+                                ? null
+                                : () => controller.printVoucher(voucher),
+                            icon: const Icon(
+                              Icons.print_outlined,
+                              size: 18,
                               color: Colors.white70,
-                              fontWeight: FontWeight.bold,
+                            ),
+                            label: const Text(
+                              'Print',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.white.withValues(alpha: 0.1),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
                             ),
                           ),
-                          style: TextButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: 0.1),
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                          ),
                         ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   void _showBulkDeleteConfirm(BuildContext context) {
