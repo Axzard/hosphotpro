@@ -6,6 +6,7 @@ import '../../../core/utils/snackbar_utils.dart';
 import '../../../config/routing/app_pages.dart';
 import '../../../core/services/websocket_service.dart';
 import '../../../data/services/token_service.dart';
+import '../../voucher/view_models/voucher_view_model.dart';
 
 class AuthViewModel extends GetxController {
   final AuthRepository _authRepository;
@@ -144,6 +145,7 @@ class AuthViewModel extends GetxController {
   Future<void> logout() async {
     await _authRepository.logout();
     user.value = null;
+    Get.delete<VoucherViewModel>(force: true);
     Get.offAllNamed(Routes.LOGIN);
   }
 

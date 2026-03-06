@@ -287,24 +287,6 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
       ),
       child: Row(
         children: [
-          // Download icon-only button
-          SizedBox(
-            height: 54,
-            width: 54,
-            child: OutlinedButton(
-              onPressed: () => _downloadPdf(context),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white24),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: EdgeInsets.zero,
-              ),
-              child: const Icon(Icons.download, size: 24),
-            ),
-          ),
-          const SizedBox(width: 12),
           // Print button
           Expanded(
             child: SizedBox(
@@ -547,13 +529,6 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
     );
   }
 
-  Future<void> _downloadPdf(BuildContext context) async {
-    final pdfDetails = await _generatePdf();
-    await Printing.layoutPdf(
-      onLayout: (_) => pdfDetails,
-      name: 'vouchers_${DateTime.now().millisecondsSinceEpoch}.pdf',
-    );
-  }
 
   Future<void> _sharePdf(BuildContext context) async {
     final pdfDetails = await _generatePdf();
@@ -569,113 +544,126 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
     final font = await PdfGoogleFonts.openSansRegular();
     final fontBold = await PdfGoogleFonts.openSansBold();
 
-    // Thermal receipt style: ~58mm width single column
-    final receiptWidth = 58 * PdfPageFormat.mm;
     final listToPrint = _vouchersToPrint;
     final dateStr = DateFormat('dd MMM yyyy HH:mm').format(DateTime.now());
 
-    // Each voucher gets its own receipt page with header + footer
-    for (final voucher in listToPrint) {
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat(
-            receiptWidth,
-            double.infinity,
-            marginAll: 8 * PdfPageFormat.mm,
-          ),
-          build: (pw.Context context) {
-            return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.center,
-              children: [
-                // Header
-                pw.Text(
-                  'hotspotsio',
-                  style: pw.TextStyle(
-                    font: fontBold,
-                    fontSize: 16,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 2),
-                pw.Divider(thickness: 1.5),
-                pw.SizedBox(height: 2),
+    // Ukuran kotak voucher: Lebar ~36 mm agar muat 5 kolom di A4 (210mm lebar total, sisa untuk margin & spasi).
+    final boxWidth = 36 * PdfPageFormat.mm;
 
-
-                // Body — voucher data
-                pw.Text(
-                  'DATA LOGIN VOUCHER',
-                  style: pw.TextStyle(
-                    font: fontBold,
-                    fontSize: 8,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 2),
-
-                pw.Text(
-                  'USERNAME / KODE',
-                  style: pw.TextStyle(
-                    font: font,
-                    fontSize: 7,
-                    color: PdfColors.grey600,
-                  ),
-                ),
-                pw.SizedBox(height: 2),
-                pw.Text(
-                  voucher.kodeVoucher,
-                  style: pw.TextStyle(
-                    font: fontBold,
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.bold,
-                    letterSpacing: 2,
-                  ),
-                ),
-
-                if (voucher.passwordVoucher.isNotEmpty &&
-                    voucher.passwordVoucher != voucher.kodeVoucher) ...[
-                  pw.SizedBox(height: 4),
-                  pw.Text(
-                    'PASSWORD',
-                    style: pw.TextStyle(
-                      font: font,
-                      fontSize: 7,
-                      color: PdfColors.grey600,
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(10 * PdfPageFormat.mm), // Margin 10mm
+        build: (pw.Context context) {
+          return [
+            pw.Wrap(
+              spacing: 2 * PdfPageFormat.mm, // Spasi horizontal 2mm
+              runSpacing: 2 * PdfPageFormat.mm, // Spasi vertikal 2mm
+              children: listToPrint.map((voucher) {
+                return pw.Container(
+                  width: boxWidth,
+                  padding: const pw.EdgeInsets.all(3 * PdfPageFormat.mm), // Padding diperkecil
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(
+                      color: PdfColors.black,
+                      width: 0.5,
+                      style: pw.BorderStyle.dashed, // Garis putus-putus untuk gunting
                     ),
                   ),
-                  pw.SizedBox(height: 2),
-                  pw.Text(
-                    voucher.passwordVoucher,
-                    style: pw.TextStyle(
-                      font: fontBold,
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
+                    children: [
+                      // Header
+                      pw.Text(
+                        'hotspotsio',
+                        style: pw.TextStyle(
+                          font: fontBold,
+                          fontSize: 10,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.SizedBox(height: 1),
+                      pw.Divider(thickness: 1.0),
+                      pw.SizedBox(height: 1),
+
+                      // Body — voucher data
+                      pw.Text(
+                        'DATA LOGIN VOUCHER',
+                        style: pw.TextStyle(
+                          font: fontBold,
+                          fontSize: 5,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.SizedBox(height: 2),
+
+                      pw.Text(
+                        'USERNAME / KODE',
+                        style: pw.TextStyle(
+                          font: font,
+                          fontSize: 4,
+                          color: PdfColors.grey600,
+                        ),
+                      ),
+                      pw.SizedBox(height: 0.5),
+                      pw.Text(
+                        voucher.kodeVoucher,
+                        style: pw.TextStyle(
+                          font: fontBold,
+                          fontSize: 8,
+                          fontWeight: pw.FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+
+                      if (voucher.passwordVoucher.isNotEmpty &&
+                          voucher.passwordVoucher != voucher.kodeVoucher) ...[
+                        pw.SizedBox(height: 3),
+                        pw.Text(
+                          'PASSWORD',
+                          style: pw.TextStyle(
+                            font: font,
+                            fontSize: 4,
+                            color: PdfColors.grey600,
+                          ),
+                        ),
+                        pw.SizedBox(height: 0.5),
+                        pw.Text(
+                          voucher.passwordVoucher,
+                          style: pw.TextStyle(
+                            font: fontBold,
+                            fontSize: 8,
+                            fontWeight: pw.FontWeight.bold,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ],
+
+                      // Footer
+                      pw.SizedBox(height: 4),
+                      pw.Divider(thickness: 0.5),
+
+                      pw.SizedBox(height: 2),
+                      pw.Text(
+                        'Terima Kasih',
+                        style: pw.TextStyle(
+                          font: fontBold,
+                          fontSize: 5,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.SizedBox(height: 1),
+                      pw.Text(dateStr, style: pw.TextStyle(font: font, fontSize: 4)),
+                    ],
                   ),
+                );
+              }).toList(),
+            ),
+          ];
+        },
+      ),
+    );
 
-                ],
-
-                // Footer
-                pw.SizedBox(height: 8),
-                pw.Divider(thickness: 0.5),
-
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  'Terima Kasih',
-                  style: pw.TextStyle(
-                    font: fontBold,
-                    fontSize: 10,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(dateStr, style: pw.TextStyle(font: font, fontSize: 8)),
-              ],
-            );
-          },
-        ),
-      );
-    }
     return pdf.save();
   }
 }

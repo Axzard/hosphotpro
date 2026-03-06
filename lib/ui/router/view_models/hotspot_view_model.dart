@@ -33,8 +33,12 @@ class HotspotViewModel extends GetxController {
 
     // Listen to subscription status changes
     ever(dashboardVM.isActiveSubscription, (bool isActive) {
-      if (isActive && routers.isEmpty) {
-        loadRouters();
+      if (isActive) {
+        if (routers.isEmpty) {
+          loadRouters(); // This will internally call loadHotspots() at the end
+        } else {
+          loadHotspots(); // Routers already loaded, fetch hotspots immediately
+        }
       }
     });
 

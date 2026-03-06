@@ -44,7 +44,7 @@ class AppPages {
       binding: BindingsBuilder(() {
         Get.put(NavigationController());
         Get.put(DashboardViewModel());
-        Get.lazyPut(() => VoucherViewModel());
+        Get.put(VoucherViewModel(), permanent: true);
         Get.lazyPut(() => RouterViewModel(Get.find()));
         Get.lazyPut(() => HotspotViewModel());
         Get.lazyPut(() => ReportViewModel());
@@ -81,16 +81,10 @@ class AppPages {
     GetPage(
       name: Routes.VOUCHERS,
       page: () => const PrintVoucherScreen(),
-      binding: BindingsBuilder(() {
-        Get.lazyPut(() => VoucherViewModel());
-      }),
     ),
     GetPage(
       name: Routes.VOUCHER_DETAIL,
       page: () => const VoucherDetailScreen(),
-      binding: BindingsBuilder(() {
-        Get.lazyPut(() => VoucherViewModel());
-      }),
     ),
     GetPage(
       name: '/mikrotik-routers',
