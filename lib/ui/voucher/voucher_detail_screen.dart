@@ -311,58 +311,54 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
           ),
           const SizedBox(height: 28),
 
-          Row(
-            children: [
-              Expanded(
-                child: _buildInfoItem(
-                  'SERVER',
-                  voucher.namaServer,
-                  Icons.dns_outlined,
-                  accentColor,
-                ),
+          ...(() {
+            final items = <Widget>[
+              _buildInfoItem(
+                'SERVER',
+                voucher.namaServer,
+                Icons.dns_outlined,
+                accentColor,
               ),
               if (voucher.alamatIp != null)
-                Expanded(
-                  child: _buildInfoItem(
-                    'ALAMAT IP',
-                    voucher.alamatIp!,
-                    Icons.language_outlined,
-                    accentColor,
-                  ),
-                )
-              else
-                const Expanded(child: SizedBox.shrink()),
-            ],
-          ),
-          const SizedBox(height: 28),
-          if (voucher.portApi != null || voucher.gunakanSsl) ...[
-            Row(
-              children: [
-                if (voucher.portApi != null)
-                  Expanded(
-                    child: _buildInfoItem(
-                      'PORT API',
-                      voucher.portApi!.toString(),
-                      Icons.settings_input_component_outlined,
-                      accentColor,
-                    ),
-                  )
-                else
-                  const Expanded(child: SizedBox.shrink()),
-                Expanded(
-                  child: _buildInfoItem(
-                    'SSL',
-                    voucher.gunakanSsl ? 'AKTIF' : 'NON-AKTIF',
-                    Icons.security_outlined,
-                    voucher.gunakanSsl
-                        ? const Color(0xFF4ADE80)
-                        : Colors.white24,
-                  ),
+                _buildInfoItem(
+                  'ALAMAT IP',
+                  voucher.alamatIp!,
+                  Icons.language_outlined,
+                  accentColor,
                 ),
-              ],
-            ),
-            const SizedBox(height: 28),
-          ],
+              if (voucher.portApi != null)
+                _buildInfoItem(
+                  'PORT API',
+                  voucher.portApi!.toString(),
+                  Icons.settings_input_component_outlined,
+                  accentColor,
+                ),
+              _buildInfoItem(
+                'SSL',
+                voucher.gunakanSsl ? 'AKTIF' : 'NON-AKTIF',
+                Icons.security_outlined,
+                voucher.gunakanSsl ? const Color(0xFF4ADE80) : Colors.white24,
+              ),
+            ];
+
+            final rows = <Widget>[];
+            for (int i = 0; i < items.length; i += 2) {
+              rows.add(
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: items[i]),
+                    if (i + 1 < items.length)
+                      Expanded(child: items[i + 1])
+                    else
+                      const Expanded(child: SizedBox.shrink()),
+                  ],
+                ),
+              );
+              rows.add(const SizedBox(height: 28));
+            }
+            return rows;
+          })(),
           Divider(color: Colors.white.withValues(alpha: 0.06)),
           const SizedBox(height: 20),
 
