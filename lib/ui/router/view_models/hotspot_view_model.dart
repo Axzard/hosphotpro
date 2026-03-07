@@ -5,6 +5,7 @@ import '../../../../domain/models/hotspot_model.dart';
 import '../../../../domain/models/router_model.dart';
 import '../../../domain/repositories/router_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../../../core/services/session_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
@@ -215,7 +216,9 @@ class HotspotViewModel extends GetxController {
 
   Future<void> deleteHotspot(int idHotspot) async {
     try {
-      // Optimistic delete
+      await _routerRepository.deleteHotspot(idHotspot);
+      
+      // Jika berhasil, baru hapus dari memori dan sinkronisasi cache
       final victim = hotspots.firstWhereOrNull((h) => h.idHotspot == idHotspot);
       if (victim != null) {
         final routerId = victim.idRouter;
@@ -223,13 +226,12 @@ class HotspotViewModel extends GetxController {
         _syncWithCache(routerId);
       }
 
-      await _routerRepository.deleteHotspot(idHotspot);
       SnackbarUtils.showSuccess('Berhasil', 'Hotspot berhasil dihapus');
     } catch (e) {
       print('[HotspotVM] Delete Hotspot Error: $e');
       SnackbarUtils.showError(
-        'Error',
-        'Gagal menghapus hotspot. Silakan coba lagi.',
+        'Gagal Hapus',
+        ErrorUtils.sanitizeServerMessage(e.toString().replaceAll('Exception: ', '')),
       );
       loadHotspots(); // Fallback
     }

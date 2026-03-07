@@ -8,6 +8,7 @@ import '../../../domain/repositories/router_repository.dart';
 import '../../../domain/repositories/voucher_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../../../core/services/session_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
@@ -32,11 +33,9 @@ class VoucherPackageViewModel extends GetxController {
   final namaPaketController = TextEditingController();
   final durasiController = TextEditingController();
   final hargaController = TextEditingController();
-  final profileMikrotikController = TextEditingController();
   final prefixController = TextEditingController();
   final panjangUsernameController = TextEditingController();
   final rateLimitController = TextEditingController();
-  final dnsLoginController = TextEditingController();
 
   final RxBool gunakanSsl = false.obs;
 
@@ -145,11 +144,9 @@ class VoucherPackageViewModel extends GetxController {
     namaPaketController.dispose();
     durasiController.dispose();
     hargaController.dispose();
-    profileMikrotikController.dispose();
     prefixController.dispose();
     panjangUsernameController.dispose();
     rateLimitController.dispose();
-    dnsLoginController.dispose();
     super.onClose();
   }
 
@@ -339,16 +336,11 @@ class VoucherPackageViewModel extends GetxController {
         namaPaket: namaPaketController.text,
         durasi: durasiController.text,
         harga: CurrencyFormatter.parse(hargaController.text),
-        namaProfileMikrotik: profileMikrotikController.text,
         prefix: prefixController.text,
         panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
         formatKarakter: selectedFormatKarakter.value,
-        dataLimitMb: 0,
         rateLimit: rateLimitController.text.isNotEmpty
             ? rateLimitController.text
-            : null,
-        dnsLogin: dnsLoginController.text.isNotEmpty
-            ? dnsLoginController.text
             : null,
         gunakanSsl: gunakanSsl.value,
       );
@@ -387,16 +379,11 @@ class VoucherPackageViewModel extends GetxController {
         namaPaket: namaPaketController.text,
         durasi: durasiController.text,
         harga: CurrencyFormatter.parse(hargaController.text),
-        namaProfileMikrotik: profileMikrotikController.text,
         prefix: prefixController.text,
         panjangUsername: int.tryParse(panjangUsernameController.text) ?? 4,
         formatKarakter: selectedFormatKarakter.value,
-        dataLimitMb: 0,
         rateLimit: rateLimitController.text.isNotEmpty
             ? rateLimitController.text
-            : null,
-        dnsLogin: dnsLoginController.text.isNotEmpty
-            ? dnsLoginController.text
             : null,
         gunakanSsl: gunakanSsl.value,
       );
@@ -430,13 +417,16 @@ class VoucherPackageViewModel extends GetxController {
     try {
       deletingPackageIds.add(id);
 
+      // Tunggu respons API, tidak menghapus dari UI dulu (no optimistic update)
+      await _voucherRepository.deleteVoucherPackage(id);
+
+      // Jika berhasil, baru hapus dari memori dan sinkronisasi cache
       packages.removeWhere((p) => p.id == id);
       _syncWithCache(packages);
 
-      await _voucherRepository.deleteVoucherPackage(id);
       SnackbarUtils.showSuccess('Berhasil', 'Paket voucher berhasil dihapus');
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal menghapus paket: $e');
+      SnackbarUtils.showError('Gagal Hapus', ErrorUtils.sanitizeServerMessage(e.toString().replaceAll('Exception: ', '')));
     } finally {
       isLoading.value = false;
       deletingPackageIds.remove(id);
@@ -447,11 +437,9 @@ class VoucherPackageViewModel extends GetxController {
     namaPaketController.text = package.namaPaket;
     durasiController.text = package.durasi;
     hargaController.text = CurrencyFormatter.format(package.harga);
-    profileMikrotikController.text = package.namaProfileMikrotik;
     prefixController.text = package.prefix;
     panjangUsernameController.text = package.panjangUsername.toString();
     rateLimitController.text = package.rateLimit ?? '';
-    dnsLoginController.text = package.dnsLogin ?? '';
     gunakanSsl.value = package.gunakanSsl;
 
     selectedFormatKarakter.value = package.formatKarakter;
@@ -474,10 +462,9 @@ class VoucherPackageViewModel extends GetxController {
     namaPaketController.clear();
     durasiController.clear();
     hargaController.clear();
-    profileMikrotikController.clear();
     prefixController.clear();
     panjangUsernameController.clear();
-    dnsLoginController.clear();
+    rateLimitController.clear();
     gunakanSsl.value = false;
     selectedFormatKarakter.value = 'mix';
     formSelectedHotspot.value = null;
@@ -505,7 +492,6 @@ class VoucherPackageViewModel extends GetxController {
     if (namaPaketController.text.isEmpty ||
         durasiController.text.isEmpty ||
         hargaController.text.isEmpty ||
-        profileMikrotikController.text.isEmpty ||
         panjangUsernameController.text.isEmpty) {
       SnackbarUtils.showError('Error', 'Field wajib diisi harus lengkap');
       return false;

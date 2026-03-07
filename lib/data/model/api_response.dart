@@ -1,3 +1,5 @@
+import '../../core/utils/error_utils.dart';
+
 class ApiResponse<T> {
   final bool success;
   final String message;
@@ -5,9 +7,9 @@ class ApiResponse<T> {
 
   ApiResponse({
     required this.success,
-    required this.message,
+    required String message,
     this.data,
-  });
+  }) : message = !success ? ErrorUtils.sanitizeServerMessage(message) : message;
 
   factory ApiResponse.fromJson(
     Map<String, dynamic> json,
@@ -20,3 +22,4 @@ class ApiResponse<T> {
     );
   }
 }
+

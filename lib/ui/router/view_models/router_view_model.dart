@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../domain/models/router_model.dart';
 import '../../../domain/repositories/router_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
 
@@ -150,14 +151,15 @@ class RouterViewModel extends GetxController {
 
   Future<void> deleteRouter(String id) async {
     try {
-      // Optimistic delete
+      await _routerRepository.deleteRouter(id);
+      
+      // Jika berhasil, baru hapus dari memori dan sinkronisasi cache
       routers.removeWhere((r) => r.id == id);
       _syncWithCache();
       
-      await _routerRepository.deleteRouter(id);
       SnackbarUtils.showSuccess('Berhasil', 'Router berhasil dihapus');
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal menghapus router: $e');
+      SnackbarUtils.showError('Gagal Hapus', ErrorUtils.sanitizeServerMessage(e.toString().replaceAll('Exception: ', '')));
       loadRouters(); // Fallback resync
     }
   }

@@ -8,6 +8,7 @@ import '../../../domain/repositories/router_repository.dart';
 import '../../../domain/models/router_model.dart';
 import '../../../domain/models/hotspot_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/utils/error_utils.dart';
 
 import '../../../ui/voucher/widgets/voucher_print_preview.dart';
 import '../../../core/services/websocket_service.dart';
@@ -228,9 +229,6 @@ class VoucherViewModel extends GetxController {
       namaPaket: v.namaPaket.isEmpty ? (pkg?.namaPaket ?? '') : v.namaPaket,
       harga: v.harga <= 0 ? (pkg?.harga ?? 0) : v.harga,
       durasi: v.durasi.isEmpty ? (pkg?.durasi ?? '') : v.durasi,
-      namaProfileMikrotik: v.namaProfileMikrotik.isEmpty
-          ? (pkg?.namaProfileMikrotik ?? '')
-          : v.namaProfileMikrotik,
       namaServer: v.namaServer.isEmpty
           ? (hotspot?.namaServer ?? '')
           : v.namaServer,
@@ -239,7 +237,6 @@ class VoucherViewModel extends GetxController {
           : v.namaRouter,
       alamatIp: v.alamatIp ?? (router?.alamatIp),
       portApi: v.portApi ?? (router?.portApi),
-      dnsLogin: v.dnsLogin ?? (pkg?.dnsLogin ?? router?.keterangan),
       gunakanSsl: v.gunakanSsl || (pkg?.gunakanSsl ?? false),
     );
   }
@@ -501,32 +498,24 @@ class VoucherViewModel extends GetxController {
 
     deletingVoucherIds.add(idVoucher);
 
-    final index = vouchers.indexWhere((v) => v.idVoucher == idVoucher);
-    VoucherModel? removedVoucher;
-    if (index != -1) {
-      removedVoucher = vouchers[index];
-      vouchers.removeAt(index);
-    }
-
     try {
       final success = await _voucherRepository.deleteVoucher(idVoucher);
       if (success) {
+        // Hapus dari UI setelah pasti dari API berhasil
+        vouchers.removeWhere((v) => v.idVoucher == idVoucher);
+        
         final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
         if (idHotspot != 0) {
           await _voucherRepository.updateVoucherCache(idHotspot, vouchers);
         }
         SnackbarUtils.showSuccess('Berhasil', 'Voucher berhasil dihapus');
       } else {
-        if (removedVoucher != null) {
-          vouchers.insert(index.clamp(0, vouchers.length), removedVoucher);
-        }
-        SnackbarUtils.showError('Error', 'Gagal menghapus voucher');
+        SnackbarUtils.showError('Gagal Hapus', 'Gagal menghapus voucher');
       }
     } catch (e) {
-      if (removedVoucher != null) {
-        vouchers.insert(index.clamp(0, vouchers.length), removedVoucher);
-      }
-      SnackbarUtils.showError('Error', 'Gagal menghapus voucher: $e');
+      SnackbarUtils.showError(
+          'Gagal Hapus', 
+          ErrorUtils.sanitizeServerMessage(e.toString().replaceAll('Exception: ', '')));
     } finally {
       deletingVoucherIds.remove(idVoucher);
     }
@@ -622,7 +611,7 @@ class VoucherViewModel extends GetxController {
     selectedVoucher.value = voucher;
     Get.toNamed(Routes.VOUCHER_DETAIL, arguments: voucher);
 
-    if (voucher.namaProfileMikrotik.isEmpty || voucher.namaServer.isEmpty) {
+    if (voucher.namaServer.isEmpty) {
       _fetchFullVoucherDetail(voucher.idVoucher);
     }
   }

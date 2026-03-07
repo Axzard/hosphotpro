@@ -66,7 +66,7 @@ class VoucherPackageItemCard extends StatelessWidget {
                 Flexible(child: _buildInfoChip(Icons.speed, package.rateLimit!)),
                 const SizedBox(width: 8),
               ],
-              Flexible(child: _buildInfoChip(Icons.person_outline, package.namaProfileMikrotik)),
+              Flexible(child: _buildInfoChip(Icons.vpn_key_outlined, package.prefix)),
             ],
           ),
           const Divider(height: 32, color: Colors.white10),

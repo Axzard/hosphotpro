@@ -185,8 +185,6 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
       controller.namaPaketController.clear();
       controller.durasiController.clear();
       controller.hargaController.clear();
-      controller.profileMikrotikController.clear();
-      controller.dnsLoginController.clear();
       controller.prefixController.clear();
       controller.panjangUsernameController.clear();
       controller.rateLimitController.clear();
@@ -305,32 +303,12 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                 ],
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller.hargaController,
-                      'Harga',
-                      hint: '5000',
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [CurrencyFormatter()],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTextField(
-                      controller.profileMikrotikController,
-                      'Profile Mikrotik',
-                      hint: 'profile-1jam',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
               _buildTextField(
-                controller.dnsLoginController,
-                'DNS Login',
-                hint: 'hotspot.domain.com',
+                controller.hargaController,
+                'Harga',
+                hint: '5000',
+                keyboardType: TextInputType.number,
+                inputFormatters: [CurrencyFormatter()],
               ),
               const SizedBox(height: 16),
               Obx(

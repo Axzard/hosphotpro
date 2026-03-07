@@ -27,7 +27,6 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
       backgroundColor: bgColor,
       body: SafeArea(
         child: Obx(() {
-          // Gunakan state reaktif selectedVoucher dari controller untuk performa lebih baik
           final voucher = controller.selectedVoucher.value ?? initialVoucher;
 
           return Column(
@@ -316,26 +315,13 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             children: [
               Expanded(
                 child: _buildInfoItem(
-                  'PROFIL MIKROTIK',
-                  voucher.namaProfileMikrotik,
-                  Icons.router_outlined,
-                  accentColor,
-                ),
-              ),
-              Expanded(
-                child: _buildInfoItem(
                   'SERVER',
                   voucher.namaServer,
                   Icons.dns_outlined,
                   accentColor,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          if (voucher.alamatIp != null) ...[
-            Row(
-              children: [
+              if (voucher.alamatIp != null)
                 Expanded(
                   child: _buildInfoItem(
                     'ALAMAT IP',
@@ -343,7 +329,15 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
                     Icons.language_outlined,
                     accentColor,
                   ),
-                ),
+                )
+              else
+                const Expanded(child: SizedBox.shrink()),
+            ],
+          ),
+          const SizedBox(height: 28),
+          if (voucher.portApi != null || voucher.gunakanSsl) ...[
+            Row(
+              children: [
                 if (voucher.portApi != null)
                   Expanded(
                     child: _buildInfoItem(
@@ -352,22 +346,9 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
                       Icons.settings_input_component_outlined,
                       accentColor,
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 28),
-          ],
-          if (voucher.dnsLogin != null) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoItem(
-                    'DNS LOGIN',
-                    voucher.dnsLogin!,
-                    Icons.public_outlined,
-                    accentColor,
-                  ),
-                ),
+                  )
+                else
+                  const Expanded(child: SizedBox.shrink()),
                 Expanded(
                   child: _buildInfoItem(
                     'SSL',
@@ -581,9 +562,8 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  // Tutup dialog dan detail screen sekaligus (2 layer) tanpa delay animasi overlap
                                   Get.close(2);
-                                  // Mulai proses hapus
+
                                   controller.deleteVoucher(voucher.idVoucher);
                                 },
                                 child: const Text(

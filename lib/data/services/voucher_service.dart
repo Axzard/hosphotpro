@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../model/api_response.dart';
 import '../../config/api_config.dart';
+import '../../core/utils/error_utils.dart';
 import '../model/voucher_api_model.dart';
 import '../model/voucher_package_api_model.dart';
 import 'token_service.dart';
@@ -169,13 +170,10 @@ class VoucherService extends GetxService {
               namaPaket: package.namaPaket,
               durasi: package.durasi,
               harga: package.harga,
-              namaProfileMikrotik: package.namaProfileMikrotik,
               prefix: package.prefix,
               panjangUsername: package.panjangUsername,
               formatKarakter: package.formatKarakter,
-              dataLimitMb: package.dataLimitMb,
               rateLimit: package.rateLimit,
-              dnsLogin: package.dnsLogin,
               gunakanSsl: package.gunakanSsl,
             );
           } else if (respData['data'] != null && respData['data'] is Map) {
@@ -297,9 +295,18 @@ class VoucherService extends GetxService {
           message: response.data?['pesan'] ?? 'Package deleted',
         );
       } else {
+        // Extract error message, supporting both Map and raw string responses
+        String errorMsg = 'Gagal menghapus paket voucher';
+        final dynamic respData = response.data;
+        if (respData is Map) {
+          errorMsg = (respData['pesan'] ?? respData['message'] ?? respData['detail'] ?? errorMsg).toString();
+        } else if (respData != null && respData.toString().isNotEmpty) {
+          // Raw string from server (e.g. PHP exception dump) — sanitize immediately
+          errorMsg = ErrorUtils.sanitizeServerMessage(respData.toString());
+        }
         return ApiResponse(
           success: false,
-          message: response.data?['pesan'] ?? 'Failed to delete package',
+          message: errorMsg,
         );
       }
     } catch (e) {
