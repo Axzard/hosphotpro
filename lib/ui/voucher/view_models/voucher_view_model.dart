@@ -28,8 +28,7 @@ class VoucherViewModel extends GetxController {
   List<VoucherModel> get stockVouchers => _applyFilters(VoucherStatus.stok);
   List<VoucherModel> get soldVouchers => _applyFilters(VoucherStatus.terjual);
   List<VoucherModel> get activeVouchers => _applyFilters(VoucherStatus.aktif);
-  List<VoucherModel> get expiredVouchers =>
-      _applyFilters(VoucherStatus.expired);
+  List<VoucherModel> get expiredVouchers => _applyFilters(VoucherStatus.expired);
 
   List<VoucherModel> _applyFilters(VoucherStatus status) {
     return vouchers.where((v) {
@@ -57,7 +56,7 @@ class VoucherViewModel extends GetxController {
   final hotspots = <HotspotModel>[].obs;
 
   final isLoading = false.obs;
-
+  
   final _isInitialLoad = true.obs;
   final isGenerating = false.obs;
   final isDeletingAll = false.obs;
@@ -695,6 +694,10 @@ class VoucherViewModel extends GetxController {
         updatedVouchers.add(voucher);
       }
     }
+
+    vouchers.refresh();
+    _syncWithCache(vouchers);
+
     return updatedVouchers;
   }
 

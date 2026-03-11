@@ -435,12 +435,12 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
         }
       }
 
+      Get.back();
+
       SnackbarUtils.showSuccess(
         'Berhasil',
         'Semua voucher ($selectedQuantity) berhasil dicetak',
       );
-
-      Get.back();
     } catch (e) {
       SnackbarUtils.showError(
         'Gagal',
