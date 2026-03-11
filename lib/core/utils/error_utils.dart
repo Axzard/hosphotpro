@@ -50,23 +50,22 @@ class ErrorUtils {
 
     final lower = rawMessage.toLowerCase();
 
-    // Detect raw database / PHP exception leak indicators
-    final bool hasDbLeak = lower.contains('sqlstate') ||
+    final bool hasDbLeak =
+        lower.contains('sqlstate') ||
         lower.contains('pdoexception') ||
         lower.contains('illuminate\\') ||
         lower.contains('stack trace') ||
         lower.contains('exception in') ||
         lower.contains('syntax error');
 
-    // Foreign-key / integrity constraint errors
-    final bool hasIntegrityError = lower.contains('1451') ||
+    final bool hasIntegrityError =
+        lower.contains('1451') ||
         lower.contains('integrity constraint violation') ||
         lower.contains('foreign key constraint fails') ||
         lower.contains('cannot delete or update a parent row') ||
         lower.contains('a foreign key constraint fails');
 
     if (hasDbLeak || hasIntegrityError) {
-      // Specifically for deletion that involves vouchers / packages
       if (lower.contains('voucher') ||
           lower.contains('paket') ||
           lower.contains('paket_voucher')) {
@@ -79,8 +78,6 @@ class ErrorUtils {
       return 'Terjadi kesalahan sistem, silakan coba lagi nanti.';
     }
 
-    // Fallback: if message looks like a raw server dump (very long or contains
-    // newlines / HTML), replace with generic message
     if (rawMessage.length > 300 ||
         rawMessage.contains('\n') ||
         rawMessage.contains('<br') ||

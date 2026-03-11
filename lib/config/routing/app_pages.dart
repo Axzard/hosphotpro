@@ -144,8 +144,8 @@ class AppPages {
         final _type = _args['type'] as String? ?? 'offline';
 
         final _title = _type == 'timeout'
-            ? 'Koneksi Lambat'
-            : 'Tidak Ada Koneksi';
+            ? 'Koneksi Internet Anda Lambat'
+            : 'Tidak Ada Koneksi Internet';
         final _subtitle = _type == 'timeout'
             ? 'Server membutuhkan waktu terlalu lama untuk merespons. Pastikan koneksi internet Anda stabil.'
             : 'Periksa kembali koneksi Wi-Fi atau Data Seluler pada perangkat Anda.';

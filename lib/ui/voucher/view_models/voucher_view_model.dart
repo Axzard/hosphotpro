@@ -351,6 +351,8 @@ class VoucherViewModel extends GetxController {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) return;
 
+    vouchers.clear(); // Bersihkan data lama untuk mencegah ghosting
+
     final idHotspot = selectedHotspot.value?.idHotspot ?? -1;
 
     try {

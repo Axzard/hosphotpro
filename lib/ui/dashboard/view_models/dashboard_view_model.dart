@@ -109,11 +109,23 @@ class DashboardViewModel extends GetxController {
 
   void _throttledActiveUserFetch() {
     if (_activeUserThrottle?.isActive ?? false) return;
-    _activeUserThrottle = Timer(const Duration(seconds: 3), () async {
+    _activeUserThrottle = Timer(const Duration(seconds: 5), () async {
       try {
-        final activeVouchers = await _voucherRepository.getActiveVouchers();
-        activeUserCount.value = activeVouchers.where((v) => v.statusVoucher == VoucherStatus.aktif).length;
-      } catch (e) {}
+        final allPackages = await _voucherRepository.getAllVoucherPackages();
+        final paketIds = allPackages.map((p) => p.id).whereType<int>().toList();
+        if (paketIds.isNotEmpty) {
+          final allVouchers =
+              await _voucherRepository.getAllVouchersByPackages(paketIds);
+          activeUserCount.value = allVouchers
+              .where((v) => v.statusVoucher == VoucherStatus.aktif)
+              .length;
+          voucherCount.value = allVouchers
+              .where((v) => v.statusVoucher == VoucherStatus.stok)
+              .length;
+        }
+      } catch (e) {
+        // Silent error to avoid log noise
+      }
     });
   }
 
@@ -188,13 +200,9 @@ class DashboardViewModel extends GetxController {
             stats['user_aktif'] ??
             stats['user_online'];
         if (count is num) {
-          final val = count.toInt();
-
-          if (val > 0) {
-            activeUserCount.value = val;
-          }
+          activeUserCount.value = count.toInt();
         }
-      } else if (stats is int && stats > 0) {
+      } else if (stats is int) {
         activeUserCount.value = stats;
       }
     });
@@ -291,7 +299,6 @@ class DashboardViewModel extends GetxController {
           bulan: now.month,
           tgl: now.day,
         ),
-        _voucherRepository.getActiveVouchers(),
       ]);
 
       final routersList = results[0] as List<RouterModel>;
@@ -300,7 +307,6 @@ class DashboardViewModel extends GetxController {
       final profileData = results[3];
       final AuthModel? profile = profileData is AuthModel? ? profileData : null;
       final dailyReport = results[4] as DailyReportModel?;
-      final activeVouchers = results[5] as List<VoucherModel>?;
 
       if (profile != null) {
         username.value = profile.username;
@@ -327,13 +333,6 @@ class DashboardViewModel extends GetxController {
 
       totalIncomeToday.value = income;
       totalTransactionsToday.value = transactions;
-
-      if (activeVouchers != null) {
-        activeUserCount.value = activeVouchers.where((v) => v.statusVoucher == VoucherStatus.aktif).length;
-        print(
-          '[DashboardVM] Initialized Active Vouchers: ${activeUserCount.value}',
-        );
-      }
 
       totalRouterCount.value = routersList.length;
       onlineRouterCount.value = routersList
@@ -462,16 +461,13 @@ class DashboardViewModel extends GetxController {
             .where((v) => v.statusVoucher == VoucherStatus.stok)
             .length;
 
-        print(
-          '[DashboardVM] Voucher stok: ${voucherCount.value} dari ${allVouchers.length} total',
-        );
+        activeUserCount.value = allVouchers
+            .where((v) => v.statusVoucher == VoucherStatus.aktif)
+            .length;
       } else {
         voucherCount.value = 0;
+        activeUserCount.value = 0;
       }
-
-      final activeVouchersList = await _voucherRepository.getActiveVouchers();
-      activeUserCount.value = activeVouchersList.where((v) => v.statusVoucher == VoucherStatus.aktif).length;
-      print('[DashboardVM] Active Vouchers: ${activeUserCount.value}');
     } catch (e) {
       print('[DashboardVM] Error background fetch: $e');
     }

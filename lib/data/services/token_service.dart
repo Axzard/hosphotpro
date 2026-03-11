@@ -35,13 +35,7 @@ class TokenService extends GetxService {
   }
 
   String? getToken() {
-    final token = _prefs?.getString(_tokenKey);
-    if (token != null) {
-      print('Token retrieved: ${token.substring(0, 20)}...');
-    } else {
-      print(' No token found');
-    }
-    return token;
+    return _prefs?.getString(_tokenKey);
   }
 
   String? getUsername() {

@@ -619,7 +619,18 @@ class VoucherService extends GetxService {
         List<dynamic> listData = [];
 
         if (rawData is Map) {
-          listData = rawData['data'] is List ? (rawData['data'] as List) : [];
+          final dataField = rawData['data'];
+          if (dataField is List) {
+            listData = dataField;
+          } else if (dataField is Map) {
+            if (dataField['detail'] is List) {
+              listData = dataField['detail'];
+            } else if (dataField['data'] is List) {
+              listData = dataField['data'];
+            } else {
+              listData = [dataField];
+            }
+          }
         } else if (rawData is List) {
           listData = rawData;
         }
