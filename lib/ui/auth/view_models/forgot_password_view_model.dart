@@ -29,7 +29,7 @@ class ForgotPasswordViewModel extends GetxController {
         SnackbarUtils.showError('Gagal', response.message);
       }
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Terjadi kesalahan: $e');
+      SnackbarUtils.showError('Gagal', 'Terjadi kesalahan: $e');
     } finally {
       isLoading.value = false;
     }
@@ -55,7 +55,7 @@ class ForgotPasswordViewModel extends GetxController {
         SnackbarUtils.showError('Gagal', response.message);
       }
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Terjadi kesalahan: $e');
+      SnackbarUtils.showError('Gagal', 'Terjadi kesalahan: $e');
     } finally {
       isLoading.value = false;
     }

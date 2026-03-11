@@ -22,13 +22,7 @@ List<YearlyReportApiModel> _parseYearlyReports(dynamic data) {
 }
 
 class ReportService extends GetxService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
-    ),
-  );
+  final Dio _dio = ApiConfig.createDio();
   final TokenService _tokenService = Get.find<TokenService>();
 
   Future<ApiResponse<ReportDashboardApiModel?>> getDashboardReport({

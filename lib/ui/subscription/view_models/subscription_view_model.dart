@@ -49,9 +49,7 @@ class SubscriptionViewModel extends GetxController {
   }
 
   Future<void> _loadInitialData() async {
-    // Load subscriptions first to know if user is subscribed
     await loadMySubscriptions();
-    // Then load packages (public or authenticated based on subscription status)
     await loadPackages();
   }
 
@@ -101,7 +99,7 @@ class SubscriptionViewModel extends GetxController {
         currentSubscription.value = null;
       }
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat data langganan');
+      SnackbarUtils.showError('Gagal', 'Gagal memuat data langganan');
     } finally {
       isLoading.value = false;
       _isLoadingSubscriptions = false;
@@ -168,7 +166,7 @@ class SubscriptionViewModel extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memproses pembayaran: $e');
+      Get.snackbar('Gagal', 'Gagal memproses pembayaran: $e');
     } finally {
       isProcessingPayment.value = false;
     }
@@ -221,7 +219,7 @@ class SubscriptionViewModel extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memperpanjang langganan: $e');
+      Get.snackbar('Gagal', 'Gagal memperpanjang langganan: $e');
     } finally {
       processingSubscriptionId.value = null;
     }

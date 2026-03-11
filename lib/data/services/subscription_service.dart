@@ -19,13 +19,7 @@ List<UserSubscriptionApiModel> _parseSubscriptions(dynamic data) {
 }
 
 class SubscriptionService extends GetxService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
-      sendTimeout: const Duration(seconds: 15),
-    ),
-  );
+  final Dio _dio = ApiConfig.createDio();
   final TokenService _tokenService = Get.find<TokenService>();
 
   Future<ApiResponse<List<SubscriptionPackageApiModel>>> getPackages() async {

@@ -107,7 +107,6 @@ class VoucherViewModel extends GetxController {
 
       print('[VoucherVM] Event Received: $event');
 
-      // Normalisasi nama event untuk mendukung pattern voucher_added atau voucher:added
       final normEvent = event.replaceAll(':', '_');
 
       if (normEvent == 'voucher_added' && data != null) {
@@ -122,7 +121,8 @@ class VoucherViewModel extends GetxController {
         return;
       }
 
-      if (normEvent == 'voucher_bulk_added' || normEvent == 'voucher_bulkcreated') {
+      if (normEvent == 'voucher_bulk_added' ||
+          normEvent == 'voucher_bulkcreated') {
         try {
           final listData = data is List ? data : (data['data'] as List?);
           if (listData != null) {
@@ -152,7 +152,8 @@ class VoucherViewModel extends GetxController {
         return;
       }
 
-      if ((normEvent == 'voucher_updated' || normEvent == 'voucher_sold') && data != null) {
+      if ((normEvent == 'voucher_updated' || normEvent == 'voucher_sold') &&
+          data != null) {
         final id = data['id_voucher'];
         final statusStr = data['status_voucher']?.toString();
         if (id != null && statusStr != null) {
@@ -210,12 +211,12 @@ class VoucherViewModel extends GetxController {
       const structuralEvents = [
         'hotspot_added',
         'hotspot_created',
-        'hotspot_updated', 
+        'hotspot_updated',
         'router_added',
         'router_updated',
       ];
       if (structuralEvents.contains(normEvent)) {
-        loadRouters(); 
+        loadRouters();
       }
     });
   }
@@ -324,7 +325,7 @@ class VoucherViewModel extends GetxController {
 
       vouchers.assignAll(vchList);
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat data voucher: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal memuat data voucher: $e');
     } finally {
       isLoading.value = false;
       _isInitialLoad.value = false;
@@ -402,7 +403,7 @@ class VoucherViewModel extends GetxController {
     final idPaket = selectedPaketId.value;
 
     if (idPaket == null) {
-      Get.snackbar('Error', 'Pilih paket terlebih dahulu');
+      Get.snackbar('Gagal', 'Pilih paket terlebih dahulu');
       return;
     }
 
@@ -419,7 +420,7 @@ class VoucherViewModel extends GetxController {
 
       loadVouchers();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal membuat voucher: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal membuat voucher: $e');
     } finally {
       isGenerating.value = false;
     }
@@ -429,12 +430,12 @@ class VoucherViewModel extends GetxController {
     final idPaket = selectedPaketId.value;
 
     if (idPaket == null) {
-      Get.snackbar('Error', 'Pilih paket terlebih dahulu');
+      Get.snackbar('Gagal', 'Pilih paket terlebih dahulu');
       return;
     }
 
     if (count.value <= 0 || count.value > 500) {
-      SnackbarUtils.showError('Error', 'Jumlah harus antara 1 - 500');
+      SnackbarUtils.showError('Gagal', 'Jumlah harus antara 1 - 500');
       return;
     }
 
@@ -459,7 +460,7 @@ class VoucherViewModel extends GetxController {
 
       loadVouchers();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal membuat voucher bulk: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal membuat voucher bulk: $e');
     } finally {
       isGenerating.value = false;
     }
@@ -481,7 +482,7 @@ class VoucherViewModel extends GetxController {
       SnackbarUtils.showSuccess('Berhasil', 'Paket voucher berhasil dibuat');
       await loadVoucherPackages();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal membuat paket voucher: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal membuat paket voucher: $e');
     } finally {
       isGenerating.value = false;
     }
@@ -501,9 +502,8 @@ class VoucherViewModel extends GetxController {
     try {
       final success = await _voucherRepository.deleteVoucher(idVoucher);
       if (success) {
-        // Hapus dari UI setelah pasti dari API berhasil
         vouchers.removeWhere((v) => v.idVoucher == idVoucher);
-        
+
         final idHotspot = selectedHotspot.value?.idHotspot ?? 0;
         if (idHotspot != 0) {
           await _voucherRepository.updateVoucherCache(idHotspot, vouchers);
@@ -514,8 +514,11 @@ class VoucherViewModel extends GetxController {
       }
     } catch (e) {
       SnackbarUtils.showError(
-          'Gagal Hapus', 
-          ErrorUtils.sanitizeServerMessage(e.toString().replaceAll('Exception: ', '')));
+        'Gagal Hapus',
+        ErrorUtils.sanitizeServerMessage(
+          e.toString().replaceAll('Gagal: ', ''),
+        ),
+      );
     } finally {
       deletingVoucherIds.remove(idVoucher);
     }
@@ -558,7 +561,7 @@ class VoucherViewModel extends GetxController {
         );
       }
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal menghapus beberapa voucher: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal menghapus beberapa voucher: $e');
     } finally {
       isDeletingAll.value = false;
       bulkDeletingCategory.value = null;
@@ -590,7 +593,7 @@ class VoucherViewModel extends GetxController {
 
       await loadVouchers();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal menjual voucher: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal menjual voucher: $e');
     } finally {
       isLoading.value = false;
     }
@@ -601,7 +604,7 @@ class VoucherViewModel extends GetxController {
       isLoading.value = true;
       await _voucherRepository.getActiveVouchers();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat voucher aktif: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal memuat voucher aktif: $e');
     } finally {
       isLoading.value = false;
     }
@@ -648,7 +651,7 @@ class VoucherViewModel extends GetxController {
 
   void printAllVouchers() {
     if (vouchers.isEmpty) {
-      SnackbarUtils.showError('Error', 'Tidak ada voucher untuk dicetak');
+      SnackbarUtils.showError('Gagal', 'Tidak ada voucher untuk dicetak');
       return;
     }
     _openPrintPreview(vouchers);
@@ -695,7 +698,7 @@ class VoucherViewModel extends GetxController {
 
   void _openPrintPreview(List<VoucherModel> vouchersToPrint) {
     if (selectedHotspot.value == null) {
-      SnackbarUtils.showError('Error', 'Hotspot belum dipilih');
+      SnackbarUtils.showError('Gagal', 'Hotspot belum dipilih');
       return;
     }
 
@@ -710,13 +713,12 @@ class VoucherViewModel extends GetxController {
   }
 
   void _syncWithCache(List<VoucherModel> list) {
-    if (selectedHotspot.value != null && 
-        selectedHotspot.value!.idHotspot > 0 && 
+    if (selectedHotspot.value != null &&
+        selectedHotspot.value!.idHotspot > 0 &&
         list.isNotEmpty) {
-       _voucherRepository.updateVoucherCache(
-         selectedHotspot.value!.idHotspot, 
-         list
-       ).catchError((e) => print('Cache sync error: $e'));
+      _voucherRepository
+          .updateVoucherCache(selectedHotspot.value!.idHotspot, list)
+          .catchError((e) => print('Cache sync error: $e'));
     }
   }
 }

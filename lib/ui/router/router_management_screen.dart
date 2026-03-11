@@ -51,11 +51,10 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Removed inline form card
                         _buildListHeader(accentColor),
                         const SizedBox(height: 16),
                         _buildRouterList(accentColor, cardColor),
-                        const SizedBox(height: 80), // Space for FAB
+                        const SizedBox(height: 80),
                       ],
                     ),
                   ),
@@ -93,7 +92,6 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
               ),
             ),
           Expanded(
-
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -272,8 +270,8 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
                     color: Colors.white,
                   ),
                   maxLines: ResponsiveLayout.isDesktop(context) ? null : 1,
-                  overflow: ResponsiveLayout.isDesktop(context) 
-                      ? TextOverflow.visible 
+                  overflow: ResponsiveLayout.isDesktop(context)
+                      ? TextOverflow.visible
                       : TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),

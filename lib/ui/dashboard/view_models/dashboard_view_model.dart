@@ -498,7 +498,7 @@ class DashboardViewModel extends GetxController {
       await _authRepository.logout();
       Get.offAllNamed(Routes.LOGIN);
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal logout: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal logout: $e');
     }
   }
 

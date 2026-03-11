@@ -1,3 +1,7 @@
+import 'package:dio/dio.dart';
+import 'package:get/get.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
 class ApiConfig {
   static const String baseUrl = 'https://api.siodev.sbs';
 
@@ -73,5 +77,49 @@ class ApiConfig {
     }
 
     return headers;
+  }
+
+  static Dio createDio() {
+    final dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+        sendTimeout: const Duration(seconds: 15),
+      ),
+    );
+
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          try {
+            final connectivityResult = await Connectivity().checkConnectivity();
+            if (connectivityResult.contains(ConnectivityResult.none)) {
+              Get.toNamed('/network-error', arguments: {'type': 'offline'});
+              return handler.reject(
+                DioException(
+                  requestOptions: options,
+                  type: DioExceptionType.connectionError,
+                  error: 'Tidak ada koneksi internet',
+                ),
+              );
+            }
+          } catch (_) {}
+          
+          return handler.next(options);
+        },
+        onError: (DioException e, handler) {
+          if (e.type == DioExceptionType.connectionTimeout || 
+              e.type == DioExceptionType.receiveTimeout || 
+              e.type == DioExceptionType.sendTimeout) {
+            Get.toNamed('/network-error', arguments: {'type': 'timeout'});
+          } else if (e.response?.statusCode == 500) {
+            Get.toNamed('/error', arguments: 'Server sedang bermasalah. Silakan hubungi admin atau coba lagi nanti.');
+          }
+          return handler.next(e);
+        },
+      ),
+    );
+
+    return dio;
   }
 }

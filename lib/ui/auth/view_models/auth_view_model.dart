@@ -90,7 +90,7 @@ class AuthViewModel extends GetxController {
       }
     } catch (e) {
       Get.snackbar(
-        'Error',
+        'Gagal',
         'Terjadi kesalahan koneksi. Silakan coba lagi.',
         backgroundColor: Colors.red,
         colorText: Colors.white,
@@ -136,7 +136,7 @@ class AuthViewModel extends GetxController {
         );
       }
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Terjadi kesalahan: $e');
+      SnackbarUtils.showError('Gagal', 'Terjadi kesalahan: $e');
     } finally {
       isLoading.value = false;
     }

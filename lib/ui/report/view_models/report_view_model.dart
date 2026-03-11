@@ -9,13 +9,10 @@ import '../../../data/model/report_api_model.dart';
 import '../../../core/services/cache_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
 
-
-
 class ReportViewModel extends GetxController {
   final ReportRepository _reportRepository = Get.find<ReportRepository>();
   final WebSocketService _webSocketService = Get.find<WebSocketService>();
   final CacheService _cacheService = Get.find<CacheService>();
-
 
   final dailyReports = <DailyReportModel>[].obs;
   final monthlyReports = <MonthlyReportModel>[].obs;
@@ -25,11 +22,14 @@ class ReportViewModel extends GetxController {
   List<DailyReportModel> get filteredDailyReports {
     if (selectedDate.value == null) return dailyReports;
     final date = selectedDate.value!;
-    return dailyReports.where((e) =>
-      e.tanggal.year == date.year &&
-      e.tanggal.month == date.month &&
-      e.tanggal.day == date.day
-    ).toList();
+    return dailyReports
+        .where(
+          (e) =>
+              e.tanggal.year == date.year &&
+              e.tanggal.month == date.month &&
+              e.tanggal.day == date.day,
+        )
+        .toList();
   }
 
   List<MonthlyReportModel> get filteredMonthlyReports {
@@ -48,7 +48,6 @@ class ReportViewModel extends GetxController {
     super.onInit();
     final dashboardVM = Get.find<DashboardViewModel>();
 
-    // Listen to subscription status changes
     ever(dashboardVM.isActiveSubscription, (bool isActive) {
       if (isActive && dailyReports.isEmpty) {
         fetchAllReports();
@@ -63,11 +62,15 @@ class ReportViewModel extends GetxController {
   Future<void> loadCachedData() async {
     try {
       final cached = _cacheService.getReports();
-      
+
       if (cached != null) {
         if (cached['daily'] != null) {
           final list = (cached['daily'] as List)
-              .map((e) => DailyReportApiModel.fromJson(e as Map<String, dynamic>).toDomain())
+              .map(
+                (e) => DailyReportApiModel.fromJson(
+                  e as Map<String, dynamic>,
+                ).toDomain(),
+              )
               .toList();
           dailyReports.assignAll(list);
         }
@@ -76,7 +79,6 @@ class ReportViewModel extends GetxController {
       print('[ReportVM] Error loading cache: $e');
     }
   }
-
 
   void _initRealtimeListeners() {
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
@@ -138,44 +140,50 @@ class ReportViewModel extends GetxController {
       final year = selectedYear.value;
       final month = selectedDate.value?.month ?? now.month;
 
-      // Use dashboard endpoint instead of separate calls
       final dashboardData = await _reportRepository.getDashboardReport(
         year: year,
         month: month,
       );
 
       if (dashboardData != null) {
-        // 1. Daily Reports
         final sortedDaily = List<DailyReportModel>.from(dashboardData.perHari);
         sortedDaily.sort((a, b) => b.tanggal.compareTo(a.tanggal));
         dailyReports.assignAll(sortedDaily);
 
-        // 2. Monthly Reports
         monthlyReports.assignAll(dashboardData.perBulan);
 
-        // 3. Yearly Reports
         yearlyReports.assignAll(dashboardData.perTahun);
 
-        // Update cache
         _cacheService.saveReports({
-          'daily': dailyReports.map((e) => {
-            'tanggal': e.tanggal.toIso8601String(),
-            'total_pendapatan': e.totalPendapatan,
-            'total_transaksi': e.totalTransaksi,
-          }).toList(),
-          'monthly': monthlyReports.map((e) => {
-            'bulan': e.bulan,
-            'total_pendapatan': e.totalPendapatan,
-            'total_transaksi': e.totalTransaksi,
-          }).toList(),
-          'yearly': yearlyReports.map((e) => {
-            'tahun': e.tahun,
-            'total_pendapatan': e.totalPendapatan,
-            'total_transaksi': e.totalTransaksi,
-          }).toList(),
+          'daily': dailyReports
+              .map(
+                (e) => {
+                  'tanggal': e.tanggal.toIso8601String(),
+                  'total_pendapatan': e.totalPendapatan,
+                  'total_transaksi': e.totalTransaksi,
+                },
+              )
+              .toList(),
+          'monthly': monthlyReports
+              .map(
+                (e) => {
+                  'bulan': e.bulan,
+                  'total_pendapatan': e.totalPendapatan,
+                  'total_transaksi': e.totalTransaksi,
+                },
+              )
+              .toList(),
+          'yearly': yearlyReports
+              .map(
+                (e) => {
+                  'tahun': e.tahun,
+                  'total_pendapatan': e.totalPendapatan,
+                  'total_transaksi': e.totalTransaksi,
+                },
+              )
+              .toList(),
         });
       }
-
     } catch (e) {
       if (!isSilent) {
         Get.toNamed(
@@ -188,8 +196,6 @@ class ReportViewModel extends GetxController {
     }
   }
 
-
-
   void setDate(DateTime? date) {
     if (date != null) {
       selectedDate.value = date;
@@ -200,7 +206,7 @@ class ReportViewModel extends GetxController {
 
   void setYear(int year) {
     selectedYear.value = year;
-    // Keep the same month if possible, otherwise use January
+
     final currentMonth = selectedDate.value?.month ?? DateTime.now().month;
     selectedDate.value = DateTime(year, currentMonth, 1);
     fetchAllReports();
@@ -214,10 +220,10 @@ class ReportViewModel extends GetxController {
         await fetchAllReports();
         SnackbarUtils.showSuccess('Berhasil', 'Laporan berhasil diperbarui');
       } else {
-        SnackbarUtils.showError('Error', 'Gagal memperbarui laporan');
+        SnackbarUtils.showError('Gagal', 'Gagal memperbarui laporan');
       }
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memperbarui laporan: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal memperbarui laporan: $e');
     } finally {
       isLoading.value = false;
     }

@@ -9,7 +9,7 @@ class NavigationController extends GetxController {
     isSidebarOpen.value = !isSidebarOpen.value;
   }
 
-  // Mapping from index to route for deep linking / syncing
+  
   final List<String> indexRoutes = [
     Routes.DASHBOARD,
     Routes.VOUCHERS,
@@ -25,9 +25,9 @@ class NavigationController extends GetxController {
   void changeIndex(int index) {
     if (index >= 0 && index < indexRoutes.length) {
       selectedIndex.value = index;
-      // We don't necessarily call Get.toNamed here to avoid the whole-page build,
-      // but we might want to update the browser URL if supported.
-      // For now, let's keep it simple as an index switch.
+      
+      
+      
     }
   }
 

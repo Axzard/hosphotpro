@@ -18,13 +18,7 @@ List<HotspotApiModel> _parseHotspots(dynamic data) {
 }
 
 class RouterService extends GetxService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 60),
-      receiveTimeout: const Duration(seconds: 60),
-      sendTimeout: const Duration(seconds: 60),
-    ),
-  );
+  final Dio _dio = ApiConfig.createDio();
   final TokenService _tokenService = Get.find<TokenService>();
 
   Future<ApiResponse<List<RouterApiModel>>> getRouters() async {

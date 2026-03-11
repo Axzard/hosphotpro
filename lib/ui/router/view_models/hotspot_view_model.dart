@@ -10,7 +10,6 @@ import '../../../../core/services/websocket_service.dart';
 import '../../../../core/services/session_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
 
-
 class HotspotViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
   final _webSocketService = Get.find<WebSocketService>();
@@ -32,13 +31,12 @@ class HotspotViewModel extends GetxController {
     super.onInit();
     final dashboardVM = Get.find<DashboardViewModel>();
 
-    // Listen to subscription status changes
     ever(dashboardVM.isActiveSubscription, (bool isActive) {
       if (isActive) {
         if (routers.isEmpty) {
-          loadRouters(); // This will internally call loadHotspots() at the end
+          loadRouters();
         } else {
-          loadHotspots(); // Routers already loaded, fetch hotspots immediately
+          loadHotspots();
         }
       }
     });
@@ -72,8 +70,8 @@ class HotspotViewModel extends GetxController {
       if (event == 'hotspot_added' && data != null) {
         try {
           final newHotspot = HotspotModel.fromJson(data);
-          // Only add if it belongs to selected router, or if 'semua' is selected
-          if (selectedRouter.value?.id == 'all' || 
+
+          if (selectedRouter.value?.id == 'all' ||
               newHotspot.idRouter.toString() == selectedRouter.value?.id) {
             hotspots.add(newHotspot);
             _syncWithCache(newHotspot.idRouter);
@@ -82,7 +80,9 @@ class HotspotViewModel extends GetxController {
       } else if (event == 'hotspot_updated' && data != null) {
         try {
           final updated = HotspotModel.fromJson(data);
-          final idx = hotspots.indexWhere((h) => h.idHotspot == updated.idHotspot);
+          final idx = hotspots.indexWhere(
+            (h) => h.idHotspot == updated.idHotspot,
+          );
           if (idx != -1) {
             hotspots[idx] = updated;
             _syncWithCache(updated.idRouter);
@@ -93,7 +93,9 @@ class HotspotViewModel extends GetxController {
         if (id != null) {
           final intId = id is int ? id : int.tryParse(id.toString());
           if (intId != null) {
-            final victim = hotspots.firstWhereOrNull((h) => h.idHotspot == intId);
+            final victim = hotspots.firstWhereOrNull(
+              (h) => h.idHotspot == intId,
+            );
             if (victim != null) {
               final routerId = victim.idRouter;
               hotspots.removeWhere((h) => h.idHotspot == intId);
@@ -102,7 +104,7 @@ class HotspotViewModel extends GetxController {
           }
         }
       } else {
-         loadHotspots();
+        loadHotspots();
       }
     });
   }
@@ -111,7 +113,7 @@ class HotspotViewModel extends GetxController {
     try {
       isLoading.value = true;
       final result = await _routerRepository.getRouters();
-      
+
       final routerList = [RouterModel.semua];
       routerList.addAll(result);
       routers.assignAll(routerList);
@@ -119,7 +121,9 @@ class HotspotViewModel extends GetxController {
       if (selectedRouter.value == null) {
         final savedRouterId = _sessionService.selectedRouterId.value;
         if (savedRouterId != null && savedRouterId != 'all') {
-          selectedRouter.value = routerList.firstWhereOrNull((r) => r.id == savedRouterId) ?? RouterModel.semua;
+          selectedRouter.value =
+              routerList.firstWhereOrNull((r) => r.id == savedRouterId) ??
+              RouterModel.semua;
         } else {
           selectedRouter.value = RouterModel.semua;
         }
@@ -128,7 +132,7 @@ class HotspotViewModel extends GetxController {
     } catch (e) {
       print('[HotspotVM] Load Routers Error: $e');
       SnackbarUtils.showError(
-        'Error',
+        'Gagal',
         'Gagal memuat daftar router. Pastikan koneksi internet stabil atau coba lagi nanti.',
       );
     } finally {
@@ -159,7 +163,7 @@ class HotspotViewModel extends GetxController {
     } catch (e) {
       print('[HotspotVM] Load Hotspots Error: $e');
       SnackbarUtils.showError(
-        'Error',
+        'Gagal',
         'Gagal memuat daftar hotspot. Silakan cek status router Mikrotik Anda.',
       );
     } finally {
@@ -176,22 +180,21 @@ class HotspotViewModel extends GetxController {
 
   Future<void> updateHotspot(int idHotspot) async {
     if (namaServerController.text.isEmpty || interfaceController.text.isEmpty) {
-      SnackbarUtils.showError('Error', 'Nama Server dan Interface wajib diisi');
+      SnackbarUtils.showError('Gagal', 'Nama Server dan Interface wajib diisi');
       return;
     }
 
     try {
-      Get.back(); // Pindahkan ke awal biar UI snappier
+      Get.back();
       SnackbarUtils.showSuccess('Proses...', 'Sedang memperbarui');
-      
+
       final data = {
         'nama_server': namaServerController.text,
         'interface': interfaceController.text,
       };
-      
+
       await _routerRepository.updateHotspot(idHotspot, data);
 
-      // Optimistic Update
       final idx = hotspots.indexWhere((h) => h.idHotspot == idHotspot);
       if (idx != -1) {
         hotspots[idx] = hotspots[idx].copyWith(
@@ -200,15 +203,15 @@ class HotspotViewModel extends GetxController {
         );
         _syncWithCache(hotspots[idx].idRouter);
       }
-      
+
       SnackbarUtils.showSuccess('Berhasil', 'Hotspot berhasil diperbarui');
     } catch (e) {
       print('[HotspotVM] Update Hotspot Error: $e');
       SnackbarUtils.showError(
-        'Error',
+        'Gagal',
         'Gagal memperbarui data hotspot. Terjadi gangguan pada server atau router.',
       );
-      loadHotspots(); // Fallback on error
+      loadHotspots();
     } finally {
       isLoading.value = false;
     }
@@ -217,8 +220,7 @@ class HotspotViewModel extends GetxController {
   Future<void> deleteHotspot(int idHotspot) async {
     try {
       await _routerRepository.deleteHotspot(idHotspot);
-      
-      // Jika berhasil, baru hapus dari memori dan sinkronisasi cache
+
       final victim = hotspots.firstWhereOrNull((h) => h.idHotspot == idHotspot);
       if (victim != null) {
         final routerId = victim.idRouter;
@@ -231,14 +233,20 @@ class HotspotViewModel extends GetxController {
       print('[HotspotVM] Delete Hotspot Error: $e');
       SnackbarUtils.showError(
         'Gagal Hapus',
-        ErrorUtils.sanitizeServerMessage(e.toString().replaceAll('Exception: ', '')),
+        ErrorUtils.sanitizeServerMessage(
+          e.toString().replaceAll('Gagal: ', ''),
+        ),
       );
-      loadHotspots(); // Fallback
+      loadHotspots();
     }
   }
 
   void _syncWithCache(int idRouter) {
-    _routerRepository.updateHotspotCache(idRouter, hotspots.where((h) => h.idRouter == idRouter).toList())
+    _routerRepository
+        .updateHotspotCache(
+          idRouter,
+          hotspots.where((h) => h.idRouter == idRouter).toList(),
+        )
         .catchError((e) => print('[HotspotVM] Cache sync error: $e'));
   }
 
@@ -254,7 +262,7 @@ class HotspotViewModel extends GetxController {
 
     final router = selectedRouter.value;
     if (router == null) {
-      SnackbarUtils.showError('Error', 'Pilih router terlebih dahulu');
+      SnackbarUtils.showError('Gagal', 'Pilih router terlebih dahulu');
       return;
     }
 
@@ -262,7 +270,7 @@ class HotspotViewModel extends GetxController {
       isLoading.value = true;
       final idRouter = int.tryParse(router.id) ?? 0;
       if (idRouter == 0) {
-        SnackbarUtils.showError('Error', 'ID Router tidak valid: ${router.id}');
+        SnackbarUtils.showError('Gagal', 'ID Router tidak valid: ${router.id}');
         return;
       }
 
@@ -298,18 +306,18 @@ class HotspotViewModel extends GetxController {
       if (Get.isDialogOpen ?? false) Get.back();
 
       print('[HotspotVM] Sync Error: $e');
-      
-      String friendlyMessage = 'Gagal sinkronisasi. Pastikan router online dan coba lagi.';
+
+      String friendlyMessage =
+          'Gagal sinkronisasi. Pastikan router online dan coba lagi.';
       if (e.toString().contains('500')) {
-        friendlyMessage = 'Oops! Terjadi gangguan pada server (500). Silakan hubungi admin.';
+        friendlyMessage =
+            'Oops! Terjadi gangguan pada server (500). Silakan hubungi admin.';
       } else if (e.toString().contains('timeout')) {
-        friendlyMessage = 'Koneksi ke router melampaui batas waktu. Pastikan router stabil.';
+        friendlyMessage =
+            'Koneksi ke router melampaui batas waktu. Pastikan router stabil.';
       }
 
-      SnackbarUtils.showError(
-        'Sinkronisasi Gagal',
-        friendlyMessage,
-      );
+      SnackbarUtils.showError('Sinkronisasi Gagal', friendlyMessage);
     } finally {
       isLoading.value = false;
     }

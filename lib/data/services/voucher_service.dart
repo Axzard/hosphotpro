@@ -27,13 +27,7 @@ List<VoucherApiModel> _parseVouchers(dynamic data) {
 }
 
 class VoucherService extends GetxService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
-    ),
-  );
+  final Dio _dio = ApiConfig.createDio();
   final TokenService _tokenService = Get.find<TokenService>();
 
   String _getErrorMsg(dynamic data, String fallback) {

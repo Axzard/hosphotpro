@@ -216,7 +216,7 @@ class VoucherPackageViewModel extends GetxController {
       selectedHotspot.value = nextHotspot;
       packages.assignAll(pList);
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat data: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal memuat data: $e');
     } finally {
       isLoading.value = false;
       _isInitialLoad.value = false;
@@ -281,7 +281,7 @@ class VoucherPackageViewModel extends GetxController {
       packages.assignAll(result);
     } catch (e) {
       if (packages.isEmpty) {
-        SnackbarUtils.showError('Error', 'Gagal memuat paket: $e');
+        SnackbarUtils.showError('Gagal', 'Gagal memuat paket: $e');
       }
     } finally {
       isLoading.value = false;
@@ -361,7 +361,7 @@ class VoucherPackageViewModel extends GetxController {
 
       _clearForm();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal membuat paket: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal membuat paket: $e');
     } finally {
       isLoading.value = false;
     }
@@ -405,7 +405,7 @@ class VoucherPackageViewModel extends GetxController {
 
       _clearForm();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memperbarui paket: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal memperbarui paket: $e');
     } finally {
       isLoading.value = false;
     }
@@ -417,16 +417,19 @@ class VoucherPackageViewModel extends GetxController {
     try {
       deletingPackageIds.add(id);
 
-      // Tunggu respons API, tidak menghapus dari UI dulu (no optimistic update)
       await _voucherRepository.deleteVoucherPackage(id);
 
-      // Jika berhasil, baru hapus dari memori dan sinkronisasi cache
       packages.removeWhere((p) => p.id == id);
       _syncWithCache(packages);
 
       SnackbarUtils.showSuccess('Berhasil', 'Paket voucher berhasil dihapus');
     } catch (e) {
-      SnackbarUtils.showError('Gagal Hapus', ErrorUtils.sanitizeServerMessage(e.toString().replaceAll('Exception: ', '')));
+      SnackbarUtils.showError(
+        'Gagal Hapus',
+        ErrorUtils.sanitizeServerMessage(
+          e.toString().replaceAll('Gagal: ', ''),
+        ),
+      );
     } finally {
       isLoading.value = false;
       deletingPackageIds.remove(id);
@@ -484,7 +487,7 @@ class VoucherPackageViewModel extends GetxController {
     if (formSelectedHotspot.value == null ||
         formSelectedHotspot.value?.idHotspot == -1) {
       SnackbarUtils.showError(
-        'Error',
+        'Gagal',
         'Hotspot harus dipilih secara spesifik untuk membuat paket',
       );
       return false;
@@ -493,7 +496,7 @@ class VoucherPackageViewModel extends GetxController {
         durasiController.text.isEmpty ||
         hargaController.text.isEmpty ||
         panjangUsernameController.text.isEmpty) {
-      SnackbarUtils.showError('Error', 'Field wajib diisi harus lengkap');
+      SnackbarUtils.showError('Gagal', 'Field wajib diisi harus lengkap');
       return false;
     }
     return true;

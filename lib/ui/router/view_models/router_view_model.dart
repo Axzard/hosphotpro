@@ -35,8 +35,7 @@ class RouterViewModel extends GetxController {
   void onInit() {
     super.onInit();
     final dashboardVM = Get.find<DashboardViewModel>();
-    
-    // Listen to subscription status changes
+
     ever(dashboardVM.isActiveSubscription, (bool isActive) {
       if (isActive && routers.isEmpty) {
         loadRouters();
@@ -76,7 +75,7 @@ class RouterViewModel extends GetxController {
           _syncWithCache();
         }
       } else if (event.startsWith('router_')) {
-         loadRouters();
+        loadRouters();
       }
     });
   }
@@ -91,7 +90,7 @@ class RouterViewModel extends GetxController {
       }
       routers.value = await _routerRepository.getRouters();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat router: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal memuat router: $e');
     } finally {
       isLoading.value = false;
     }
@@ -125,25 +124,24 @@ class RouterViewModel extends GetxController {
       final future = isEditing.value
           ? _routerRepository.updateRouter(routerData)
           : _routerRepository.createRouter(routerData);
-          
-      Get.back(); // Tutup dialog segera
+
+      Get.back();
       SnackbarUtils.showSuccess('Proses...', 'Menyimpan router');
-      
+
       await future;
 
-      // Optimistic save
       if (!isEditing.value) {
         routers.add(routerData);
       } else {
-         final idx = routers.indexWhere((r) => r.id == routerData.id);
-         if (idx != -1) routers[idx] = routerData;
+        final idx = routers.indexWhere((r) => r.id == routerData.id);
+        if (idx != -1) routers[idx] = routerData;
       }
       _syncWithCache();
-      
+
       clearForm();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal menyimpan router: $e');
-      loadRouters(); // Fallback
+      SnackbarUtils.showError('Gagal', 'Gagal menyimpan router: $e');
+      loadRouters();
     } finally {
       isLoading.value = false;
     }
@@ -152,20 +150,25 @@ class RouterViewModel extends GetxController {
   Future<void> deleteRouter(String id) async {
     try {
       await _routerRepository.deleteRouter(id);
-      
-      // Jika berhasil, baru hapus dari memori dan sinkronisasi cache
+
       routers.removeWhere((r) => r.id == id);
       _syncWithCache();
-      
+
       SnackbarUtils.showSuccess('Berhasil', 'Router berhasil dihapus');
     } catch (e) {
-      SnackbarUtils.showError('Gagal Hapus', ErrorUtils.sanitizeServerMessage(e.toString().replaceAll('Exception: ', '')));
-      loadRouters(); // Fallback resync
+      SnackbarUtils.showError(
+        'Gagal Hapus',
+        ErrorUtils.sanitizeServerMessage(
+          e.toString().replaceAll('Gagal: ', ''),
+        ),
+      );
+      loadRouters();
     }
   }
 
   void _syncWithCache() {
-    _routerRepository.updateRouterCache(routers.toList())
+    _routerRepository
+        .updateRouterCache(routers.toList())
         .catchError((e) => print('[RouterVM] Cache sync error: $e'));
   }
 
@@ -253,7 +256,7 @@ class RouterViewModel extends GetxController {
               ],
             ),
             content: SizedBox(
-              width: 500, // Constrain width on desktop
+              width: 500,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -298,9 +301,13 @@ class RouterViewModel extends GetxController {
                               ),
                             )
                           : Text(
-                              pingLines.isEmpty ? "Ping completed with no log data." : pingLines.join('\n'),
+                              pingLines.isEmpty
+                                  ? "Ping completed with no log data."
+                                  : pingLines.join('\n'),
                               style: GoogleFonts.firaCode(
-                                color: pingLines.isEmpty ? Colors.white38 : Colors.greenAccent,
+                                color: pingLines.isEmpty
+                                    ? Colors.white38
+                                    : Colors.greenAccent,
                                 fontSize: 10,
                               ),
                             ),
@@ -326,18 +333,16 @@ class RouterViewModel extends GetxController {
       final int routerId = int.tryParse(id) ?? 0;
       final result = await _routerRepository.pingRouter(routerId);
 
-      // Ambil detail dari respons API:
-      // { "status": "ONLINE", "detail": { "raw": "PING ...", "time": 60.7, "status": "ONLINE" } }
       final detail = result['detail'] as Map? ?? {};
       final String rawOutput = (detail['raw'] ?? '').toString();
       final String time = (detail['time'] ?? result['time'] ?? '-').toString();
-      final String status = (result['status'] ?? detail['status'] ?? 'UNKNOWN').toString();
+      final String status = (result['status'] ?? detail['status'] ?? 'UNKNOWN')
+          .toString();
 
       isPingLoading.value = false;
       pingStatus.value = status;
       pingResponseTime.value = time;
 
-      // Tampilkan isi 'raw' baris per baris di console output
       final List<String> lines = rawOutput.split('\n');
       for (var line in lines) {
         if (line.trim().isEmpty) continue;

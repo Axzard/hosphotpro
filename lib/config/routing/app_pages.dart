@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../ui/main/main_layout_screen.dart';
 import '../../ui/core/controllers/navigation_controller.dart';
@@ -23,6 +24,7 @@ import '../../ui/router/view_models/hotspot_view_model.dart';
 import '../../ui/voucher/voucher_package_management_screen.dart';
 import '../../ui/voucher/view_models/voucher_package_view_model.dart';
 import '../../ui/core/widgets/error_screen.dart';
+import '../../ui/error/screens/network_error_screen.dart';
 import '../../ui/subscription/payment_error_screen.dart';
 import '../../ui/auth/forgot_password_screen.dart';
 import '../../ui/auth/reset_password_screen.dart';
@@ -78,10 +80,7 @@ class AppPages {
         }
       }),
     ),
-    GetPage(
-      name: Routes.VOUCHERS,
-      page: () => const PrintVoucherScreen(),
-    ),
+    GetPage(name: Routes.VOUCHERS, page: () => const PrintVoucherScreen()),
     GetPage(
       name: Routes.VOUCHER_DETAIL,
       page: () => const VoucherDetailScreen(),
@@ -135,6 +134,30 @@ class AppPages {
         return PaymentErrorScreen(
           message: args['message'],
           bankName: args['bankName'],
+        );
+      },
+    ),
+    GetPage(
+      name: Routes.NETWORK_ERROR,
+      page: () {
+        final _args = Get.arguments as Map<String, dynamic>? ?? {};
+        final _type = _args['type'] as String? ?? 'offline';
+
+        final _title = _type == 'timeout'
+            ? 'Koneksi Lambat'
+            : 'Tidak Ada Koneksi';
+        final _subtitle = _type == 'timeout'
+            ? 'Server membutuhkan waktu terlalu lama untuk merespons. Pastikan koneksi internet Anda stabil.'
+            : 'Periksa kembali koneksi Wi-Fi atau Data Seluler pada perangkat Anda.';
+
+        final _icon = _type == 'timeout'
+            ? Icons.hourglass_bottom_rounded
+            : Icons.wifi_off_rounded;
+
+        return NetworkErrorScreen(
+          title: _args['title'] ?? _title,
+          subtitle: _args['subtitle'] ?? _subtitle,
+          icon: _args['icon'] ?? _icon,
         );
       },
     ),
