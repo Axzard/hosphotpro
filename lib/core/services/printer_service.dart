@@ -3,8 +3,6 @@ import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../domain/models/voucher_model.dart';
-import 'dart:typed_data';
-import 'dart:async';
 import 'dart:io';
 
 class PrinterService extends GetxService {
@@ -72,8 +70,10 @@ class PrinterService extends GetxService {
       }
 
       print("Connecting to ${device.name} (${device.macAdress})");
+
       final bool result = await PrintBluetoothThermal.connect(
-          macPrinterAddress: device.macAdress);
+        macPrinterAddress: device.macAdress,
+      );
 
       if (result) {
         selectedDevice.value = device;
@@ -101,55 +101,14 @@ class PrinterService extends GetxService {
   Future<void> printVoucher(VoucherModel voucher) async {
     if (!isConnected.value) return;
 
-    final profile = await CapabilityProfile.load();
-    final generator = Generator(PaperSize.mm58, profile);
-    List<int> bytes = [];
+    try {
+      final profile = await CapabilityProfile.load();
+      final generator = Generator(PaperSize.mm58, profile);
 
-    bytes += generator.text(
-      'hotspotsio',
-      styles: const PosStyles(
-        align: PosAlign.center,
-        bold: true,
-        height: PosTextSize.size2,
-        width: PosTextSize.size2,
-      ),
-    );
-    bytes += generator.feed(1);
-    bytes += generator.text(
-      voucher.namaServer,
-      styles: const PosStyles(align: PosAlign.center),
-    );
-    bytes += generator.hr();
+      List<int> bytes = [];
 
-    bytes += generator.text(
-      'DATA LOGIN VOUCHER',
-      styles: const PosStyles(align: PosAlign.center, bold: true),
-    );
-    bytes += generator.feed(1);
-
-    bytes += generator.text(
-      'USERNAME / KODE',
-      styles: const PosStyles(align: PosAlign.center),
-    );
-    bytes += generator.text(
-      voucher.kodeVoucher,
-      styles: const PosStyles(
-        align: PosAlign.center,
-        bold: true,
-        height: PosTextSize.size2,
-        width: PosTextSize.size2,
-      ),
-    );
-
-    if (voucher.passwordVoucher.isNotEmpty &&
-        voucher.passwordVoucher != voucher.kodeVoucher) {
-      bytes += generator.feed(1);
       bytes += generator.text(
-        'PASSWORD',
-        styles: const PosStyles(align: PosAlign.center),
-      );
-      bytes += generator.text(
-        voucher.passwordVoucher,
+        'HOTSPOTSIO',
         styles: const PosStyles(
           align: PosAlign.center,
           bold: true,
@@ -157,23 +116,80 @@ class PrinterService extends GetxService {
           width: PosTextSize.size2,
         ),
       );
+
+      bytes += generator.feed(1);
+
+      bytes += generator.text(
+        voucher.namaServer,
+        styles: const PosStyles(align: PosAlign.center),
+      );
+
+      bytes += generator.hr();
+
+      bytes += generator.text(
+        'DATA LOGIN VOUCHER',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      );
+
+      bytes += generator.feed(1);
+
+      bytes += generator.text(
+        'USERNAME / KODE',
+        styles: const PosStyles(align: PosAlign.center),
+      );
+
+      bytes += generator.text(
+        voucher.kodeVoucher,
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: PosTextSize.size2,
+          width: PosTextSize.size2,
+        ),
+      );
+
+      if (voucher.passwordVoucher.isNotEmpty &&
+          voucher.passwordVoucher != voucher.kodeVoucher) {
+        bytes += generator.feed(1);
+
+        bytes += generator.text(
+          'PASSWORD',
+          styles: const PosStyles(align: PosAlign.center),
+        );
+
+        bytes += generator.text(
+          voucher.passwordVoucher,
+          styles: const PosStyles(
+            align: PosAlign.center,
+            bold: true,
+            height: PosTextSize.size2,
+            width: PosTextSize.size2,
+          ),
+        );
+      }
+
+      bytes += generator.hr();
+
+      bytes += generator.text(
+        'Terima Kasih',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      );
+
+      bytes += generator.feed(3);
+
+      bytes += [0x1B, 0x64, 0x00];
+
+      await _writeToPrinter(bytes);
+    } catch (e) {
+      print("Error generating voucher print: $e");
+      throw Exception("Print voucher failed: $e");
     }
-
-    bytes += generator.hr();
-    bytes += generator.text(
-      'Terima Kasih',
-      styles: const PosStyles(align: PosAlign.center, bold: true),
-    );
-
-    bytes += generator.feed(1);
-    bytes += generator.cut();
-
-    await _writeToPrinter(Uint8List.fromList(bytes));
   }
 
-  Future<void> _writeToPrinter(Uint8List bytes) async {
+  Future<void> _writeToPrinter(List<int> bytes) async {
     try {
       final bool result = await PrintBluetoothThermal.writeBytes(bytes);
+
       if (!result) {
         throw Exception("Failed to write to printer");
       }

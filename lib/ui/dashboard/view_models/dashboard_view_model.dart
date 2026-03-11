@@ -112,8 +112,7 @@ class DashboardViewModel extends GetxController {
     _activeUserThrottle = Timer(const Duration(seconds: 3), () async {
       try {
         final activeVouchers = await _voucherRepository.getActiveVouchers();
-
-        activeUserCount.value = activeVouchers.length;
+        activeUserCount.value = activeVouchers.where((v) => v.statusVoucher == VoucherStatus.aktif).length;
       } catch (e) {}
     });
   }
@@ -330,7 +329,7 @@ class DashboardViewModel extends GetxController {
       totalTransactionsToday.value = transactions;
 
       if (activeVouchers != null) {
-        activeUserCount.value = activeVouchers.length;
+        activeUserCount.value = activeVouchers.where((v) => v.statusVoucher == VoucherStatus.aktif).length;
         print(
           '[DashboardVM] Initialized Active Vouchers: ${activeUserCount.value}',
         );
@@ -471,7 +470,7 @@ class DashboardViewModel extends GetxController {
       }
 
       final activeVouchersList = await _voucherRepository.getActiveVouchers();
-      activeUserCount.value = activeVouchersList.length;
+      activeUserCount.value = activeVouchersList.where((v) => v.statusVoucher == VoucherStatus.aktif).length;
       print('[DashboardVM] Active Vouchers: ${activeUserCount.value}');
     } catch (e) {
       print('[DashboardVM] Error background fetch: $e');

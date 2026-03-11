@@ -28,7 +28,9 @@ class DashboardStatusCards extends StatelessWidget {
           crossAxisCount: crossAxisCount,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: isWide ? 1.4 : 1.1,
+          childAspectRatio: isWide 
+              ? 1.4 
+              : (constraints.maxWidth < 380 ? 0.95 : 1.1),
           children: [
             Obx(
               () => _buildInfoCard(
@@ -79,7 +81,7 @@ class DashboardStatusCards extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(24),
@@ -94,6 +96,7 @@ class DashboardStatusCards extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -109,7 +112,7 @@ class DashboardStatusCards extends StatelessWidget {
 
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Text(
             value,
             style: GoogleFonts.plusJakartaSans(

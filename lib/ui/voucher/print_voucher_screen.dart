@@ -396,7 +396,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                   ],
                 ),
               ),
-              // Tombol Hapus Semua
+              
               Obx(
                 () => controller.vouchers.isNotEmpty
                     ? IconButton(
@@ -617,7 +617,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                   ),
                   Row(
                     children: [
-                      // Hapus button (Dahulukan agar Print di sisi kanan)
+                      
                       IconButton(
                         icon: controller.deletingVoucherIds.contains(voucher.idVoucher) ||
                                 (controller.isDeletingAll.value && (controller.bulkDeletingCategory.value == null || controller.bulkDeletingCategory.value == voucher.statusVoucher))
@@ -684,7 +684,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                               },
                       ),
 
-                      // Print button (Sekarang di sisi paling kanan)
+                      
                       if (voucher.statusVoucher == VoucherStatus.stok)
                         Padding(
                           padding: const EdgeInsets.only(left: 4),

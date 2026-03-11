@@ -34,6 +34,13 @@ class ApiConfig {
   static const String createVoucherBulk = '$baseUrl/api/voucher/bulk';
   static const String deleteVoucherBulk = '$baseUrl/api/voucher/bulk';
   static const String voucherPackages = '$baseUrl/api/paket-voucher';
+  static String deleteVoucher(int id) => '$baseUrl/api/voucher/$id';
+  static String voucherDetail(int id) => '$baseUrl/api/voucher/$id';
+  static const String vouchersAktif = '$baseUrl/api/voucher/aktif';
+  static String sellVoucher(int id) => '$baseUrl/api/voucher/jual/$id';
+
+
+  // paket voucher endpoints
   static String packagesByHotspot(int idHotspot) => '$baseUrl/api/paket-voucher?id_hotspot=$idHotspot';
   static const String paketVoucherUser = '$baseUrl/api/paket-voucher/user';
   static String voucherPackageDetail(int id) => '$baseUrl/api/paket-voucher/$id';
@@ -41,10 +48,7 @@ class ApiConfig {
   static String deleteVoucherPackage(int id) => '$baseUrl/api/paket-voucher/$id';
   static String vouchersByPackage(int idPaket) => '$baseUrl/api/voucher/paket/$idPaket';
   static String vouchersByHotspot(int idHotspot) => '$baseUrl/api/voucher?id_hotspot=$idHotspot';
-  static String voucherDetail(int id) => '$baseUrl/api/voucher/$id';
-  static String deleteVoucher(int id) => '$baseUrl/api/voucher/$id';
-  static const String vouchersAktif = '$baseUrl/api/voucher/aktif';
-  static String sellVoucher(int id) => '$baseUrl/api/voucher/jual/$id';
+
 
   // Report (Laporan) endpoints
   static const String reportDashboard = '$baseUrl/api/laporan/dashboard';

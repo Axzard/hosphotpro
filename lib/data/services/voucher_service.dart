@@ -12,7 +12,9 @@ List<VoucherPackageApiModel> _parseVoucherPackages(dynamic data) {
   final list = data as List<dynamic>;
   return list
       .where((e) => e is Map)
-      .map((json) => VoucherPackageApiModel.fromJson(json as Map<String, dynamic>))
+      .map(
+        (json) => VoucherPackageApiModel.fromJson(json as Map<String, dynamic>),
+      )
       .toList();
 }
 
@@ -36,7 +38,8 @@ class VoucherService extends GetxService {
 
   String _getErrorMsg(dynamic data, String fallback) {
     if (data is Map) {
-      return (data['pesan'] ?? data['detail'] ?? data['message'] ?? fallback).toString();
+      return (data['pesan'] ?? data['detail'] ?? data['message'] ?? fallback)
+          .toString();
     }
     if (data != null && data.toString().isNotEmpty) {
       return data.toString();
@@ -221,9 +224,12 @@ class VoucherService extends GetxService {
         ),
       );
 
-      if (response.statusCode == 200 || (response.data is Map && response.data['sukses'] == true)) {
+      if (response.statusCode == 200 ||
+          (response.data is Map && response.data['sukses'] == true)) {
         final respData = response.data;
-        final rawData = respData is Map ? (respData['data'] ?? respData) : respData;
+        final rawData = respData is Map
+            ? (respData['data'] ?? respData)
+            : respData;
         if (rawData is Map) {
           final package = VoucherPackageApiModel.fromJson(
             rawData as Map<String, dynamic>,
@@ -235,12 +241,10 @@ class VoucherService extends GetxService {
         String errorMsg = 'Package not found';
         final errData = response.data;
         if (errData is Map) {
-          errorMsg = (errData['pesan'] ?? errData['detail'] ?? errorMsg).toString();
+          errorMsg = (errData['pesan'] ?? errData['detail'] ?? errorMsg)
+              .toString();
         }
-        return ApiResponse(
-          success: false,
-          message: errorMsg,
-        );
+        return ApiResponse(success: false, message: errorMsg);
       }
     } catch (e) {
       return ApiResponse(success: false, message: 'Error: $e');
@@ -295,19 +299,19 @@ class VoucherService extends GetxService {
           message: response.data?['pesan'] ?? 'Package deleted',
         );
       } else {
-        // Extract error message, supporting both Map and raw string responses
         String errorMsg = 'Gagal menghapus paket voucher';
         final dynamic respData = response.data;
         if (respData is Map) {
-          errorMsg = (respData['pesan'] ?? respData['message'] ?? respData['detail'] ?? errorMsg).toString();
+          errorMsg =
+              (respData['pesan'] ??
+                      respData['message'] ??
+                      respData['detail'] ??
+                      errorMsg)
+                  .toString();
         } else if (respData != null && respData.toString().isNotEmpty) {
-          // Raw string from server (e.g. PHP exception dump) — sanitize immediately
           errorMsg = ErrorUtils.sanitizeServerMessage(respData.toString());
         }
-        return ApiResponse(
-          success: false,
-          message: errorMsg,
-        );
+        return ApiResponse(success: false, message: errorMsg);
       }
     } catch (e) {
       return ApiResponse(success: false, message: 'Error: $e');
@@ -329,7 +333,8 @@ class VoucherService extends GetxService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final respData = response.data;
-        final List<dynamic> data = (respData is Map ? respData['data'] : null) ?? [];
+        final List<dynamic> data =
+            (respData is Map ? respData['data'] : null) ?? [];
         final vouchers = await compute(_parseVouchers, data);
         return ApiResponse(
           success: true,
@@ -340,7 +345,8 @@ class VoucherService extends GetxService {
         String errorMsg = 'Status code: ${response.statusCode}';
         final errData = response.data;
         if (errData is Map) {
-          errorMsg = (errData['pesan'] ?? errData['detail'] ?? errorMsg).toString();
+          errorMsg = (errData['pesan'] ?? errData['detail'] ?? errorMsg)
+              .toString();
         } else if (errData != null && errData.toString().isNotEmpty) {
           errorMsg = errData.toString();
         }
@@ -356,12 +362,10 @@ class VoucherService extends GetxService {
   ) async {
     try {
       final token = _tokenService.getToken();
-      // If idHotspot is 0 or -1 (All), use the base /api/voucher endpoint.
-      // NOTE: GET /api/voucher may not be supported — callers should prefer
-      // getAllVouchersByPackages() which uses /api/voucher/paket/{id}.
+
       final url = idHotspot > 0
           ? ApiConfig.vouchersByHotspot(idHotspot)
-          : ApiConfig.vouchersAktif; // fallback: ambil yang aktif dulu
+          : ApiConfig.vouchersAktif;
 
       final response = await _dio.get(
         url,
@@ -380,12 +384,11 @@ class VoucherService extends GetxService {
           if (dataField is List) {
             listData = dataField;
           } else if (dataField is Map) {
-             // Handle cases like {"data": {"detail": [...]}}
-             if (dataField['detail'] is List) {
-               listData = dataField['detail'];
-             } else {
-               listData = [dataField];
-             }
+            if (dataField['detail'] is List) {
+              listData = dataField['detail'];
+            } else {
+              listData = [dataField];
+            }
           }
         } else if (rawData is List) {
           listData = rawData;
@@ -402,19 +405,13 @@ class VoucherService extends GetxService {
         if (response.data is Map) {
           errorMsg = response.data['pesan']?.toString() ?? errorMsg;
         }
-        return ApiResponse(
-          success: false, 
-          message: errorMsg, 
-          data: []
-        );
+        return ApiResponse(success: false, message: errorMsg, data: []);
       }
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), data: []);
     }
   }
 
-  /// Ambil semua voucher berdasarkan daftar id_paket secara paralel
-  /// menggunakan endpoint /api/voucher/paket/{id_paket}
   Future<ApiResponse<List<VoucherApiModel>>> getAllVouchersByPackages(
     List<int> paketIds,
   ) async {
@@ -440,7 +437,6 @@ class VoucherService extends GetxService {
   }
 
   Future<ApiResponse<List<VoucherApiModel>>> getAllVouchers() async {
-    // Re-use getVouchersByHotspot with 0 — kept for compatibility
     return getVouchersByHotspot(0);
   }
 
@@ -459,10 +455,15 @@ class VoucherService extends GetxService {
         final respData = response.data;
         final rawData = respData is Map ? respData['data'] : null;
         if (rawData is Map) {
-          final voucher = VoucherApiModel.fromJson(rawData as Map<String, dynamic>);
+          final voucher = VoucherApiModel.fromJson(
+            rawData as Map<String, dynamic>,
+          );
           return ApiResponse(success: true, message: 'OK', data: voucher);
         }
-        return ApiResponse(success: false, message: 'Voucher data is not a Map');
+        return ApiResponse(
+          success: false,
+          message: 'Voucher data is not a Map',
+        );
       } else {
         return ApiResponse(
           success: false,
@@ -546,9 +547,6 @@ class VoucherService extends GetxService {
     }
   }
 
-  /// Hapus semua voucher sekaligus via DELETE /api/voucher/bulk
-  /// [ids] - jika diisi, hanya hapus id tertentu; jika kosong, hapus semua
-  /// [status] - opsional, filter status: 'stok','terjual','aktif','expired'
   Future<ApiResponse<void>> deleteVoucherBulkAll({
     List<int>? ids,
     String? status,
@@ -634,7 +632,9 @@ class VoucherService extends GetxService {
 
         final vouchers = listData
             .where((e) => e is Map)
-            .map((json) => VoucherApiModel.fromJson(json as Map<String, dynamic>))
+            .map(
+              (json) => VoucherApiModel.fromJson(json as Map<String, dynamic>),
+            )
             .toList();
         return ApiResponse(
           success: true,
@@ -644,7 +644,10 @@ class VoucherService extends GetxService {
       } else {
         return ApiResponse(
           success: false,
-          message: _getErrorMsg(response.data, 'Failed to fetch active vouchers'),
+          message: _getErrorMsg(
+            response.data,
+            'Failed to fetch active vouchers',
+          ),
           data: [],
         );
       }

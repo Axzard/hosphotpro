@@ -22,7 +22,9 @@ class DashboardMenuGrid extends StatelessWidget {
           crossAxisCount: crossAxisCount,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: isWide ? 1.4 : 1.1,
+          childAspectRatio: isWide 
+              ? 1.4 
+              : (constraints.maxWidth < 380 ? 0.95 : 1.1),
           children: [
             Obx(() => _buildMenuCard(
               icon: Icons.shopping_bag_outlined,
@@ -117,7 +119,7 @@ class DashboardMenuGrid extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(24),
@@ -132,6 +134,7 @@ class DashboardMenuGrid extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(12),
@@ -141,7 +144,7 @@ class DashboardMenuGrid extends StatelessWidget {
               ),
               child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               title,
               style: GoogleFonts.plusJakartaSans(
