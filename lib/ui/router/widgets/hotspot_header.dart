@@ -40,7 +40,7 @@ class HotspotHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Manajemen Hotspot',
+                  'Server',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -50,7 +50,7 @@ class HotspotHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  'HOTSPOT CONFIGURATION',
+                  'SERVER CONFIGURATION',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,

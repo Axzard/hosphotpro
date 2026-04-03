@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import '../../../config/routing/app_routes.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../domain/repositories/router_repository.dart';
 import '../../../domain/repositories/voucher_repository.dart';
 import '../../../domain/repositories/subscription_repository.dart';
@@ -420,10 +421,36 @@ class DashboardViewModel extends GetxController {
         'voucher_package_count': voucherPackageCount.value,
       });
     } catch (e) {
-      Get.toNamed(
-        Routes.ERROR,
-        arguments: 'Gagal memuat data dashboard, terjadi gangguan pada server.',
-      );
+      print('[DashboardVM] fetchDashboardData error: $e');
+
+      // Jika ada data cache, tidak perlu tampilkan error ke user (silent fail)
+      final hasCachedData = reportSummary.value != null;
+
+      if (ErrorUtils.isNetworkError(e)) {
+        // Jaringan lag/timeout — hanya tampilkan snackbar jika benar-benar tidak ada data
+        if (!hasCachedData && isInitial) {
+          SnackbarUtils.showError(
+            'Koneksi Lambat',
+            'Gagal memuat dashboard. Periksa koneksi internet Anda.',
+          );
+        }
+      } else if (ErrorUtils.isServerError(e)) {
+        // Server error — snackbar saja, jangan navigate paksa
+        if (!isSilent) {
+          SnackbarUtils.showError(
+            'Server Bermasalah',
+            'Server sedang mengalami gangguan. Data yang ditampilkan mungkin tidak terbaru.',
+          );
+        }
+      } else {
+        // Error lain yang tidak diketahui
+        if (!isSilent && !hasCachedData) {
+          SnackbarUtils.showError(
+            'Gagal Memuat',
+            'Terjadi kesalahan saat memuat data dashboard.',
+          );
+        }
+      }
     } finally {
       if (isInitial) {
         isLoading.value = false;
@@ -480,6 +507,7 @@ class DashboardViewModel extends GetxController {
       Get.toNamed(Routes.SUBSCRIPTION_STATUS);
   void navigateToPackageList() => Get.toNamed(Routes.PACKAGES);
   void navigateToHotspots() => Get.toNamed(Routes.HOTSPOTS);
+  void navigateToActiveVouchers() => Get.toNamed(Routes.ACTIVE_VOUCHERS);
 
   void navigateToVoucherPackages() => Get.toNamed(Routes.VOUCHER_PACKAGES);
 

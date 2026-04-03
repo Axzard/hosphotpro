@@ -40,7 +40,7 @@ class VoucherPackageHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Manajemen Paket Voucher',
+                  'User Profile',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -50,7 +50,7 @@ class VoucherPackageHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  'VOUCHER CONFIGURATION',
+                  'USER PROFILE CONFIGURATION',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,

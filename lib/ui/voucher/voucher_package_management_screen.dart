@@ -52,7 +52,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                       return DropdownButton<HotspotModel>(
                         value: dropdownValue,
                         hint: const Text(
-                          'Pilih Hotspot',
+                          'Pilih Server',
                           style: TextStyle(color: Colors.white54),
                         ),
                         dropdownColor: cardColor,
@@ -95,7 +95,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Tidak ada paket voucher',
+                              'Tidak ada User Profile',
                               style: GoogleFonts.plusJakartaSans(
                                 color: Colors.white54,
                               ),

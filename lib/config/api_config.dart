@@ -1,6 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:get/get.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 
 class ApiConfig {
   static const String baseUrl = 'https://api.siodev.sbs';
@@ -82,39 +80,22 @@ class ApiConfig {
   static Dio createDio() {
     final dio = Dio(
       BaseOptions(
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
-        sendTimeout: const Duration(seconds: 15),
+        // Timeout dikurangi agar tidak terlalu lama menunggu saat jaringan lag
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 20),
+        sendTimeout: const Duration(seconds: 10),
       ),
     );
 
+    // Tidak ada navigasi paksa di interceptor.
+    // Exception dilempar ke caller (ViewModel) untuk ditangani.
+    // Ini mencegah double-navigation:
+    //   interceptor navigate → exception ke VM → VM navigate lagi.
     dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          try {
-            final connectivityResult = await Connectivity().checkConnectivity();
-            if (connectivityResult.contains(ConnectivityResult.none)) {
-              Get.toNamed('/network-error', arguments: {'type': 'offline'});
-              return handler.reject(
-                DioException(
-                  requestOptions: options,
-                  type: DioExceptionType.connectionError,
-                  error: 'Tidak ada koneksi internet',
-                ),
-              );
-            }
-          } catch (_) {}
-          
-          return handler.next(options);
-        },
         onError: (DioException e, handler) {
-          if (e.type == DioExceptionType.connectionTimeout || 
-              e.type == DioExceptionType.receiveTimeout || 
-              e.type == DioExceptionType.sendTimeout) {
-            Get.toNamed('/network-error', arguments: {'type': 'timeout'});
-          } else if (e.response?.statusCode == 500) {
-            Get.toNamed('/error', arguments: 'Server sedang bermasalah. Silakan hubungi admin atau coba lagi nanti.');
-          }
+          // Hanya log, biarkan ViewModel yang handle tampilan error
+          print('[Dio] Error: ${e.type} | ${e.response?.statusCode} | ${e.message}');
           return handler.next(e);
         },
       ),

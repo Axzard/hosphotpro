@@ -24,6 +24,7 @@ class VoucherViewModel extends GetxController {
 
   final vouchers = <VoucherModel>[].obs;
   final filterPaketId = Rxn<int>();
+  final searchQuery = ''.obs;
 
   List<VoucherModel> get stockVouchers => _applyFilters(VoucherStatus.stok);
   List<VoucherModel> get soldVouchers => _applyFilters(VoucherStatus.terjual);
@@ -31,7 +32,8 @@ class VoucherViewModel extends GetxController {
   List<VoucherModel> get expiredVouchers => _applyFilters(VoucherStatus.expired);
 
   List<VoucherModel> _applyFilters(VoucherStatus status) {
-    return vouchers.where((v) {
+    final query = searchQuery.value.toLowerCase().trim();
+    final filtered = vouchers.where((v) {
       final matchStatus = v.statusVoucher == status;
 
       bool matchHotspot = true;
@@ -41,9 +43,22 @@ class VoucherViewModel extends GetxController {
       }
 
       if (!matchHotspot) return false;
-      if (filterPaketId.value == null) return matchStatus;
-      return matchStatus && v.idPaket == filterPaketId.value;
+
+      bool matchPackage = true;
+      if (filterPaketId.value != null) {
+        matchPackage = v.idPaket == filterPaketId.value;
+      }
+
+      bool matchSearch = true;
+      if (query.isNotEmpty) {
+        matchSearch = v.kodeVoucher.toLowerCase().contains(query) ||
+            v.namaPaket.toLowerCase().contains(query);
+      }
+
+      return matchStatus && matchPackage && matchSearch;
     }).toList();
+
+    return filtered;
   }
 
   void setFilterPaket(int? id) {
@@ -160,10 +175,15 @@ class VoucherViewModel extends GetxController {
           if (intId != null) {
             final index = vouchers.indexWhere((v) => v.idVoucher == intId);
             if (index != -1) {
+              final oldStatus = vouchers[index].statusVoucher;
+              final newStatus = VoucherStatus.fromString(statusStr);
+              print('[VoucherVM] Updating voucher $intId from $oldStatus to $newStatus (raw: $statusStr)');
+              
               vouchers[index] = vouchers[index].copyWith(
-                statusVoucher: VoucherStatus.fromString(statusStr),
+                statusVoucher: newStatus,
               );
               _syncWithCache(vouchers);
+              vouchers.refresh();
             }
           }
         }
@@ -379,13 +399,27 @@ class VoucherViewModel extends GetxController {
         vouchers.assignAll(result);
       }
     } catch (e) {
+      print('[VoucherVM] loadVouchers error: $e');
+      // Hanya tampilkan error jika benar-benar tidak ada data sama sekali
       if (vouchers.isEmpty) {
-        Get.toNamed(
-          Routes.ERROR,
-          arguments:
-              'Gagal memuat daftar voucher, terjadi gangguan pada server.',
-        );
+        if (ErrorUtils.isNetworkError(e)) {
+          SnackbarUtils.showError(
+            'Koneksi Lambat',
+            'Gagal memuat voucher. Periksa koneksi internet Anda.',
+          );
+        } else if (ErrorUtils.isServerError(e)) {
+          SnackbarUtils.showError(
+            'Server Bermasalah',
+            'Server sedang mengalami gangguan, coba lagi nanti.',
+          );
+        } else {
+          SnackbarUtils.showError(
+            'Gagal Memuat',
+            'Terjadi kesalahan saat memuat daftar voucher.',
+          );
+        }
       }
+      // Jika ada data cache/sebelumnya, biarkan silent — user masih lihat data lama
     } finally {
       isLoading.value = false;
     }
@@ -673,20 +707,22 @@ class VoucherViewModel extends GetxController {
     final List<VoucherModel> updatedVouchers = [];
     for (final voucher in vouchersToPrint) {
       if (voucher.statusVoucher == VoucherStatus.stok) {
-        try {
-          await _voucherRepository.sellVoucher(voucher.idVoucher, 'cash');
-          final updated = voucher.copyWith(
-            statusVoucher: VoucherStatus.terjual,
-          );
+          try {
+            print('[VoucherVM] Selling voucher ${voucher.idVoucher} for print');
+            await _voucherRepository.sellVoucher(voucher.idVoucher, 'cash');
+            final updated = voucher.copyWith(
+              statusVoucher: VoucherStatus.terjual,
+            );
 
-          final index = vouchers.indexWhere(
-            (v) => v.idVoucher == voucher.idVoucher,
-          );
-          if (index != -1) {
-            vouchers[index] = updated;
-          }
-          updatedVouchers.add(updated);
-        } catch (e) {
+            final index = vouchers.indexWhere(
+              (v) => v.idVoucher == voucher.idVoucher,
+            );
+            if (index != -1) {
+              print('[VoucherVM] Local update voucher ${voucher.idVoucher} to TERJUAL');
+              vouchers[index] = updated;
+            }
+            updatedVouchers.add(updated);
+          } catch (e) {
           updatedVouchers.add(voucher);
           print('[VoucherVM] Gagal sell voucher ${voucher.idVoucher}: $e');
         }
@@ -695,7 +731,9 @@ class VoucherViewModel extends GetxController {
       }
     }
 
-    vouchers.refresh();
+    print('[VoucherVM] Bulk sell finished. Syncing with server...');
+    vouchers.refresh(); 
+    await loadVouchers(); // FORCE SYNC FROM SERVER
     _syncWithCache(vouchers);
 
     return updatedVouchers;

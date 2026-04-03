@@ -74,7 +74,7 @@ class DesktopSidebar extends StatelessWidget {
                   ),
                   _SidebarItem(
                     icon: Icons.inventory_2_outlined,
-                    label: 'Paket Voucher',
+                    label: 'User Interface',
                     route: Routes.VOUCHER_PACKAGES,
                     isActive: navCtrl != null 
                         ? selectedIndex == 2 
@@ -90,16 +90,6 @@ class DesktopSidebar extends StatelessWidget {
                         ? selectedIndex == 3 
                         : currentRoute == Routes.MIKROTIK_ROUTERS,
                     index: 3,
-                    navCtrl: navCtrl,
-                  ),
-                  _SidebarItem(
-                    icon: Icons.wifi_off_outlined,
-                    label: 'Manajemen Hotspot',
-                    route: Routes.HOTSPOTS,
-                    isActive: navCtrl != null 
-                        ? selectedIndex == 4 
-                        : currentRoute == Routes.HOTSPOTS,
-                    index: 4,
                     navCtrl: navCtrl,
                   ),
                   _SidebarItem(

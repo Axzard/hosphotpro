@@ -373,7 +373,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Manajemen Voucher',
+                      'Voucher',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -422,8 +422,9 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          
+          const SizedBox(height: 12),
+
+          // Hotspot Dropdown
           Obx(() {
             if (controller.hotspots.isEmpty) return const SizedBox.shrink();
 
@@ -438,7 +439,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                 child: DropdownButton<HotspotModel>(
                   value: controller.selectedHotspot.value,
                   hint: const Text(
-                    'Pilih Hotspot',
+                    'Pilih Server',
                     style: TextStyle(color: Colors.white54, fontSize: 13),
                   ),
                   dropdownColor: const Color(0xFF131E29),
@@ -464,6 +465,65 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                       controller.onHotspotChanged(val);
                     }
                   },
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 10),
+
+          // Search Bar
+          Obx(() {
+            return TextField(
+              onChanged: (val) => controller.searchQuery.value = val,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Cari voucher (kode / nama paket)...',
+                hintStyle: GoogleFonts.plusJakartaSans(
+                  color: Colors.white38,
+                  fontSize: 13,
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF00C2FF),
+                  size: 20,
+                ),
+                suffixIcon: controller.searchQuery.value.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white38,
+                          size: 18,
+                        ),
+                        onPressed: () {
+                          controller.searchQuery.value = '';
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.03),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF00C2FF),
+                    width: 1.5,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
                 ),
               ),
             );
@@ -686,32 +746,6 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
 
                       
                       if (voucher.statusVoucher == VoucherStatus.stok)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4),
-                          child: TextButton.icon(
-                            onPressed: isInteractionDisabled
-                                ? null
-                                : () => controller.printVoucher(voucher),
-                            icon: const Icon(
-                              Icons.print_outlined,
-                              size: 18,
-                              color: Colors.white70,
-                            ),
-                            label: const Text(
-                              'Print',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            style: TextButton.styleFrom(
-                              backgroundColor: Colors.white.withValues(alpha: 0.1),
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                            ),
-                          ),
-                        ),
-                      if (voucher.statusVoucher == VoucherStatus.terjual ||
-                          voucher.statusVoucher == VoucherStatus.aktif)
                         Padding(
                           padding: const EdgeInsets.only(left: 4),
                           child: TextButton.icon(

@@ -9,7 +9,6 @@ import '../../../domain/models/voucher_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/services/printer_service.dart';
 import '../../../core/utils/snackbar_utils.dart';
-import '../view_models/voucher_view_model.dart';
 import 'dart:math' as math;
 
 class VoucherPrintPreview extends StatefulWidget {
@@ -421,18 +420,6 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
         await printerService.printVoucher(toPrint[i]);
 
         await Future.delayed(const Duration(milliseconds: 600));
-      }
-
-      final hasStokVouchers = toPrint.any(
-        (v) => v.statusVoucher == VoucherStatus.stok,
-      );
-      if (hasStokVouchers) {
-        try {
-          final voucherVM = Get.find<VoucherViewModel>();
-          await voucherVM.sellBulkVouchersForPrint(toPrint);
-        } catch (e) {
-          print('[PrintPreview] Error updating status after print: $e');
-        }
       }
 
       Get.back();

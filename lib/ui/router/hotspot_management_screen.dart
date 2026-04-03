@@ -54,7 +54,7 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                               items: [
                                 DropdownMenuItem<RouterModel>(
                                   value: RouterModel.semua,
-                                  child: const Text('Semua Router'),
+                                  child: const Text('Semua Mikrotik'),
                                 ),
                                 ...filteredRouters.map((router) {
                                   return DropdownMenuItem<RouterModel>(
@@ -91,7 +91,7 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                                   ),
                                 )
                               : const Icon(Icons.sync_rounded, color: accentColor),
-                          tooltip: 'Sinkronkan Hotspot',
+                          tooltip: 'Sinkronkan Server',
                         ),
                       );
                     }),

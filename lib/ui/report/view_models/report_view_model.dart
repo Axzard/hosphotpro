@@ -3,8 +3,8 @@ import 'package:get/get.dart';
 import '../../../domain/repositories/report_repository.dart';
 import '../../../domain/models/report_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/services/websocket_service.dart';
-import '../../../config/routing/app_routes.dart' as app_routes;
 import '../../../data/model/report_api_model.dart';
 import '../../../core/services/cache_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
@@ -83,12 +83,21 @@ class ReportViewModel extends GetxController {
   void _initRealtimeListeners() {
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
       final event = (eventData['event'] ?? '').toString().toLowerCase();
+      final data = eventData['data'];
 
-      if (event == 'voucher:sold' ||
-          event == 'voucher:updated' ||
-          event == 'voucher:created' ||
-          event == 'voucher:bulkcreated') {
+      // Refresh laporan saat ada voucher yang menjadi aktif
+      if (event == 'voucher:aktif' || event == 'voucher_aktif') {
         fetchAllReports(isSilent: true);
+        return;
+      }
+
+      // Periksa event voucher:updated apakah statusnya aktif
+      if ((event == 'voucher:updated' || event == 'voucher_updated') && data != null) {
+        final statusStr = (data['status_voucher'] ?? '').toString().toLowerCase();
+        if (statusStr == 'aktif') {
+          fetchAllReports(isSilent: true);
+        }
+        return;
       }
     });
   }
@@ -185,10 +194,30 @@ class ReportViewModel extends GetxController {
         });
       }
     } catch (e) {
-      if (!isSilent) {
-        Get.toNamed(
-          app_routes.Routes.ERROR,
-          arguments: 'Gagal memuat laporan: $e',
+      print('[ReportVM] fetchAllReports error: $e');
+      final hasCachedData = dailyReports.isNotEmpty ||
+          monthlyReports.isNotEmpty ||
+          yearlyReports.isNotEmpty;
+
+      if (isSilent) return; // Silent call — tidak tampilkan apapun saat error
+
+      if (ErrorUtils.isNetworkError(e)) {
+        if (!hasCachedData) {
+          SnackbarUtils.showError(
+            'Koneksi Lambat',
+            'Gagal memuat laporan. Periksa koneksi internet Anda.',
+          );
+        }
+        // Jika ada cache, biarkan silent — data lama masih ditampilkan
+      } else if (ErrorUtils.isServerError(e)) {
+        SnackbarUtils.showError(
+          'Server Bermasalah',
+          'Server sedang mengalami gangguan. Data laporan mungkin belum terbaru.',
+        );
+      } else if (!hasCachedData) {
+        SnackbarUtils.showError(
+          'Gagal Memuat',
+          'Terjadi kesalahan saat memuat laporan.',
         );
       }
     } finally {

@@ -1,6 +1,33 @@
 import 'package:dio/dio.dart';
 
 class ErrorUtils {
+  /// Mengembalikan true jika error disebabkan jaringan lambat/timeout/offline.
+  /// Digunakan ViewModel untuk menampilkan snackbar bukan navigate ke error page.
+  static bool isNetworkError(dynamic error) {
+    if (error is DioException) {
+      return error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.sendTimeout ||
+          error.type == DioExceptionType.connectionError;
+    }
+    final msg = error.toString().toLowerCase();
+    return msg.contains('timeout') ||
+        msg.contains('socketexception') ||
+        msg.contains('connection refused') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('failed host lookup');
+  }
+
+  /// Mengembalikan true jika error berasal dari server (status 5xx).
+  static bool isServerError(dynamic error) {
+    if (error is DioException && error.type == DioExceptionType.badResponse) {
+      final code = error.response?.statusCode ?? 0;
+      return code >= 500 && code < 600;
+    }
+    final msg = error.toString().toLowerCase();
+    return msg.contains('500') || msg.contains('internal server error');
+  }
+
   static String getUserFriendlyMessage(dynamic error) {
     if (error is DioException) {
       switch (error.type) {

@@ -12,6 +12,7 @@ import '../../ui/subscription/view_models/subscription_view_model.dart';
 import '../../ui/report/report_screen.dart';
 import '../../ui/report/view_models/report_view_model.dart';
 import '../../ui/voucher/print_voucher_screen.dart';
+import '../../ui/voucher/active_voucher_screen.dart';
 import '../../ui/voucher/voucher_detail_screen.dart';
 import '../../ui/voucher/view_models/voucher_view_model.dart';
 import '../../ui/router/router_management_screen.dart';
@@ -81,6 +82,10 @@ class AppPages {
       }),
     ),
     GetPage(name: Routes.VOUCHERS, page: () => const PrintVoucherScreen()),
+    GetPage(
+      name: Routes.ACTIVE_VOUCHERS,
+      page: () => const ActiveVoucherScreen(),
+    ),
     GetPage(
       name: Routes.VOUCHER_DETAIL,
       page: () => const VoucherDetailScreen(),

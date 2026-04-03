@@ -59,13 +59,17 @@ class DashboardStatusCards extends StatelessWidget {
                 color: const Color(0xFF00C2FF),
               ),
             ),
-            Obx(
-              () => _buildInfoCard(
-                title: 'User Aktif',
-                value:
-                    '${controller.activeUserCount.value < 0 ? 0 : controller.activeUserCount.value}',
-                icon: Icons.people_alt_rounded,
-                color: const Color(0xFFF472B6),
+            GestureDetector(
+              onTap: () => controller.navigateToActiveVouchers(),
+              child: Obx(
+                () => _buildInfoCard(
+                  title: 'Voucher Aktif',
+                  value:
+                      '${controller.activeUserCount.value < 0 ? 0 : controller.activeUserCount.value}',
+                  icon: Icons.people_alt_rounded,
+                  color: const Color(0xFFF472B6),
+                  isClickable: true,
+                ),
               ),
             ),
           ],
@@ -79,6 +83,7 @@ class DashboardStatusCards extends StatelessWidget {
     required String value,
     required IconData icon,
     required Color color,
+    bool isClickable = false,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -109,7 +114,33 @@ class DashboardStatusCards extends StatelessWidget {
                 ),
                 child: Icon(icon, color: color, size: 22),
               ),
-
+              if (isClickable)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Tap',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.touch_app_rounded,
+                        color: color,
+                        size: 14,
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 12),

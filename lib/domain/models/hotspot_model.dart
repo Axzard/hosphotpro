@@ -18,7 +18,7 @@ class HotspotModel {
   static HotspotModel get semua => HotspotModel(
         idHotspot: -1,
         idRouter: 0,
-        namaServer: 'Semua Hotspot',
+        namaServer: 'Semua Server',
         interface: '',
         statusHotspot: 'aktif',
         dibuatPada: DateTime.now(),

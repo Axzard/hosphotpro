@@ -498,34 +498,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ),
             const SizedBox(height: 14),
           ],
-          if (voucher.statusVoucher == VoucherStatus.terjual ||
-              voucher.statusVoucher == VoucherStatus.aktif) ...[
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton.icon(
-                onPressed: () => controller.printVoucher(voucher),
-                icon: const Icon(Icons.print_outlined),
-                label: Text(
-                  'Cetak Sekarang',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 8,
-                  shadowColor: accentColor.withValues(alpha: 0.4),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-          ],
+
           SizedBox(
             width: double.infinity,
             height: 54,

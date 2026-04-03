@@ -39,7 +39,7 @@ class DashboardMenuGrid extends StatelessWidget {
               final isRestricted = !controller.isActiveSubscription.value;
               return _buildMenuCard(
                 icon: Icons.router_rounded,
-                title: 'Router',
+                title: 'Mikrotik',
                 subtitle: isRestricted ? 'Butuh Langganan' : '${controller.totalRouterCount.value} Unit',
                 color: isRestricted ? Colors.grey : const Color(0xFF4ADE80),
                 onTap: isRestricted 
@@ -50,26 +50,12 @@ class DashboardMenuGrid extends StatelessWidget {
             Obx(() {
               final isRestricted = !controller.isActiveSubscription.value;
               return _buildMenuCard(
-                icon: Icons.wifi_tethering_rounded,
-                title: 'Hotspot',
-                subtitle: isRestricted 
-                    ? 'Butuh Langganan' 
-                    : (controller.selectedRouter.value != null ? '${controller.hotspotCount.value} Unit' : 'Manajemen Server'),
-                color: isRestricted ? Colors.grey : const Color(0xFF00C2FF),
-                onTap: isRestricted 
-                    ? controller.navigateToPackageList
-                    : controller.navigateToHotspots,
-              );
-            }),
-            Obx(() {
-              final isRestricted = !controller.isActiveSubscription.value;
-              return _buildMenuCard(
-                icon: Icons.inventory_2_outlined,
-                title: 'Paket Voucher',
+                icon: Icons.layers_rounded,
+                title: 'User Profile',
                 subtitle: isRestricted 
                     ? 'Butuh Langganan' 
                     : (controller.selectedRouter.value != null ? '${controller.voucherPackageCount.value} Paket' : 'Kelola Paket'),
-                color: isRestricted ? Colors.grey : const Color(0xFF94A3B8),
+                color: isRestricted ? Colors.grey : const Color(0xFFE879F9),
                 onTap: isRestricted 
                     ? controller.navigateToPackageList
                     : controller.navigateToVoucherPackages,
@@ -108,6 +94,7 @@ class DashboardMenuGrid extends StatelessWidget {
       },
     );
   }
+
 
   Widget _buildMenuCard({
     required IconData icon,

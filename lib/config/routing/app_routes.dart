@@ -22,6 +22,7 @@ abstract class _Paths {
   static const FORGOT_PASSWORD = '/forgot-password';
   static const RESET_PASSWORD = '/reset-password';
   static const NETWORK_ERROR = '/network-error';
+  static const ACTIVE_VOUCHERS = '/active-vouchers';
 }
 
 abstract class Routes {
@@ -47,4 +48,5 @@ abstract class Routes {
   static const FORGOT_PASSWORD = _Paths.FORGOT_PASSWORD;
   static const RESET_PASSWORD = _Paths.RESET_PASSWORD;
   static const NETWORK_ERROR = _Paths.NETWORK_ERROR;
+  static const ACTIVE_VOUCHERS = _Paths.ACTIVE_VOUCHERS;
 }

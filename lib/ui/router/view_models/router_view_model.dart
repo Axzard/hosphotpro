@@ -8,6 +8,8 @@ import '../../../../core/utils/snackbar_utils.dart';
 import '../../../../core/utils/error_utils.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
+import '../../../../core/services/session_service.dart';
+import '../../../config/routing/app_routes.dart';
 
 class RouterViewModel extends GetxController {
   final RouterRepository _routerRepository;
@@ -250,7 +252,7 @@ class RouterViewModel extends GetxController {
                   ),
                 const SizedBox(width: 12),
                 const Text(
-                  'Router Ping Status',
+                  'Mikrotik Ping Status',
                   style: TextStyle(color: Colors.white),
                 ),
               ],
@@ -377,6 +379,11 @@ class RouterViewModel extends GetxController {
         ],
       ),
     );
+  }
+
+  void navigateToHotspots(RouterModel router) {
+    Get.find<SessionService>().setRouterId(router.id);
+    Get.toNamed(Routes.HOTSPOTS);
   }
 
   @override
