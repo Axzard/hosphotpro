@@ -260,7 +260,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               children: [
                 _buildFilterTab(
-                  label: 'Semua Paket',
+                  label: 'Semua User Profile',
                   isSelected: controller.filterPaketId.value == null,
                   onTap: () => controller.setFilterPaket(null),
                   accentColor: accentColor,
@@ -480,7 +480,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                 fontSize: 14,
               ),
               decoration: InputDecoration(
-                hintText: 'Cari voucher (kode / nama paket)...',
+                hintText: 'Cari voucher (kode / user profile)...',
                 hintStyle: GoogleFonts.plusJakartaSans(
                   color: Colors.white38,
                   fontSize: 13,

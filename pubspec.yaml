@@ -29,6 +29,7 @@ dependencies:
   window_manager: ^0.4.3
   print_bluetooth_thermal: ^1.1.9
   connectivity_plus: ^7.0.0
+  package_info_plus: ^9.0.1
   
 
 dev_dependencies:

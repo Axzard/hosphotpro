@@ -247,7 +247,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                       ),
                     ),
                   Text(
-                    isEdit ? 'Edit Paket Voucher' : 'Tambah Paket Voucher',
+                    isEdit ? 'Edit User Profile' : 'Tambah User Profile',
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white,
                       fontSize: 20,
@@ -261,7 +261,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
               const SizedBox(height: 16),
               _buildTextField(
                 controller.namaPaketController,
-                'Nama Paket',
+                'Nama User Profile',
                 hint: 'Contoh: Paket 1 Jam',
               ),
               const SizedBox(height: 16),
@@ -354,7 +354,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                             ),
                           )
                         : Text(
-                            isEdit ? 'Simpan Perubahan' : 'Buat Paket',
+                            isEdit ? 'Simpan Perubahan' : 'Buat User Profile',
                             style: GoogleFonts.plusJakartaSans(
                               fontWeight: FontWeight.bold,
                             ),

@@ -4,6 +4,7 @@ import '../../../domain/models/auth_model.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../config/routing/app_pages.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/services/websocket_service.dart';
 import '../../../data/services/token_service.dart';
 import '../../voucher/view_models/voucher_view_model.dart';
@@ -18,11 +19,22 @@ class AuthViewModel extends GetxController {
   final isLoading = false.obs;
   final isCheckingLogin = true.obs;
   final errorMessage = ''.obs;
+  final RxString appVersion = ''.obs;
 
   @override
   void onInit() {
     super.onInit();
+    _initAppVersion();
     checkLoginStatus();
+  }
+
+  Future<void> _initAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      appVersion.value = info.version;
+    } catch (_) {
+      appVersion.value = 'Unknown';
+    }
   }
 
   Future<void> checkLoginStatus() async {

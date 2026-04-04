@@ -123,14 +123,14 @@ class LoginScreen extends GetView<AuthViewModel> {
                       ],
                     ),
                     const SizedBox(height: 30),
-                    const Text(
-                      'Versi 2.0.0',
-                      style: TextStyle(
+                    Obx(() => Text(
+                      'Versi ${controller.appVersion.value}',
+                      style: const TextStyle(
                         color: Colors.white24,
                         fontSize: 12,
                         letterSpacing: 1.0,
                       ),
-                    ),
+                    )),
                     const SizedBox(height: 20),
                   ],
                 ),

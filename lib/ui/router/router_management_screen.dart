@@ -46,16 +46,21 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
               _buildHeader(context, accentColor),
               Expanded(
                 child: ResponsiveMaxWidth(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildListHeader(accentColor),
-                        const SizedBox(height: 16),
-                        _buildRouterList(accentColor, cardColor),
-                        const SizedBox(height: 80),
-                      ],
+                  child: RefreshIndicator(
+                    onRefresh: controller.loadRouters,
+                    color: accentColor,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildListHeader(accentColor),
+                          const SizedBox(height: 16),
+                          _buildRouterList(accentColor, cardColor),
+                          const SizedBox(height: 80),
+                        ],
+                      ),
                     ),
                   ),
                 ),

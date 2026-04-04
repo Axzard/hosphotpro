@@ -106,15 +106,20 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                       return const Center(child: CircularProgressIndicator(color: accentColor));
                     }
                     if (controller.hotspots.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      return RefreshIndicator(
+                        onRefresh: controller.loadHotspots,
+                        color: accentColor,
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           children: [
+                            SizedBox(height: Get.height * 0.3),
                             Icon(Icons.wifi_off, size: 64, color: Colors.white.withValues(alpha: 0.2)),
                             const SizedBox(height: 16),
-                            Text(
-                              'Tidak ada hotspot server',
-                              style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                            Center(
+                              child: Text(
+                                'Tidak ada hotspot server',
+                                style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                              ),
                             ),
                           ],
                         ),
@@ -123,23 +128,28 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
 
                     final isDesktop = ResponsiveLayout.isDesktop(context);
                     if (isDesktop) {
-                      return GridView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 400,
-                          mainAxisExtent: 220,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
+                      return RefreshIndicator(
+                        onRefresh: controller.loadHotspots,
+                        color: accentColor,
+                        child: GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 400,
+                            mainAxisExtent: 220,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
+                          itemCount: controller.hotspots.length,
+                          itemBuilder: (context, index) {
+                            final hotspot = controller.hotspots[index];
+                            return HotspotItemCard(
+                              hotspot: hotspot,
+                              cardColor: cardColor,
+                              accentColor: accentColor,
+                            );
+                          },
                         ),
-                        itemCount: controller.hotspots.length,
-                        itemBuilder: (context, index) {
-                          final hotspot = controller.hotspots[index];
-                          return HotspotItemCard(
-                            hotspot: hotspot,
-                            cardColor: cardColor,
-                            accentColor: accentColor,
-                          );
-                        },
                       );
                     }
 

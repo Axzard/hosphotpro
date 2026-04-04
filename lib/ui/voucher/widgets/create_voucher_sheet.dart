@@ -97,12 +97,12 @@ class _CreateVoucherSheetState extends State<CreateVoucherSheet> {
             ),
             const SizedBox(height: 20),
 
-            _buildLabel('Paket'),
+            _buildLabel('User Profile'),
             const SizedBox(height: 8),
             Obx(
               () => _buildDropdown<int>(
                 value: controller.selectedPaketId.value,
-                hint: 'Pilih Paket',
+                hint: 'Pilih User Profile',
                 items: controller.voucherPackages.map((pkg) {
                   final currencyFormat = NumberFormat.currency(
                     locale: 'id_ID',

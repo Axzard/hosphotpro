@@ -100,7 +100,7 @@ class ActiveVoucherScreen extends GetView<VoucherViewModel> {
             fontSize: 14,
           ),
           decoration: InputDecoration(
-            hintText: 'Cari voucher aktif (kode / nama paket)...',
+            hintText: 'Cari voucher aktif (kode / user profile)...',
             hintStyle: GoogleFonts.plusJakartaSans(
               color: Colors.white38,
               fontSize: 13,
@@ -181,7 +181,7 @@ class ActiveVoucherScreen extends GetView<VoucherViewModel> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Belum ada user yang aktif',
+                      'Belum ada voucher yang aktif',
                       style: GoogleFonts.plusJakartaSans(
                         color: Colors.white54,
                         fontSize: 16,

@@ -293,7 +293,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             children: [
               Expanded(
                 child: _buildInfoItem(
-                  'PAKET',
+                  'USER PROFILE',
                   voucher.namaPaket,
                   Icons.sell_outlined,
                   accentColor,

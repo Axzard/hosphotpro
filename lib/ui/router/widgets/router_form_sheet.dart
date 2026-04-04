@@ -149,7 +149,7 @@ class RouterFormSheet extends GetView<RouterViewModel> {
                       : Text(
                           controller.isEditing.value
                               ? 'Simpan Perubahan'
-                              : 'Tambah Router',
+                              : 'Tambah Mikrotik',
                           style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.bold,
                           ),
