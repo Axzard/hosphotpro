@@ -10,6 +10,8 @@ import '../../../../core/services/websocket_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../config/routing/app_routes.dart';
+import '../../core/controllers/navigation_controller.dart';
+import '../../core/widgets/responsive_layout.dart';
 
 class RouterViewModel extends GetxController {
   final RouterRepository _routerRepository;
@@ -383,7 +385,12 @@ class RouterViewModel extends GetxController {
 
   void navigateToHotspots(RouterModel router) {
     Get.find<SessionService>().setRouterId(router.id);
-    Get.toNamed(Routes.HOTSPOTS);
+    if (Get.isRegistered<NavigationController>() &&
+        ResponsiveLayout.isDesktop(Get.context!)) {
+      Get.find<NavigationController>().setIndexByRoute(Routes.HOTSPOTS);
+    } else {
+      Get.toNamed(Routes.HOTSPOTS);
+    }
   }
 
   @override

@@ -74,7 +74,7 @@ class DesktopSidebar extends StatelessWidget {
                   ),
                   _SidebarItem(
                     icon: Icons.inventory_2_outlined,
-                    label: 'User Interface',
+                    label: 'User Profile',
                     route: Routes.VOUCHER_PACKAGES,
                     isActive: navCtrl != null 
                         ? selectedIndex == 2 
@@ -84,7 +84,7 @@ class DesktopSidebar extends StatelessWidget {
                   ),
                   _SidebarItem(
                     icon: Icons.router_outlined,
-                    label: 'Manajemen Router',
+                    label: 'Mikrotik',
                     route: Routes.MIKROTIK_ROUTERS,
                     isActive: navCtrl != null 
                         ? selectedIndex == 3 

@@ -18,6 +18,8 @@ import '../../../domain/models/voucher_model.dart';
 import '../../../data/services/token_service.dart';
 import '../../../core/services/cache_service.dart';
 import '../../../data/model/report_api_model.dart';
+import '../../core/controllers/navigation_controller.dart';
+import '../../core/widgets/responsive_layout.dart';
 
 class DashboardViewModel extends GetxController {
   final RouterRepository _routerRepository = Get.find<RouterRepository>();
@@ -506,7 +508,13 @@ class DashboardViewModel extends GetxController {
       Get.toNamed(Routes.SUBSCRIPTION_STATUS);
   void navigateToPackageList() => Get.toNamed(Routes.PACKAGES);
   void navigateToHotspots() => Get.toNamed(Routes.HOTSPOTS);
-  void navigateToActiveVouchers() => Get.toNamed(Routes.ACTIVE_VOUCHERS);
+  void navigateToActiveVouchers() {
+    if (Get.isRegistered<NavigationController>() && ResponsiveLayout.isDesktop(Get.context!)) {
+      Get.find<NavigationController>().setIndexByRoute(Routes.ACTIVE_VOUCHERS);
+    } else {
+      Get.toNamed(Routes.ACTIVE_VOUCHERS);
+    }
+  }
 
   void navigateToVoucherPackages() => Get.toNamed(Routes.VOUCHER_PACKAGES);
 

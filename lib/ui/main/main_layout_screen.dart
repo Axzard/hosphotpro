@@ -13,6 +13,8 @@ import '../subscription/subscription_status_screen.dart';
 import '../subscription/package_list_screen.dart';
 import '../subscription/package_detail_screen.dart';
 import '../dashboard/widgets/background_blobs.dart';
+import '../voucher/active_voucher_screen.dart';
+import '../voucher/voucher_detail_screen.dart';
 
 class MainLayoutScreen extends GetView<NavigationController> {
   const MainLayoutScreen({super.key});
@@ -65,6 +67,8 @@ class MainLayoutScreen extends GetView<NavigationController> {
                       PackageListScreen(),
                       SubscriptionStatusScreen(),
                       PackageDetailScreen(),
+                      ActiveVoucherScreen(),
+                      VoucherDetailScreen(),
                     ],
                   ),
                 ),

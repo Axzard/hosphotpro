@@ -229,7 +229,6 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
               const SizedBox(height: 24),
               Row(
                 children: [
-                  if (isEdit)
                     GestureDetector(
                       onTap: () => Get.back(),
                       child: Container(

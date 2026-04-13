@@ -20,6 +20,8 @@ class NavigationController extends GetxController {
     Routes.PACKAGES,
     Routes.SUBSCRIPTION_STATUS,
     Routes.PACKAGE_DETAIL,
+    Routes.ACTIVE_VOUCHERS,
+    Routes.VOUCHER_DETAIL,
   ];
 
   void changeIndex(int index) {

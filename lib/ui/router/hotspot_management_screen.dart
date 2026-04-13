@@ -26,7 +26,10 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
             children: [
               HotspotHeader(accentColor: accentColor),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 8.0,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -35,22 +38,37 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                         decoration: BoxDecoration(
                           color: cardColor,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: Obx(() {
-                            final currentRouter = controller.selectedRouter.value;
+                            final currentRouter =
+                                controller.selectedRouter.value;
                             final dropdownValue = (currentRouter?.id == 'all')
                                 ? RouterModel.semua
-                                : controller.routers.firstWhereOrNull((r) => r.id == currentRouter?.id);
-                            final filteredRouters = controller.routers.where((r) => r.id != 'all').toList();
+                                : controller.routers.firstWhereOrNull(
+                                    (r) => r.id == currentRouter?.id,
+                                  );
+                            final filteredRouters = controller.routers
+                                .where((r) => r.id != 'all')
+                                .toList();
                             return DropdownButton<RouterModel>(
                               value: dropdownValue,
-                              hint: const Text('Pilih Router', style: TextStyle(color: Colors.white54)),
+                              hint: const Text(
+                                'Pilih Router',
+                                style: TextStyle(color: Colors.white54),
+                              ),
                               dropdownColor: cardColor,
                               isExpanded: true,
-                              icon: const Icon(Icons.router, color: accentColor),
-                              style: GoogleFonts.plusJakartaSans(color: Colors.white),
+                              icon: const Icon(
+                                Icons.router,
+                                color: accentColor,
+                              ),
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                              ),
                               items: [
                                 DropdownMenuItem<RouterModel>(
                                   value: RouterModel.semua,
@@ -71,16 +89,21 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                     ),
                     const SizedBox(width: 12),
                     Obx(() {
-                      final isAllRouter = controller.selectedRouter.value?.id == 'all';
+                      final isAllRouter =
+                          controller.selectedRouter.value?.id == 'all';
                       if (isAllRouter) return const SizedBox.shrink();
                       return Container(
                         decoration: BoxDecoration(
                           color: accentColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: accentColor.withValues(alpha: 0.2)),
+                          border: Border.all(
+                            color: accentColor.withValues(alpha: 0.2),
+                          ),
                         ),
                         child: IconButton(
-                          onPressed: controller.isLoading.value ? null : () => controller.syncHotspots(),
+                          onPressed: controller.isLoading.value
+                              ? null
+                              : () => controller.syncHotspots(),
                           icon: controller.isLoading.value
                               ? const SizedBox(
                                   width: 20,
@@ -90,7 +113,10 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                                     color: accentColor,
                                   ),
                                 )
-                              : const Icon(Icons.sync_rounded, color: accentColor),
+                              : const Icon(
+                                  Icons.sync_rounded,
+                                  color: accentColor,
+                                ),
                           tooltip: 'Sinkronkan Server',
                         ),
                       );
@@ -102,8 +128,11 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
               Expanded(
                 child: ResponsiveMaxWidth(
                   child: Obx(() {
-                    if (controller.isLoading.value && controller.hotspots.isEmpty) {
-                      return const Center(child: CircularProgressIndicator(color: accentColor));
+                    if (controller.isLoading.value &&
+                        controller.hotspots.isEmpty) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: accentColor),
+                      );
                     }
                     if (controller.hotspots.isEmpty) {
                       return RefreshIndicator(
@@ -113,12 +142,18 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           children: [
                             SizedBox(height: Get.height * 0.3),
-                            Icon(Icons.wifi_off, size: 64, color: Colors.white.withValues(alpha: 0.2)),
+                            Icon(
+                              Icons.wifi_off,
+                              size: 64,
+                              color: Colors.white.withValues(alpha: 0.2),
+                            ),
                             const SizedBox(height: 16),
                             Center(
                               child: Text(
                                 'Tidak ada hotspot server',
-                                style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white54,
+                                ),
                               ),
                             ),
                           ],
@@ -134,12 +169,13 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                         child: GridView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: 24),
-                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 400,
-                            mainAxisExtent: 220,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 400,
+                                mainAxisExtent: 220,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                              ),
                           itemCount: controller.hotspots.length,
                           itemBuilder: (context, index) {
                             final hotspot = controller.hotspots[index];

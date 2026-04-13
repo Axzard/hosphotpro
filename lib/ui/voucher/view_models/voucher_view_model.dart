@@ -15,6 +15,8 @@ import '../../../core/services/websocket_service.dart';
 import '../../../core/services/session_service.dart';
 import '../../../data/model/voucher_api_model.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
+import '../../core/controllers/navigation_controller.dart';
+import '../../core/widgets/responsive_layout.dart';
 
 class VoucherViewModel extends GetxController {
   final VoucherRepository _voucherRepository = Get.find<VoucherRepository>();
@@ -83,6 +85,7 @@ class VoucherViewModel extends GetxController {
   final Rxn<RouterModel> selectedRouter = Rxn<RouterModel>();
   final Rxn<HotspotModel> selectedHotspot = Rxn<HotspotModel>();
   final selectedPaketId = Rxn<int>();
+  String _lastVoucherListRoute = Routes.VOUCHERS;
 
   StreamSubscription? _refreshSub;
 
@@ -647,10 +650,24 @@ class VoucherViewModel extends GetxController {
 
   void navigateToDetail(VoucherModel voucher) {
     selectedVoucher.value = voucher;
-    Get.toNamed(Routes.VOUCHER_DETAIL, arguments: voucher);
+    if (Get.isRegistered<NavigationController>() && ResponsiveLayout.isDesktop(Get.context!)) {
+      final nav = Get.find<NavigationController>();
+      _lastVoucherListRoute = nav.currentRoute;
+      nav.setIndexByRoute(Routes.VOUCHER_DETAIL);
+    } else {
+      Get.toNamed(Routes.VOUCHER_DETAIL, arguments: voucher);
+    }
 
     if (voucher.namaServer.isEmpty) {
       _fetchFullVoucherDetail(voucher.idVoucher);
+    }
+  }
+
+  void goBackFromDetail() {
+    if (Get.isRegistered<NavigationController>() && ResponsiveLayout.isDesktop(Get.context!)) {
+      Get.find<NavigationController>().setIndexByRoute(_lastVoucherListRoute);
+    } else {
+      Get.back();
     }
   }
 

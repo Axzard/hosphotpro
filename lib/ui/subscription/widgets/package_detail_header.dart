@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/widgets/responsive_layout.dart';
+import '../../core/controllers/navigation_controller.dart';
+import '../../../config/routing/app_routes.dart';
 
 class PackageDetailHeader extends StatelessWidget {
   final Color accentColor;
@@ -14,25 +16,31 @@ class PackageDetailHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
       child: Row(
         children: [
-          if (ResponsiveLayout.isMobile(context))
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: GestureDetector(
-                onTap: () => Get.back(),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.arrow_back_ios_new,
-                    color: accentColor,
-                    size: 18,
-                  ),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: () {
+                if (Get.isRegistered<NavigationController>() && 
+                    ResponsiveLayout.isDesktop(context)) {
+                  Get.find<NavigationController>().setIndexByRoute(Routes.PACKAGES);
+                } else {
+                  Get.back();
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.arrow_back_ios_new,
+                  color: accentColor,
+                  size: 18,
                 ),
               ),
             ),
+          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

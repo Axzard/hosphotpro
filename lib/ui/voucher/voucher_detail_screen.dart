@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../core/utils/snackbar_utils.dart';
-import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/snackbar_utils.dart';
+import 'package:get/get.dart';
 import '../../domain/models/voucher_model.dart';
+import '../../config/routing/app_routes.dart';
+import '../core/controllers/navigation_controller.dart';
+import '../core/widgets/responsive_layout.dart';
 import 'view_models/voucher_view_model.dart';
 
 class VoucherDetailScreen extends GetView<VoucherViewModel> {
@@ -12,7 +15,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
 
   @override
   Widget build(BuildContext context) {
-    final initialVoucher = Get.arguments as VoucherModel;
+    final initialVoucher = Get.arguments as VoucherModel?;
     final currencyFormat = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
@@ -28,44 +31,45 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
       body: SafeArea(
         child: Obx(() {
           final voucher = controller.selectedVoucher.value ?? initialVoucher;
+          if (voucher == null) return const SizedBox.shrink();
 
           return Column(
-            children: [
-              _buildHeader(accentColor),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      _buildCodeCard(voucher, accentColor),
-                      const SizedBox(height: 24),
-                      _buildInfoSection(
-                        voucher,
-                        currencyFormat,
-                        dateFormat,
-                        accentColor,
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+              children: [
+                _buildHeader(voucher, accentColor, context),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        _buildCodeCard(voucher, accentColor),
+                        const SizedBox(height: 24),
+                        _buildInfoSection(
+                          voucher,
+                          currencyFormat,
+                          dateFormat,
+                          accentColor,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _buildActionButtons(voucher, accentColor),
-            ],
-          );
-        }),
+                _buildActionButtons(voucher, accentColor),
+              ],
+            );
+          }),
       ),
     );
   }
 
-  Widget _buildHeader(Color accentColor) {
+  Widget _buildHeader(VoucherModel voucher, Color accentColor, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Get.back(),
+            onTap: () => controller.goBackFromDetail(),
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(

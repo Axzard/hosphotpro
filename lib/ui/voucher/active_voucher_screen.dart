@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../core/widgets/desktop_page_wrapper.dart';
+import '../core/widgets/responsive_layout.dart';
+import '../core/controllers/navigation_controller.dart';
+import '../../config/routing/app_routes.dart';
 import 'view_models/voucher_view_model.dart';
 import '../../domain/models/voucher_model.dart';
 
@@ -41,7 +44,14 @@ class ActiveVoucherScreen extends GetView<VoucherViewModel> {
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
-              onTap: () => Get.back(),
+              onTap: () {
+                if (Get.isRegistered<NavigationController>() && 
+                    ResponsiveLayout.isDesktop(context)) {
+                  Get.find<NavigationController>().setIndexByRoute(Routes.DASHBOARD);
+                } else {
+                  Get.back();
+                }
+              },
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
