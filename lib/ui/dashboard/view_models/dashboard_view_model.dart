@@ -154,11 +154,10 @@ class DashboardViewModel extends GetxController {
               : 0.0;
 
           if (event == 'voucher:sold') {
-            totalIncomeToday.value += harga;
-            totalTransactionsToday.value += 1;
-
+            // Karena backend hanya menghitung pendapatan saat voucher aktif,
+            // kita jangan lakukan penambahan pendapatan di sisi front-end saat status "terjual".
             if (voucherCount.value > 0) voucherCount.value -= 1;
-          } else if (event == 'voucher:activated') {
+          } else if (event == 'voucher:activated' || event == 'voucher_aktif') {
             if (harga > 0) totalIncomeToday.value += harga;
             totalTransactionsToday.value += 1;
           }

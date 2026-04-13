@@ -9,6 +9,7 @@ import '../../../domain/models/voucher_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/services/printer_service.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../view_models/voucher_view_model.dart';
 import 'dart:math' as math;
 
 class VoucherPrintPreview extends StatefulWidget {
@@ -411,7 +412,8 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
     });
 
     try {
-      final toPrint = _vouchersToPrint;
+      final voucherVM = Get.find<VoucherViewModel>();
+      final toPrint = await voucherVM.sellBulkVouchersForPrint(_vouchersToPrint);
 
       for (int i = 0; i < toPrint.length; i++) {
         setState(() {
@@ -506,20 +508,22 @@ class _VoucherPrintPreviewState extends State<VoucherPrintPreview> {
   }
 
   Future<void> _sharePdf(BuildContext context) async {
-    final pdfDetails = await _generatePdf();
+    final voucherVM = Get.find<VoucherViewModel>();
+    final toPrint = await voucherVM.sellBulkVouchersForPrint(_vouchersToPrint);
+
+    final pdfDetails = await _generatePdf(toPrint);
     await Printing.sharePdf(
       bytes: pdfDetails,
       filename: 'vouchers_${DateTime.now().millisecondsSinceEpoch}.pdf',
     );
   }
 
-  Future<Uint8List> _generatePdf() async {
+  Future<Uint8List> _generatePdf(List<VoucherModel> listToPrint) async {
     final pdf = pw.Document();
 
     final font = await PdfGoogleFonts.openSansRegular();
     final fontBold = await PdfGoogleFonts.openSansBold();
 
-    final listToPrint = _vouchersToPrint;
     DateFormat('dd MMM yyyy HH:mm').format(DateTime.now());
 
     final boxWidth = 34 * PdfPageFormat.mm;
