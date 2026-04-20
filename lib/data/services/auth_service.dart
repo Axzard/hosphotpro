@@ -5,13 +5,7 @@ import '../model/api_response.dart';
 import '../../config/api_config.dart';
 
 class AuthService extends GetxService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
-    ),
-  );
+  final Dio _dio = ApiConfig.createDio();
 
   Future<ApiResponse<AuthApiModel>> login(
     String username,
@@ -171,10 +165,82 @@ class AuthService extends GetxService {
       data: AuthApiModel(
         id: '1',
         username: 'admin',
-        email: 'admin@hosphotpro.com',
+        email: 'admin@hotspotsio.com',
         token: 'dummy_token_12345',
         subscriptionActive: true,
       ),
     );
+  }
+
+  Future<ApiResponse<bool>> sendOtp(String email) async {
+    try {
+      final requestData = {'email': email};
+      final response = await _dio.post(
+        ApiConfig.sendOtp,
+        data: requestData,
+        options: Options(
+          headers: ApiConfig.headers(),
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'OTP berhasil dikirim',
+          data: true,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Email tidak ditemukan',
+          data: false,
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Gagal mengirim OTP: $e', data: false);
+    }
+  }
+
+  Future<ApiResponse<bool>> resetPassword(
+    String email,
+    String kodeOtp,
+    String passwordBaru,
+  ) async {
+    try {
+      final requestData = {
+        'email': email,
+        'kodeOtp': kodeOtp,
+        'passwordBaru': passwordBaru,
+      };
+      final response = await _dio.post(
+        ApiConfig.resetPassword,
+        data: requestData,
+        options: Options(
+          headers: ApiConfig.headers(),
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Password berhasil diubah',
+          data: true,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'OTP tidak valid atau expired',
+          data: false,
+        );
+      }
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Gagal reset password: $e',
+        data: false,
+      );
+    }
   }
 }

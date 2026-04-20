@@ -1,10 +1,14 @@
-import 'package:get/get.dart';
 import '../../domain/models/report_model.dart';
 import '../../domain/repositories/report_repository.dart';
 import '../services/report_service.dart';
+import '../../core/services/cache_service.dart';
+import '../model/report_api_model.dart';
 
 class ReportRepositoryImpl implements ReportRepository {
-  final ReportService _reportService = Get.find<ReportService>();
+  final ReportService _reportService;
+  final CacheService _cacheService;
+
+  ReportRepositoryImpl(this._reportService, this._cacheService);
 
   @override
   Future<ReportDashboardModel?> getDashboardReport({int? year, int? month}) async {
@@ -13,7 +17,16 @@ class ReportRepositoryImpl implements ReportRepository {
       month: month,
     );
     if (response.success && response.data != null) {
-      return response.data!.toDomain();
+      final domain = response.data!.toDomain();
+      // Cache the result
+      await _cacheService.saveReports({
+        'daily': domain.perHari.map((e) => {
+          'tanggal': e.tanggal.toIso8601String(),
+          'total_pendapatan': e.totalPendapatan,
+          'total_transaksi': e.totalTransaksi,
+        }).toList(),
+      });
+      return domain;
     }
     return null;
   }
@@ -99,5 +112,15 @@ class ReportRepositoryImpl implements ReportRepository {
       'total_pendapatan': 0.0,
       'total_transaksi': 0,
     };
+  }
+
+  @override
+  Future<List<DailyReportModel>> getDailyReportsFromCache({int? year, int? month}) async {
+    if (year == null || month == null) return [];
+    final cached = _cacheService.getDailyReports('$year-$month');
+    if (cached == null) return [];
+    return cached
+        .map((json) => DailyReportApiModel.fromJson(json as Map<String, dynamic>).toDomain())
+        .toList();
   }
 }

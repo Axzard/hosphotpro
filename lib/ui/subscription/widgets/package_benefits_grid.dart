@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../core/widgets/responsive_layout.dart';
 import '../../../domain/models/subscription_package_model.dart';
 
 class PackageBenefitsGrid extends StatelessWidget {
@@ -61,15 +62,15 @@ class PackageBenefitsGrid extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        // 2-column grid
+        // Responsive grid
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: ResponsiveLayout.isDesktop(context) ? 200 : 250,
+            mainAxisExtent: ResponsiveLayout.isDesktop(context) ? 140 : 160,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.95, // Increased vertical space (lowered ratio)
           ),
           itemCount: benefits.length,
           itemBuilder: (context, index) {

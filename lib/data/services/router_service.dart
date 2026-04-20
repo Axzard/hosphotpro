@@ -1,19 +1,24 @@
 import 'package:get/get.dart' hide FormData;
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../model/router_api_model.dart';
 import '../model/hotspot_api_model.dart';
 import '../model/api_response.dart';
 import '../../config/api_config.dart';
 import 'token_service.dart';
 
+List<RouterApiModel> _parseRouters(dynamic data) {
+  final list = data as List<dynamic>;
+  return list.map((json) => RouterApiModel.fromJson(json as Map<String, dynamic>)).toList();
+}
+
+List<HotspotApiModel> _parseHotspots(dynamic data) {
+  final list = data as List<dynamic>;
+  return list.map((json) => HotspotApiModel.fromJson(json as Map<String, dynamic>)).toList();
+}
+
 class RouterService extends GetxService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
-    ),
-  );
+  final Dio _dio = ApiConfig.createDio();
   final TokenService _tokenService = Get.find<TokenService>();
 
   Future<ApiResponse<List<RouterApiModel>>> getRouters() async {
@@ -29,9 +34,8 @@ class RouterService extends GetxService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final List<dynamic> routersData = response.data['data'] ?? [];
-        final routers = routersData
-            .map((json) => RouterApiModel.fromJson(json))
-            .toList();
+        final routers = await compute(_parseRouters, routersData);
+
 
         return ApiResponse(
           success: true,
@@ -154,6 +158,7 @@ class RouterService extends GetxService {
   }
 
   Future<ApiResponse<List<HotspotApiModel>>> getHotspots(int idRouter) async {
+    if (idRouter == 0) return getAllHotspots();
     try {
       final token = _tokenService.getToken();
       final response = await _dio.get(
@@ -166,9 +171,8 @@ class RouterService extends GetxService {
 
       if (response.statusCode == 200) {
         final List<dynamic> hotspotsData = response.data['data'] ?? [];
-        final hotspots = hotspotsData
-            .map((json) => HotspotApiModel.fromJson(json))
-            .toList();
+        final hotspots = await compute(_parseHotspots, hotspotsData);
+
 
         return ApiResponse(
           success: true,
@@ -179,6 +183,38 @@ class RouterService extends GetxService {
         return ApiResponse(
           success: false,
           message: response.data['pesan'] ?? 'Failed to fetch hotspots',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: 'Error: $e');
+    }
+  }
+
+  Future<ApiResponse<List<HotspotApiModel>>> getAllHotspots() async {
+    try {
+      final token = _tokenService.getToken();
+      final response = await _dio.get(
+        ApiConfig.hotspotAll,
+        options: Options(
+          headers: ApiConfig.headers(token: token),
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> hotspotsData = response.data['data'] ?? [];
+        final hotspots = await compute(_parseHotspots, hotspotsData);
+
+
+        return ApiResponse(
+          success: true,
+          message: response.data['pesan'] ?? 'Hotspots fetched successfully',
+          data: hotspots,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: response.data['pesan'] ?? 'Failed to fetch all hotspots',
         );
       }
     } catch (e) {
@@ -288,7 +324,19 @@ class RouterService extends GetxService {
       );
 
       if (response.statusCode == 200 || response.data['sukses'] == true) {
-        final List<dynamic> resultData = response.data['data'] ?? [];
+        final rawData = response.data['data'];
+        List<dynamic> resultData = [];
+        
+        if (rawData is List) {
+          resultData = rawData;
+        } else if (rawData is Map) {
+          if (rawData['detail'] is List) {
+            resultData = rawData['detail'];
+          } else {
+            resultData = [rawData];
+          }
+        }
+
         return ApiResponse(
           success: true,
           message: response.data['pesan'] ?? 'Sinkronisasi hotspot selesai',
@@ -319,15 +367,19 @@ class RouterService extends GetxService {
         ),
       );
 
+      final responseData = response.data;
+      final pingResult = responseData['data'] ?? responseData;
+
       return ApiResponse(
         success:
-            response.statusCode == 200 && (response.data['sukses'] == true),
+            response.statusCode == 200 && (responseData['sukses'] == true || responseData['success'] == true),
         message:
-            response.data['pesan'] ??
-            response.data['message'] ??
+            responseData['pesan'] ??
+            responseData['message'] ??
             'Ping complete',
-        data: response.data,
+        data: Map<String, dynamic>.from(pingResult),
       );
+
     } catch (e) {
       return ApiResponse(success: false, message: 'Ping error: $e');
     }

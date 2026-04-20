@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hosphotpro/ui/subscription/view_models/subscription_view_model.dart';
+import 'package:hotspotsio/ui/subscription/view_models/subscription_view_model.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import '../../../core/utils/snackbar_utils.dart';
@@ -96,7 +96,6 @@ class _MobileWebViewState extends State<_MobileWebView> {
             final url = request.url.toLowerCase();
             debugPrint('🌐 WebView Navigating to: $url');
 
-            // Catch any cancel/error/finish redirects from Midtrans Snap
             if (url.contains('status_code=') ||
                 url.contains('transaction_status=') ||
                 url.contains('transaction_id=') ||
@@ -136,14 +135,12 @@ class _MobileWebViewState extends State<_MobileWebView> {
         ),
       );
 
-    // Android specific tweaks for Midtrans/SSL mixed content
     if (_controller.platform is AndroidWebViewController) {
       final androidController =
           _controller.platform as AndroidWebViewController;
       AndroidWebViewController.enableDebugging(true);
       androidController.setMediaPlaybackRequiresUserGesture(false);
 
-      // Fix for net_error -202 / SSL mixed content issues on older Androids
       final cookieManager =
           WebViewCookieManager().platform as AndroidWebViewCookieManager;
       cookieManager.setAcceptThirdPartyCookies(androidController, true);
@@ -201,10 +198,8 @@ class _MobileWebViewState extends State<_MobileWebView> {
         if (didPop) return;
         final shouldPop = await _onWillPop();
         if (shouldPop) {
-          // Explicitly pop the screen FIRST
           Get.back();
 
-          // Then process the cancellation asynchronously
           if (widget.idLangganan != 0) {
             if (widget.isRenewal) {
               subscriptionViewModel.cancelRenewal(widget.idLangganan);
@@ -219,10 +214,7 @@ class _MobileWebViewState extends State<_MobileWebView> {
         appBar: AppBar(
           backgroundColor: const Color(0xFF131E29),
           elevation: 0,
-          leading: const Icon(
-            Icons.payment,
-            color: Colors.white70,
-          ), // Replaced back arrow with informative icon
+          leading: const Icon(Icons.payment, color: Colors.white70),
           title: Text(
             'Pembayaran',
             style: GoogleFonts.plusJakartaSans(
@@ -238,10 +230,8 @@ class _MobileWebViewState extends State<_MobileWebView> {
               onPressed: () async {
                 final shouldPop = await _onWillPop();
                 if (shouldPop) {
-                  // Pop screen first
                   Get.back();
 
-                  // Then process the cancellation asynchronously
                   if (widget.idLangganan != 0) {
                     if (widget.isRenewal) {
                       subscriptionViewModel.cancelRenewal(widget.idLangganan);
@@ -367,7 +357,6 @@ class _MobileWebViewState extends State<_MobileWebView> {
           transactionStatus == 'expire' ||
           transactionStatus == 'expired' ||
           url.contains('/unfinish')) {
-        // If expired or explicitly canceled, we return to the method list
         if (transactionStatus == 'expire' || transactionStatus == 'expired') {
           if (widget.idLangganan != 0) {
             if (widget.isRenewal) {
@@ -412,13 +401,11 @@ class _MobileWebViewState extends State<_MobileWebView> {
       SnackbarUtils.showInfo('Informasi', message);
     }
 
-    if (stayOnPage) return; // Wait for user to click button
+    if (stayOnPage) return;
 
-    // Safely exit
     if (Get.isOverlaysOpen) Get.back();
 
     Future.delayed(const Duration(milliseconds: 200), () {
-      // Check if we are still on the WebView page before calling back
       if (Get.currentRoute == Routes.MIDTRANS_WEBVIEW ||
           Get.currentRoute.contains('MidtransWebView')) {
         Get.back();

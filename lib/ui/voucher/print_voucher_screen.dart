@@ -2,69 +2,80 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../core/widgets/desktop_page_wrapper.dart';
+import '../core/widgets/responsive_layout.dart';
 import 'view_models/voucher_view_model.dart';
 import '../../domain/models/voucher_model.dart';
+import '../../domain/models/hotspot_model.dart';
 import '../../ui/voucher/widgets/create_voucher_sheet.dart';
 
 class PrintVoucherScreen extends GetView<VoucherViewModel> {
   const PrintVoucherScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     const bgColor = Color(0xFF0A1118);
     const cardColor = Color(0xFF131E29);
     const accentColor = Color(0xFF00C2FF);
 
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        backgroundColor: bgColor,
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            Get.bottomSheet(
-              const CreateVoucherSheet(),
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-            );
-          },
-          backgroundColor: accentColor,
-          child: const Icon(Icons.add_rounded),
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context, accentColor),
-              _buildTabBar(accentColor),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _buildVoucherList(
-                      controller.stockVouchers,
-                      accentColor,
-                      cardColor,
-                      'Belum ada voucher stok',
-                    ),
-                    _buildVoucherList(
-                      controller.soldVouchers,
-                      accentColor,
-                      cardColor,
-                      'Belum ada voucher terjual',
-                    ),
-                    _buildVoucherList(
-                      controller.activeVouchers,
-                      accentColor,
-                      cardColor,
-                      'Belum ada voucher aktif',
-                    ),
-                    _buildVoucherList(
-                      controller.expiredVouchers,
-                      accentColor,
-                      cardColor,
-                      'Belum ada voucher expired',
-                    ),
-                  ],
+    return DesktopPageWrapper(
+      child: DefaultTabController(
+        length: 4,
+        child: Scaffold(
+          backgroundColor: bgColor,
+          floatingActionButton: FloatingActionButton(
+            heroTag: null,
+            onPressed: () {
+              Get.bottomSheet(
+                const CreateVoucherSheet(),
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+              );
+            },
+            backgroundColor: accentColor,
+            child: const Icon(Icons.add_rounded),
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(context, accentColor),
+                _buildTabBar(accentColor),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _buildVoucherList(
+                        controller.stockVouchers,
+                        accentColor,
+                        cardColor,
+                        'Belum ada voucher stok',
+                        VoucherStatus.stok,
+                      ),
+                      _buildVoucherList(
+                        controller.soldVouchers,
+                        accentColor,
+                        cardColor,
+                        'Belum ada voucher terjual',
+                        VoucherStatus.terjual,
+                      ),
+                      _buildVoucherList(
+                        controller.activeVouchers,
+                        accentColor,
+                        cardColor,
+                        'Belum ada voucher aktif',
+                        VoucherStatus.aktif,
+                      ),
+                      _buildVoucherList(
+                        controller.expiredVouchers,
+                        accentColor,
+                        cardColor,
+                        'Belum ada voucher expired',
+                        VoucherStatus.expired,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -105,11 +116,49 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
           fontWeight: FontWeight.w600,
         ),
         dividerColor: Colors.transparent,
-        tabs: const [
-          Tab(text: 'STOK'),
-          Tab(text: 'TERJUAL'),
-          Tab(text: 'AKTIF'),
-          Tab(text: 'EXPIRED'),
+        tabs: [
+          Tab(
+            child: Obx(() => _buildTabLabel('STOK', controller.stockVouchers.length)),
+          ),
+          Tab(
+            child: Obx(() => _buildTabLabel('TERJUAL', controller.soldVouchers.length)),
+          ),
+          Tab(
+            child: Obx(() => _buildTabLabel('AKTIF', controller.activeVouchers.length)),
+          ),
+          Tab(
+            child: Obx(() => _buildTabLabel('EXPIRED', controller.expiredVouchers.length)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabLabel(String label, int count) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label),
+          if (count > 0) ...[
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                count.toString(),
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -120,6 +169,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
     Color accentColor,
     Color cardColor,
     String emptyMessage,
+    VoucherStatus listStatus,
   ) {
     return Column(
       children: [
@@ -135,43 +185,60 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
             final filteredItems = _getFilteredItemsByMessage(emptyMessage);
 
             if (filteredItems.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.confirmation_number_outlined,
-                      size: 64,
-                      color: Colors.white.withValues(alpha: 0.2),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      emptyMessage,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
-                        fontSize: 16,
+              return RefreshIndicator(
+                onRefresh: () => controller.refreshData(),
+                color: const Color(0xFF00C2FF),
+                backgroundColor: const Color(0xFF131E29),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: 300,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.confirmation_number_outlined,
+                            size: 64,
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            emptyMessage,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white54,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               );
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 10,
-                bottom: 80,
+            return RefreshIndicator(
+              onRefresh: () => controller.refreshData(),
+              color: const Color(0xFF00C2FF),
+              backgroundColor: const Color(0xFF131E29),
+              child: ListView.builder(
+                padding: const EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 10,
+                  bottom: 80,
+                ),
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: filteredItems.length,
+                itemBuilder: (context, index) {
+                  final voucher = filteredItems[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _buildVoucherCard(voucher, cardColor, accentColor),
+                  );
+                },
               ),
-              itemCount: filteredItems.length,
-              itemBuilder: (context, index) {
-                final voucher = filteredItems[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _buildVoucherCard(voucher, cardColor, accentColor),
-                );
-              },
             );
           }),
         ),
@@ -186,18 +253,6 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Text(
-              'FILTER PAKET',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: Colors.white38,
-                letterSpacing: 1.5,
-              ),
-            ),
-          ),
           SizedBox(
             height: 42,
             child: ListView(
@@ -205,7 +260,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               children: [
                 _buildFilterTab(
-                  label: 'Semua Paket',
+                  label: 'Semua User Profile',
                   isSelected: controller.filterPaketId.value == null,
                   onTap: () => controller.setFilterPaket(null),
                   accentColor: accentColor,
@@ -294,28 +349,31 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
         children: [
           Row(
             children: [
-              GestureDetector(
-                onTap: () => Get.back(),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new,
-                    color: Colors.white,
-                    size: 20,
+              if (ResponsiveLayout.isMobile(context))
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: () => Get.back(),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Manajemen Voucher',
+                      'Voucher',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -338,6 +396,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
                   ],
                 ),
               ),
+              
               Obx(
                 () => controller.vouchers.isNotEmpty
                     ? IconButton(
@@ -363,45 +422,108 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          // Hotspot Selector
+          const SizedBox(height: 12),
+
+          // Hotspot Dropdown
           Obx(() {
-            if (controller.hotspots.isEmpty) {
-              return const SizedBox.shrink();
-            }
+            if (controller.hotspots.isEmpty) return const SizedBox.shrink();
+
             return Container(
-              width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: Colors.white.withValues(alpha: 0.03),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
               child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  value: controller.selectedHotspot.value?.idHotspot,
+                child: DropdownButton<HotspotModel>(
+                  value: controller.selectedHotspot.value,
+                  hint: const Text(
+                    'Pilih Server',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
                   dropdownColor: const Color(0xFF131E29),
+                  isExpanded: true,
                   icon: const Icon(
-                    Icons.arrow_drop_down,
-                    color: Colors.white70,
+                    Icons.wifi_tethering,
+                    color: Color(0xFF00C2FF),
+                    size: 20,
                   ),
-                  hint: Text(
-                    'Pilih Hotspot',
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white),
-                  items: controller.hotspots.map((hotspot) {
-                    return DropdownMenuItem<int>(
-                      value: hotspot.idHotspot,
-                      child: Text('Hotspot: ${hotspot.namaServer}'),
+                  items: controller.hotspots.map((h) {
+                    return DropdownMenuItem<HotspotModel>(
+                      value: h,
+                      child: Text(h.namaServer),
                     );
                   }).toList(),
                   onChanged: (val) {
-                    final hotspot = controller.hotspots.firstWhereOrNull(
-                      (h) => h.idHotspot == val,
-                    );
-                    controller.onHotspotChanged(hotspot);
+                    if (val != null) {
+                      controller.onHotspotChanged(val);
+                    }
                   },
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 10),
+
+          // Search Bar
+          Obx(() {
+            return TextField(
+              onChanged: (val) => controller.searchQuery.value = val,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Cari voucher (kode / user profile)...',
+                hintStyle: GoogleFonts.plusJakartaSans(
+                  color: Colors.white38,
+                  fontSize: 13,
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF00C2FF),
+                  size: 20,
+                ),
+                suffixIcon: controller.searchQuery.value.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white38,
+                          size: 18,
+                        ),
+                        onPressed: () {
+                          controller.searchQuery.value = '';
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.03),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF00C2FF),
+                    width: 1.5,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
                 ),
               ),
             );
@@ -431,7 +553,7 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
         statusLabel = 'STOK';
         break;
       case VoucherStatus.aktif:
-        statusColor = accentColor;
+        statusColor = Colors.greenAccent;
         statusLabel = 'AKTIF';
         break;
       case VoucherStatus.terjual:
@@ -444,191 +566,219 @@ class PrintVoucherScreen extends GetView<VoucherViewModel> {
         break;
     }
 
-    return GestureDetector(
-      onTap: () => controller.navigateToDetail(voucher),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+    return Obx(() {
+      final isBulkDeletingThis = controller.isDeletingAll.value &&
+          (controller.bulkDeletingCategory.value == null ||
+              controller.bulkDeletingCategory.value == voucher.statusVoucher);
+      final isInteractionDisabled = isBulkDeletingThis ||
+          controller.deletingVoucherIds.contains(voucher.idVoucher);
+
+      return GestureDetector(
+        onTap: isInteractionDisabled
+            ? null
+            : () => controller.navigateToDetail(voucher),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.confirmation_number_rounded,
+                      color: accentColor,
+                      size: 20,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.confirmation_number_rounded,
-                    color: accentColor,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        voucher.namaPaket.toUpperCase(),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'User: ${voucher.kodeVoucher}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: accentColor.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      if (voucher.dnsLogin != null &&
-                          voucher.dnsLogin!.isNotEmpty)
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          'DNS: ${voucher.dnsLogin}',
+                          voucher.namaPaket.toUpperCase(),
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            color: Colors.white54,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'User: ${voucher.kodeVoucher}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: accentColor.withValues(alpha: 0.7),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        if (voucher.dnsLogin != null &&
+                            voucher.dnsLogin!.isNotEmpty)
+                          Text(
+                            'DNS: ${voucher.dnsLogin}',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              color: Colors.white54,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Divider(color: Colors.white.withValues(alpha: 0.05)),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    currencyFormat.format(voucher.harga),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      
+                      IconButton(
+                        icon: controller.deletingVoucherIds.contains(voucher.idVoucher) ||
+                                (controller.isDeletingAll.value && (controller.bulkDeletingCategory.value == null || controller.bulkDeletingCategory.value == voucher.statusVoucher))
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.redAccent,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.delete_outline,
+                                size: 20,
+                                color: Colors.redAccent,
+                              ),
+                        onPressed: isInteractionDisabled
+                            ? null
+                            : () {
+                                showDialog(
+                                  context: Get.context!,
+                                  barrierDismissible: true,
+                                  builder: (dialogContext) {
+                                    bool isConfirming = false;
+                                    return StatefulBuilder(
+                                      builder: (ctx, setStateDialog) {
+                                        return AlertDialog(
+                                          backgroundColor: const Color(0xFF131E29),
+                                          title: const Text(
+                                            'Hapus Voucher',
+                                            style: TextStyle(color: Colors.white),
+                                          ),
+                                          content: Text(
+                                            'Apakah Anda yakin ingin menghapus voucher "${voucher.kodeVoucher}"?',
+                                            style: const TextStyle(color: Colors.white70),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.of(dialogContext).pop(),
+                                              child: const Text(
+                                                'Batal',
+                                                style: TextStyle(color: Colors.white54),
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onPressed: isConfirming
+                                                  ? null
+                                                  : () {
+                                                      setStateDialog(() => isConfirming = true);
+                                                      Navigator.of(dialogContext).pop();
+                                                      controller.deleteVoucher(voucher.idVoucher);
+                                                    },
+                                              child: Text(
+                                                isConfirming ? 'Menghapus...' : 'Hapus',
+                                                style: const TextStyle(color: Colors.redAccent),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
+                              },
+                      ),
+
+                      
+                      if (voucher.statusVoucher == VoucherStatus.stok)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: TextButton.icon(
+                            onPressed: isInteractionDisabled
+                                ? null
+                                : () => controller.printVoucher(voucher),
+                            icon: const Icon(
+                              Icons.print_outlined,
+                              size: 18,
+                              color: Colors.white70,
+                            ),
+                            label: const Text(
+                              'Print',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.white.withValues(alpha: 0.1),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                            ),
                           ),
                         ),
                     ],
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: statusColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Text(
-                    statusLabel,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Divider(color: Colors.white.withValues(alpha: 0.05)),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  currencyFormat.format(voucher.harga),
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                Row(
-                  children: [
-                    if (voucher.statusVoucher == VoucherStatus.stok)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: TextButton.icon(
-                          onPressed: () =>
-                              controller.sellVoucher(voucher, 'cash'),
-                          icon: const Icon(
-                            Icons.sell_outlined,
-                            size: 18,
-                            color: Color(0xFF4ADE80),
-                          ),
-                          label: const Text(
-                            'Jual',
-                            style: TextStyle(
-                              color: Color(0xFF4ADE80),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            backgroundColor: const Color(
-                              0xFF4ADE80,
-                            ).withValues(alpha: 0.1),
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                          ),
-                        ),
-                      ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        size: 20,
-                        color: Colors.redAccent,
-                      ),
-                      onPressed: () {
-                        Get.dialog(
-                          AlertDialog(
-                            backgroundColor: const Color(0xFF131E29),
-                            title: const Text(
-                              'Hapus Voucher',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            content: Text(
-                              'Apakah Anda yakin ingin menghapus voucher "${voucher.kodeVoucher}"?',
-                              style: const TextStyle(color: Colors.white70),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Get.back(),
-                                child: const Text(
-                                  'Batal',
-                                  style: TextStyle(color: Colors.white54),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Get.back();
-                                  controller.deleteVoucher(voucher.idVoucher);
-                                },
-                                child: const Text(
-                                  'Hapus',
-                                  style: TextStyle(color: Colors.redAccent),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.print_outlined,
-                        size: 20,
-                        color: Colors.white70,
-                      ),
-                      onPressed: () => controller.printVoucher(voucher),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   void _showBulkDeleteConfirm(BuildContext context) {

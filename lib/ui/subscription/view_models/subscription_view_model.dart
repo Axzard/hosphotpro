@@ -12,6 +12,8 @@ import '../../../config/routing/app_routes.dart';
 import '../midtrans_webview_screen.dart';
 import '../../../data/services/payment_persistence_service.dart';
 import '../../../core/services/websocket_service.dart';
+import '../../core/controllers/navigation_controller.dart';
+import '../../core/widgets/responsive_layout.dart';
 
 class SubscriptionViewModel extends GetxController {
   final SubscriptionRepository _subscriptionRepository;
@@ -24,6 +26,7 @@ class SubscriptionViewModel extends GetxController {
   final packages = <SubscriptionPackageModel>[].obs;
   final mySubscriptions = <UserSubscriptionModel>[].obs;
   final currentSubscription = Rx<UserSubscriptionModel?>(null);
+  final selectedPackageForDetail = Rxn<SubscriptionPackageModel>();
   final isLoading = false.obs;
   bool _isLoadingSubscriptions = false;
 
@@ -41,8 +44,13 @@ class SubscriptionViewModel extends GetxController {
   void onInit() {
     super.onInit();
 
-    Future.wait([loadPackages(), loadMySubscriptions()]);
+    _loadInitialData();
     _initRealtimeListeners();
+  }
+
+  Future<void> _loadInitialData() async {
+    await loadMySubscriptions();
+    await loadPackages();
   }
 
   void _initRealtimeListeners() {
@@ -64,6 +72,7 @@ class SubscriptionViewModel extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+      
       final result = await _subscriptionRepository.getPackages();
       packages.assignAll(result);
     } catch (e) {
@@ -90,7 +99,7 @@ class SubscriptionViewModel extends GetxController {
         currentSubscription.value = null;
       }
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat data langganan');
+      SnackbarUtils.showError('Gagal', 'Gagal memuat data langganan');
     } finally {
       isLoading.value = false;
       _isLoadingSubscriptions = false;
@@ -98,20 +107,7 @@ class SubscriptionViewModel extends GetxController {
   }
 
   double calculateTotalPrice(SubscriptionPackageModel package) {
-    final basePrice = package.price;
-    final duration = selectedDuration.value;
-
-    double discount = 0;
-    if (duration == 3) {
-      discount = 0.10;
-    } else if (duration == 6) {
-      discount = 0.15;
-    } else if (duration == 12) {
-      discount = 0.20;
-    }
-
-    final totalPrice = basePrice * duration * (1 - discount);
-    return totalPrice;
+    return package.price * selectedDuration.value;
   }
 
   Future<void> initiatePayment(SubscriptionPackageModel package) async {
@@ -170,7 +166,7 @@ class SubscriptionViewModel extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memproses pembayaran: $e');
+      Get.snackbar('Gagal', 'Gagal memproses pembayaran: $e');
     } finally {
       isProcessingPayment.value = false;
     }
@@ -223,7 +219,7 @@ class SubscriptionViewModel extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memperpanjang langganan: $e');
+      Get.snackbar('Gagal', 'Gagal memperpanjang langganan: $e');
     } finally {
       processingSubscriptionId.value = null;
     }
@@ -346,7 +342,11 @@ class SubscriptionViewModel extends GetxController {
   }
 
   void navigateToPackages() {
-    Get.toNamed(Routes.PACKAGES);
+    if (Get.isRegistered<NavigationController>() && Get.context != null && ResponsiveLayout.isDesktop(Get.context!)) {
+      Get.find<NavigationController>().setIndexByRoute(Routes.PACKAGES);
+    } else {
+      Get.toNamed(Routes.PACKAGES);
+    }
   }
 
   void _navigateToPaymentResult(

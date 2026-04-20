@@ -47,8 +47,8 @@ class RouterFormSheet extends GetView<RouterViewModel> {
                 const SizedBox(width: 12),
                 Text(
                   controller.isEditing.value
-                      ? 'Edit Router'
-                      : 'Tambah Router Baru',
+                      ? 'Edit Mikrotik'
+                      : 'Tambah Mikrotik Baru',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -60,8 +60,8 @@ class RouterFormSheet extends GetView<RouterViewModel> {
             const SizedBox(height: 24),
 
             _buildTextField(
-              'NAMA ROUTER',
-              'Router Kantor',
+              'NAMA MIKROTIK',
+              'Mikrotik Kantor',
               controller.namaController,
             ),
             const SizedBox(height: 16),
@@ -149,7 +149,7 @@ class RouterFormSheet extends GetView<RouterViewModel> {
                       : Text(
                           controller.isEditing.value
                               ? 'Simpan Perubahan'
-                              : 'Tambah Router',
+                              : 'Tambah Mikrotik',
                           style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.bold,
                           ),

@@ -5,8 +5,13 @@ import 'package:get/get.dart';
 import '../../../../domain/models/router_model.dart';
 import '../../../domain/repositories/router_repository.dart';
 import '../../../../core/utils/snackbar_utils.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../dashboard/view_models/dashboard_view_model.dart';
+import '../../../../core/services/session_service.dart';
+import '../../../config/routing/app_routes.dart';
+import '../../core/controllers/navigation_controller.dart';
+import '../../core/widgets/responsive_layout.dart';
 
 class RouterViewModel extends GetxController {
   final RouterRepository _routerRepository;
@@ -17,7 +22,6 @@ class RouterViewModel extends GetxController {
   final RxList<RouterModel> routers = <RouterModel>[].obs;
   final RxBool isLoading = false.obs;
 
-  // Form Controllers
   final namaController = TextEditingController();
   final ipController = TextEditingController();
   final portController = TextEditingController();
@@ -27,22 +31,56 @@ class RouterViewModel extends GetxController {
 
   final RxBool isEditing = false.obs;
   final RxString editingId = ''.obs;
+  final RxString editingStatus = 'aktif'.obs;
 
   StreamSubscription? _refreshSub;
 
   @override
   void onInit() {
     super.onInit();
+    final dashboardVM = Get.find<DashboardViewModel>();
+
+    ever(dashboardVM.isActiveSubscription, (bool isActive) {
+      if (isActive && routers.isEmpty) {
+        loadRouters();
+      }
+    });
+
     loadRouters();
     _initRealtimeListeners();
   }
 
   void _initRealtimeListeners() {
-    print('🚀 [RouterVM] Realtime listeners initialized');
+    print('[RouterVM] Realtime listeners initialized');
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
-      final event = eventData['event'] ?? '';
-      print('📟 [RouterVM] Refreshing due to Event: $event');
-      loadRouters();
+      final event = eventData['event']?.toString() ?? '';
+      final data = eventData['data'];
+      print('[RouterVM] Refreshing due to Event: $event');
+
+      if (event == 'router_added' && data != null) {
+        try {
+          final newRouter = RouterModel.fromJson(data);
+          routers.add(newRouter);
+          _syncWithCache();
+        } catch (_) {}
+      } else if (event == 'router_updated' && data != null) {
+        try {
+          final updated = RouterModel.fromJson(data);
+          final idx = routers.indexWhere((r) => r.id == updated.id);
+          if (idx != -1) {
+            routers[idx] = updated;
+            _syncWithCache();
+          }
+        } catch (_) {}
+      } else if (event == 'router_deleted' && data != null) {
+        final id = data['id_router']?.toString();
+        if (id != null) {
+          routers.removeWhere((r) => r.id == id);
+          _syncWithCache();
+        }
+      } else if (event.startsWith('router_')) {
+        loadRouters();
+      }
     });
   }
 
@@ -56,7 +94,7 @@ class RouterViewModel extends GetxController {
       }
       routers.value = await _routerRepository.getRouters();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memuat router: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal memuat router: $e');
     } finally {
       isLoading.value = false;
     }
@@ -65,7 +103,10 @@ class RouterViewModel extends GetxController {
   Future<void> saveRouter() async {
     final dashboardVM = Get.find<DashboardViewModel>();
     if (!dashboardVM.isActiveSubscription.value) {
-      SnackbarUtils.showInfo('Premium Only', 'Fitur ini hanya tersedia untuk pengguna Premium.');
+      SnackbarUtils.showInfo(
+        'Premium Only',
+        'Fitur ini hanya tersedia untuk pengguna Premium.',
+      );
       return;
     }
 
@@ -81,21 +122,30 @@ class RouterViewModel extends GetxController {
         usernameApi: usernameController.text,
         passwordApi: passwordController.text,
         keterangan: keteranganController.text,
-        statusRouter: 'aktif',
+        statusRouter: isEditing.value ? editingStatus.value : 'aktif',
       );
 
-      if (isEditing.value) {
-        await _routerRepository.updateRouter(routerData);
-        SnackbarUtils.showSuccess('Berhasil', 'Router berhasil diperbarui');
+      final future = isEditing.value
+          ? _routerRepository.updateRouter(routerData)
+          : _routerRepository.createRouter(routerData);
+
+      Get.back();
+      SnackbarUtils.showSuccess('Proses...', 'Menyimpan router');
+
+      await future;
+
+      if (!isEditing.value) {
+        routers.add(routerData);
       } else {
-        await _routerRepository.createRouter(routerData);
-        SnackbarUtils.showSuccess('Berhasil', 'Router berhasil ditambahkan');
+        final idx = routers.indexWhere((r) => r.id == routerData.id);
+        if (idx != -1) routers[idx] = routerData;
       }
+      _syncWithCache();
 
       clearForm();
-      loadRouters();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal menyimpan router: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal menyimpan router: $e');
+      loadRouters();
     } finally {
       isLoading.value = false;
     }
@@ -103,15 +153,27 @@ class RouterViewModel extends GetxController {
 
   Future<void> deleteRouter(String id) async {
     try {
-      isLoading.value = true;
       await _routerRepository.deleteRouter(id);
+
+      routers.removeWhere((r) => r.id == id);
+      _syncWithCache();
+
       SnackbarUtils.showSuccess('Berhasil', 'Router berhasil dihapus');
-      loadRouters();
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal menghapus router: $e');
-    } finally {
-      isLoading.value = false;
+      SnackbarUtils.showError(
+        'Gagal Hapus',
+        ErrorUtils.sanitizeServerMessage(
+          e.toString().replaceAll('Gagal: ', ''),
+        ),
+      );
+      loadRouters();
     }
+  }
+
+  void _syncWithCache() {
+    _routerRepository
+        .updateRouterCache(routers.toList())
+        .catchError((e) => print('[RouterVM] Cache sync error: $e'));
   }
 
   void prepareEdit(RouterModel router) {
@@ -123,6 +185,7 @@ class RouterViewModel extends GetxController {
     usernameController.text = router.usernameApi;
     passwordController.text = router.passwordApi;
     keteranganController.text = router.keterangan;
+    editingStatus.value = router.statusRouter;
   }
 
   void prepareCreate() {
@@ -132,6 +195,7 @@ class RouterViewModel extends GetxController {
   void clearForm() {
     isEditing.value = false;
     editingId.value = '';
+    editingStatus.value = 'aktif';
     namaController.clear();
     ipController.clear();
     portController.clear();
@@ -152,67 +216,147 @@ class RouterViewModel extends GetxController {
     return true;
   }
 
+  final RxBool isPingLoading = false.obs;
+  final RxString pingStatus = 'UNKNOWN'.obs;
+  final RxString pingResponseTime = '-'.obs;
+  final RxList<String> pingLines = <String>[].obs;
+
   Future<void> pingRouter(String id) async {
     try {
-      isLoading.value = true;
-      final int routerId = int.tryParse(id) ?? 0;
-      final result = await _routerRepository.pingRouter(routerId);
-      
-      final isOnline = result['status'] == 'ONLINE';
-      final detail = result['detail'] ?? {};
-      final output = detail['output'] ?? 'No output';
-      final time = detail['time']?.toString() ?? '-';
+      isPingLoading.value = true;
+      pingStatus.value = 'PENDING';
+      pingResponseTime.value = '-';
+      pingLines.clear();
 
       Get.dialog(
-        AlertDialog(
-          backgroundColor: const Color(0xFF131E29),
-          title: Row(
-            children: [
-              Icon(
-                isOnline ? Icons.check_circle : Icons.error,
-                color: isOnline ? Colors.green : Colors.red,
-              ),
-              const SizedBox(width: 12),
-              const Text('Router Ping Status', style: TextStyle(color: Colors.white)),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+        Obx(
+          () => AlertDialog(
+            backgroundColor: const Color(0xFF131E29),
+            title: Row(
               children: [
-                _buildStatusRow('Status', result['status'] ?? 'UNKNOWN', isOnline ? Colors.green : Colors.red),
-                _buildStatusRow('Response Time', '$time ms', Colors.white70),
-                const SizedBox(height: 16),
-                const Text('Console Output:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  width: double.maxFinite,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
+                if (isPingLoading.value)
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF00C2FF),
+                    ),
+                  )
+                else
+                  Icon(
+                    pingStatus.value == 'ONLINE'
+                        ? Icons.check_circle
+                        : Icons.error,
+                    color: pingStatus.value == 'ONLINE'
+                        ? Colors.green
+                        : Colors.red,
                   ),
-                  child: Text(
-                    output,
-                    style: GoogleFonts.firaCode(color: Colors.greenAccent, fontSize: 10),
-                  ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Mikrotik Ping Status',
+                  style: TextStyle(color: Colors.white),
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(),
-              child: const Text('Tutup', style: TextStyle(color: Color(0xFF00C2FF))),
+            content: SizedBox(
+              width: 500,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatusRow(
+                      'Status',
+                      pingStatus.value,
+                      pingStatus.value == 'ONLINE' ? Colors.green : Colors.red,
+                    ),
+                    _buildStatusRow(
+                      'Response Time',
+                      '${pingResponseTime.value} ms',
+                      Colors.white70,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Console Output:',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      constraints: const BoxConstraints(minHeight: 150),
+                      width: double.maxFinite,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: isPingLoading.value && pingLines.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "Waiting for response...",
+                                style: TextStyle(
+                                  color: Colors.white24,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              pingLines.isEmpty
+                                  ? "Ping completed with no log data."
+                                  : pingLines.join('\n'),
+                              style: GoogleFonts.firaCode(
+                                color: pingLines.isEmpty
+                                    ? Colors.white38
+                                    : Colors.greenAccent,
+                                fontSize: 10,
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(),
+                child: const Text(
+                  'Tutup',
+                  style: TextStyle(color: Color(0xFF00C2FF)),
+                ),
+              ),
+            ],
+          ),
         ),
+        barrierDismissible: false,
       );
+
+      final int routerId = int.tryParse(id) ?? 0;
+      final result = await _routerRepository.pingRouter(routerId);
+
+      final detail = result['detail'] as Map? ?? {};
+      final String rawOutput = (detail['raw'] ?? '').toString();
+      final String time = (detail['time'] ?? result['time'] ?? '-').toString();
+      final String status = (result['status'] ?? detail['status'] ?? 'UNKNOWN')
+          .toString();
+
+      isPingLoading.value = false;
+      pingStatus.value = status;
+      pingResponseTime.value = time;
+
+      final List<String> lines = rawOutput.split('\n');
+      for (var line in lines) {
+        if (line.trim().isEmpty) continue;
+        pingLines.add(line);
+        await Future.delayed(const Duration(milliseconds: 150));
+      }
     } catch (e) {
+      isPingLoading.value = false;
+      if (Get.isDialogOpen ?? false) Get.back();
       SnackbarUtils.showError('Ping Gagal', e.toString());
-    } finally {
-      isLoading.value = false;
     }
   }
 
@@ -222,11 +366,31 @@ class RouterViewModel extends GetxController {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white60, fontSize: 13)),
-          Text(value, style: TextStyle(color: valueColor, fontWeight: FontWeight.bold, fontSize: 13)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white60, fontSize: 13),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: valueColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  void navigateToHotspots(RouterModel router) {
+    Get.find<SessionService>().setRouterId(router.id);
+    if (Get.isRegistered<NavigationController>() &&
+        ResponsiveLayout.isDesktop(Get.context!)) {
+      Get.find<NavigationController>().setIndexByRoute(Routes.HOTSPOTS);
+    } else {
+      Get.toNamed(Routes.HOTSPOTS);
+    }
   }
 
   @override

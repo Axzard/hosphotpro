@@ -1,6 +1,33 @@
 import 'package:dio/dio.dart';
 
 class ErrorUtils {
+  /// Mengembalikan true jika error disebabkan jaringan lambat/timeout/offline.
+  /// Digunakan ViewModel untuk menampilkan snackbar bukan navigate ke error page.
+  static bool isNetworkError(dynamic error) {
+    if (error is DioException) {
+      return error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.sendTimeout ||
+          error.type == DioExceptionType.connectionError;
+    }
+    final msg = error.toString().toLowerCase();
+    return msg.contains('timeout') ||
+        msg.contains('socketexception') ||
+        msg.contains('connection refused') ||
+        msg.contains('network is unreachable') ||
+        msg.contains('failed host lookup');
+  }
+
+  /// Mengembalikan true jika error berasal dari server (status 5xx).
+  static bool isServerError(dynamic error) {
+    if (error is DioException && error.type == DioExceptionType.badResponse) {
+      final code = error.response?.statusCode ?? 0;
+      return code >= 500 && code < 600;
+    }
+    final msg = error.toString().toLowerCase();
+    return msg.contains('500') || msg.contains('internal server error');
+  }
+
   static String getUserFriendlyMessage(dynamic error) {
     if (error is DioException) {
       switch (error.type) {
@@ -43,5 +70,48 @@ class ErrorUtils {
     }
 
     return 'Terjadi kesalahan saat memproses data. Silakan coba lagi.';
+  }
+
+  static String sanitizeServerMessage(String rawMessage) {
+    if (rawMessage.isEmpty) return rawMessage;
+
+    final lower = rawMessage.toLowerCase();
+
+    final bool hasDbLeak =
+        lower.contains('sqlstate') ||
+        lower.contains('pdoexception') ||
+        lower.contains('illuminate\\') ||
+        lower.contains('stack trace') ||
+        lower.contains('exception in') ||
+        lower.contains('syntax error');
+
+    final bool hasIntegrityError =
+        lower.contains('1451') ||
+        lower.contains('integrity constraint violation') ||
+        lower.contains('foreign key constraint fails') ||
+        lower.contains('cannot delete or update a parent row') ||
+        lower.contains('a foreign key constraint fails');
+
+    if (hasDbLeak || hasIntegrityError) {
+      if (lower.contains('voucher') ||
+          lower.contains('paket') ||
+          lower.contains('paket_voucher')) {
+        return 'Paket tidak dapat dihapus karena masih terdapat voucher aktif yang terhubung.';
+      }
+      return 'Data sedang digunakan dan tidak dapat dihapus atau diubah saat ini.';
+    }
+
+    if (lower.contains('fatal error') || lower.contains('parse error')) {
+      return 'Terjadi kesalahan sistem, silakan coba lagi nanti.';
+    }
+
+    if (rawMessage.length > 300 ||
+        rawMessage.contains('\n') ||
+        rawMessage.contains('<br') ||
+        rawMessage.contains('<!DOCTYPE')) {
+      return 'Terjadi kesalahan pada sistem server. Silakan coba lagi nanti.';
+    }
+
+    return rawMessage;
   }
 }

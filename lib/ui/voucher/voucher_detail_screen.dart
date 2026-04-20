@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../core/utils/snackbar_utils.dart';
-import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/snackbar_utils.dart';
+import 'package:get/get.dart';
 import '../../domain/models/voucher_model.dart';
+import '../../config/routing/app_routes.dart';
+import '../core/controllers/navigation_controller.dart';
+import '../core/widgets/responsive_layout.dart';
 import 'view_models/voucher_view_model.dart';
 
 class VoucherDetailScreen extends GetView<VoucherViewModel> {
@@ -12,7 +15,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
 
   @override
   Widget build(BuildContext context) {
-    final voucher = Get.arguments as VoucherModel;
+    final initialVoucher = Get.arguments as VoucherModel?;
     final currencyFormat = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
@@ -26,43 +29,47 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(accentColor),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    _buildCodeCard(voucher, accentColor),
-                    const SizedBox(height: 24),
-                    _buildInfoSection(
-                      voucher,
-                      currencyFormat,
-                      dateFormat,
-                      accentColor,
+        child: Obx(() {
+          final voucher = controller.selectedVoucher.value ?? initialVoucher;
+          if (voucher == null) return const SizedBox.shrink();
+
+          return Column(
+              children: [
+                _buildHeader(voucher, accentColor, context),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        _buildCodeCard(voucher, accentColor),
+                        const SizedBox(height: 24),
+                        _buildInfoSection(
+                          voucher,
+                          currencyFormat,
+                          dateFormat,
+                          accentColor,
+                        ),
+                        const SizedBox(height: 24),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            _buildActionButtons(voucher, accentColor),
-          ],
-        ),
+                _buildActionButtons(voucher, accentColor),
+              ],
+            );
+          }),
       ),
     );
   }
 
-  // ── Header ──────────────────────────────────────────────────────────────
-  Widget _buildHeader(Color accentColor) {
+  Widget _buildHeader(VoucherModel voucher, Color accentColor, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Get.back(),
+            onTap: () => controller.goBackFromDetail(),
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -110,7 +117,6 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
     );
   }
 
-  // ── Code card (gradient) ────────────────────────────────────────────────
   Widget _buildCodeCard(VoucherModel voucher, Color accentColor) {
     Color statusColor;
     String statusLabel;
@@ -121,7 +127,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
         statusLabel = 'STOK';
         break;
       case VoucherStatus.aktif:
-        statusColor = accentColor;
+        statusColor = Colors.greenAccent;
         statusLabel = 'AKTIF';
         break;
       case VoucherStatus.terjual:
@@ -160,7 +166,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ),
           ),
           const SizedBox(height: 20),
-          // Kode
+
           Text(
             'USERNAME / KODE',
             style: GoogleFonts.plusJakartaSans(
@@ -201,7 +207,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ),
           ),
           const SizedBox(height: 12),
-          // Password
+
           Text(
             'PASSWORD',
             style: GoogleFonts.plusJakartaSans(
@@ -242,7 +248,7 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ),
           ),
           const SizedBox(height: 18),
-          // Status badge
+
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
             decoration: BoxDecoration(
@@ -270,7 +276,6 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
     );
   }
 
-  // ── Info section ────────────────────────────────────────────────────────
   Widget _buildInfoSection(
     VoucherModel voucher,
     NumberFormat currencyFormat,
@@ -288,12 +293,11 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
       ),
       child: Column(
         children: [
-          // Row 1
           Row(
             children: [
               Expanded(
                 child: _buildInfoItem(
-                  'PAKET',
+                  'USER PROFILE',
                   voucher.namaPaket,
                   Icons.sell_outlined,
                   accentColor,
@@ -310,80 +314,58 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
             ],
           ),
           const SizedBox(height: 28),
-          // Row 2
-          Row(
-            children: [
-              Expanded(
-                child: _buildInfoItem(
-                  'PROFIL MIKROTIK',
-                  voucher.namaProfileMikrotik,
-                  Icons.router_outlined,
+
+          ...(() {
+            final items = <Widget>[
+              _buildInfoItem(
+                'SERVER',
+                voucher.namaServer,
+                Icons.dns_outlined,
+                accentColor,
+              ),
+              if (voucher.alamatIp != null)
+                _buildInfoItem(
+                  'ALAMAT IP',
+                  voucher.alamatIp!,
+                  Icons.language_outlined,
                   accentColor,
                 ),
-              ),
-              Expanded(
-                child: _buildInfoItem(
-                  'SERVER',
-                  voucher.namaServer,
-                  Icons.dns_outlined,
+              if (voucher.portApi != null)
+                _buildInfoItem(
+                  'PORT API',
+                  voucher.portApi!.toString(),
+                  Icons.settings_input_component_outlined,
                   accentColor,
                 ),
+              _buildInfoItem(
+                'SSL',
+                voucher.gunakanSsl ? 'AKTIF' : 'NON-AKTIF',
+                Icons.security_outlined,
+                voucher.gunakanSsl ? const Color(0xFF4ADE80) : Colors.white24,
               ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          if (voucher.alamatIp != null) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoItem(
-                    'ALAMAT IP',
-                    voucher.alamatIp!,
-                    Icons.language_outlined,
-                    accentColor,
-                  ),
+            ];
+
+            final rows = <Widget>[];
+            for (int i = 0; i < items.length; i += 2) {
+              rows.add(
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: items[i]),
+                    if (i + 1 < items.length)
+                      Expanded(child: items[i + 1])
+                    else
+                      const Expanded(child: SizedBox.shrink()),
+                  ],
                 ),
-                if (voucher.portApi != null)
-                  Expanded(
-                    child: _buildInfoItem(
-                      'PORT API',
-                      voucher.portApi!.toString(),
-                      Icons.settings_input_component_outlined,
-                      accentColor,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 28),
-          ],
-          if (voucher.dnsLogin != null) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoItem(
-                    'DNS LOGIN',
-                    voucher.dnsLogin!,
-                    Icons.public_outlined,
-                    accentColor,
-                  ),
-                ),
-                Expanded(
-                  child: _buildInfoItem(
-                    'SSL',
-                    voucher.gunakanSsl ? 'AKTIF' : 'NON-AKTIF',
-                    Icons.security_outlined,
-                    voucher.gunakanSsl
-                        ? const Color(0xFF4ADE80)
-                        : Colors.white24,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 28),
-          ],
+              );
+              rows.add(const SizedBox(height: 28));
+            }
+            return rows;
+          })(),
           Divider(color: Colors.white.withValues(alpha: 0.06)),
           const SizedBox(height: 20),
-          // Date info
+
           _buildDateRow(
             Icons.calendar_today_rounded,
             'Dibuat Pada',
@@ -487,7 +469,6 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
     );
   }
 
-  // ── Action buttons ──────────────────────────────────────────────────────
   Widget _buildActionButtons(VoucherModel voucher, Color accentColor) {
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -499,56 +480,29 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
               width: double.infinity,
               height: 54,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  controller.sellVoucher(voucher, 'cash');
-                  Get.back(); // Return to list after selling
-                },
-                icon: const Icon(Icons.sell_outlined),
+                onPressed: () => controller.printVoucher(voucher),
+                icon: const Icon(Icons.print_outlined),
                 label: Text(
-                  'Jual Sekarang',
+                  'Cetak Sekarang',
                   style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4ADE80),
+                  backgroundColor: accentColor,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 8,
-                  shadowColor: const Color(0xFF4ADE80).withValues(alpha: 0.4),
+                  shadowColor: accentColor.withValues(alpha: 0.4),
                 ),
               ),
             ),
             const SizedBox(height: 14),
           ],
-          SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton.icon(
-              onPressed: () => controller.printVoucher(voucher),
-              icon: const Icon(Icons.print_outlined),
-              label: Text(
-                'Cetak Sekarang',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 8,
-                shadowColor: accentColor.withValues(alpha: 0.4),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
+
           SizedBox(
             width: double.infinity,
             height: 54,
@@ -581,9 +535,9 @@ class VoucherDetailScreen extends GetView<VoucherViewModel> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  Get.back(); // Close dialog
+                                  Get.close(2);
+
                                   controller.deleteVoucher(voucher.idVoucher);
-                                  Get.back(); // Close detail screen
                                 },
                                 child: const Text(
                                   'Hapus',

@@ -11,11 +11,11 @@ enum SubscriptionStatus {
       case SubscriptionStatus.active:
         return 'Aktif';
       case SubscriptionStatus.pending:
-        return 'Menunggu Pembayaran';
+        return 'Pending';
       case SubscriptionStatus.expired:
-        return 'Kadaluarsa';
+        return 'Expired';
       case SubscriptionStatus.canceled:
-        return 'Dibatalkan';
+        return 'Canceled';
       case SubscriptionStatus.none:
         return 'Tidak Ada Langganan';
     }

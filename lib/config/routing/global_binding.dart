@@ -19,8 +19,10 @@ import '../../domain/repositories/report_repository.dart';
 import '../../data/repositories/report_repository_impl.dart';
 import '../../core/services/printer_service.dart';
 import '../../core/services/websocket_service.dart';
-import '../../core/services/selection_service.dart';
 import '../../data/services/payment_persistence_service.dart';
+import '../../core/services/session_service.dart';
+import '../../core/services/cache_service.dart';
+
 
 class GlobalBinding extends Bindings {
   @override
@@ -34,6 +36,11 @@ class GlobalBinding extends Bindings {
     await paymentPersistenceService.init();
     Get.put<PaymentPersistenceService>(paymentPersistenceService);
 
+    final cacheService = CacheService();
+    await cacheService.init();
+    Get.put<CacheService>(cacheService);
+
+
     // Services
     Get.put<PrinterService>(PrinterService());
     Get.put<WebSocketService>(WebSocketService());
@@ -43,14 +50,16 @@ class GlobalBinding extends Bindings {
     Get.put<RouterService>(RouterService());
     Get.put<VoucherService>(VoucherService());
     Get.put<ReportService>(ReportService());
-    Get.put<SelectionService>(SelectionService());
+    final sessionService = SessionService();
+    await sessionService.init();
+    Get.put<SessionService>(sessionService);
 
     // Repositories
     Get.put<AuthRepository>(AuthRepositoryImpl());
     Get.put<SubscriptionRepository>(SubscriptionRepositoryImpl());
-    Get.put<RouterRepository>(RouterRepositoryImpl(Get.find()));
-    Get.put<VoucherRepository>(VoucherRepositoryImpl());
-    Get.put<ReportRepository>(ReportRepositoryImpl());
+    Get.put<RouterRepository>(RouterRepositoryImpl(Get.find(), Get.find()));
+    Get.put<VoucherRepository>(VoucherRepositoryImpl(Get.find(), Get.find()));
+    Get.put<ReportRepository>(ReportRepositoryImpl(Get.find(), Get.find()));
 
     // ViewModels
     Get.put<AuthViewModel>(AuthViewModel(Get.find()), permanent: true);

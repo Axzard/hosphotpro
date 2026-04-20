@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'view_models/router_view_model.dart';
 import '../../../domain/models/router_model.dart';
+import '../core/widgets/desktop_page_wrapper.dart';
+import '../core/widgets/responsive_layout.dart';
+import '../core/widgets/responsive_max_width.dart';
 import 'widgets/router_form_sheet.dart';
 
 class RouterManagementScreen extends GetView<RouterViewModel> {
@@ -14,79 +17,91 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
     const cardColor = Color(0xFF131E29);
     const accentColor = Color(0xFF00C2FF);
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          controller.prepareCreate();
-          Get.bottomSheet(
-            const RouterFormSheet(),
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-          );
-        },
-        backgroundColor: accentColor,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(
-          'Tambah Router',
-          style: GoogleFonts.plusJakartaSans(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+    return DesktopPageWrapper(
+      child: Scaffold(
+        backgroundColor: bgColor,
+        floatingActionButton: FloatingActionButton.extended(
+          heroTag: null,
+          onPressed: () {
+            controller.prepareCreate();
+            Get.bottomSheet(
+              const RouterFormSheet(),
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+            );
+          },
+          backgroundColor: accentColor,
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: Text(
+            'Tambah Mikrotik',
+            style: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(accentColor),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Removed inline form card
-                    _buildListHeader(accentColor),
-                    const SizedBox(height: 16),
-                    _buildRouterList(accentColor, cardColor),
-                    const SizedBox(height: 80), // Space for FAB
-                  ],
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(context, accentColor),
+              Expanded(
+                child: ResponsiveMaxWidth(
+                  child: RefreshIndicator(
+                    onRefresh: controller.loadRouters,
+                    color: accentColor,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildListHeader(accentColor),
+                          const SizedBox(height: 16),
+                          _buildRouterList(accentColor, cardColor),
+                          const SizedBox(height: 80),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(Color accentColor) {
+  Widget _buildHeader(BuildContext context, Color accentColor) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Get.back(),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
-                size: 20,
+          if (ResponsiveLayout.isMobile(context))
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: GestureDetector(
+                onTap: () => Get.back(),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Manajemen Router',
+                  'Mikrotik',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -119,7 +134,7 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'ROUTER TERSIMPAN',
+          'MIKROTIK TERSIMPAN',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14,
             fontWeight: FontWeight.bold,
@@ -164,12 +179,31 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
           child: Padding(
             padding: const EdgeInsets.all(32),
             child: Text(
-              'Belum ada router tersimpan',
+              'Belum ada Mikrotik tersimpan',
               style: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
             ),
           ),
         );
       }
+      final isDesktop = ResponsiveLayout.isDesktop(Get.context!);
+      if (isDesktop) {
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: controller.routers.length,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 480,
+            mainAxisExtent: 220,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemBuilder: (context, index) {
+            final router = controller.routers[index];
+            return _buildRouterCard(context, router, accentColor, cardColor);
+          },
+        );
+      }
+
       return ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -177,125 +211,189 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
         separatorBuilder: (_, __) => const SizedBox(height: 16),
         itemBuilder: (context, index) {
           final router = controller.routers[index];
-          return _buildRouterCard(router, accentColor, cardColor);
+          return _buildRouterCard(context, router, accentColor, cardColor);
         },
       );
     });
   }
 
   Widget _buildRouterCard(
+    BuildContext context,
     RouterModel router,
     Color accentColor,
     Color cardColor,
   ) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
+          // ── Info row ──────────────────────────────────────
+          Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.router,
-                  color: Color(0xFF00C2FF),
-                  size: 24,
-                ),
-              ),
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF4ADE80),
-                    shape: BoxShape.circle,
+              Stack(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.router,
+                      color: Color(0xFF00C2FF),
+                      size: 24,
+                    ),
                   ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: router.statusRouter == 'aktif'
+                            ? const Color(0xFF4ADE80)
+                            : Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      router.namaRouter,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      router.alamatIp,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: accentColor.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (router.keterangan.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '"${router.keterangan}"',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.4),
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  router.namaRouter,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  router.alamatIp,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    color: accentColor.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (router.keterangan.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '"${router.keterangan}"',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ],
+
+          // ── Divider ───────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Divider(
+              color: Colors.white.withValues(alpha: 0.07),
+              height: 1,
             ),
           ),
-          _buildActionIcon(Icons.sensors_outlined, () {
-            controller.pingRouter(router.id);
-          }, const Color(0xFF00C2FF).withValues(alpha: 0.8)),
-          const SizedBox(width: 8),
-          _buildActionIcon(Icons.edit_outlined, () {
-            controller.prepareEdit(router);
-            Get.bottomSheet(
-              const RouterFormSheet(),
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-            );
-          }, Colors.white.withValues(alpha: 0.3)),
-          const SizedBox(width: 8),
-          _buildActionIcon(
-            Icons.delete_outline,
-            () => _showDeleteDialog(router),
-            Colors.redAccent.withValues(alpha: 0.6),
+
+          // ── Action buttons row ────────────────────────────
+          Row(
+            children: [
+              _buildActionButton(
+                icon: Icons.wifi_tethering_rounded,
+                label: 'Server',
+                color: const Color(0xFF00C2FF),
+                onTap: () => controller.navigateToHotspots(router),
+              ),
+              const SizedBox(width: 8),
+              _buildActionButton(
+                icon: Icons.sensors_outlined,
+                label: 'Ping',
+                color: const Color(0xFF4ADE80),
+                onTap: () => controller.pingRouter(router.id),
+              ),
+              const SizedBox(width: 8),
+              _buildActionButton(
+                icon: Icons.edit_outlined,
+                label: 'Edit',
+                color: Colors.white.withValues(alpha: 0.6),
+                onTap: () {
+                  controller.prepareEdit(router);
+                  Get.bottomSheet(
+                    const RouterFormSheet(),
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+              _buildActionButton(
+                icon: Icons.delete_outline,
+                label: 'Hapus',
+                color: Colors.redAccent,
+                onTap: () => _showDeleteDialog(router),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionIcon(IconData icon, VoidCallback onTap, Color color) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(10),
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.15)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 18),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
         ),
-        child: Icon(icon, color: color, size: 20),
       ),
     );
   }
@@ -305,11 +403,11 @@ class RouterManagementScreen extends GetView<RouterViewModel> {
       AlertDialog(
         backgroundColor: const Color(0xFF131E29),
         title: const Text(
-          'Hapus Router',
+          'Hapus Mikrotik',
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          'Apakah Anda yakin ingin menghapus router "${router.namaRouter}"?',
+          'Apakah Anda yakin ingin menghapus mikrotik "${router.namaRouter}"?',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [

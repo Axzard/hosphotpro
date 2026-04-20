@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/widgets/responsive_layout.dart';
 import '../view_models/dashboard_view_model.dart';
+
 
 class DashboardHeader extends StatelessWidget {
   final DashboardViewModel controller;
@@ -40,67 +42,69 @@ class DashboardHeader extends StatelessWidget {
             ],
           ),
         ),
-        GestureDetector(
-          onTap: () {
-            Get.dialog(
-              AlertDialog(
-                backgroundColor: const Color(0xFF1E293B),
-                title: Text(
-                  'Keluar',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                content: Text(
-                  'Apakah Anda yakin ingin keluar dari aplikasi?',
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white70),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Get.back(),
-                    child: Text(
-                      'Batal',
-                      style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+        if (ResponsiveLayout.isMobile(context))
+          GestureDetector(
+            onTap: () {
+              Get.dialog(
+                AlertDialog(
+                  backgroundColor: const Color(0xFF1E293B),
+                  title: Text(
+                    'Keluar',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  TextButton(
-                    onPressed: () {
-                      Get.back();
-                      controller.logout();
-                    },
-                    child: Text(
-                      'Ya, Keluar',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.bold,
+                  content: Text(
+                    'Apakah Anda yakin ingin keluar dari aplikasi?',
+                    style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Get.back(),
+                      child: Text(
+                        'Batal',
+                        style: GoogleFonts.plusJakartaSans(color: Colors.white54),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(2),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [Color(0xFFFF4757), Color(0xFFFF6B81)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
+                    TextButton(
+                      onPressed: () {
+                        Get.back();
+                        controller.logout();
+                      },
+                      child: Text(
+                        'Ya, Keluar',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(2),
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0xFF0F172A),
+                gradient: LinearGradient(
+                  colors: [Color(0xFFFF4757), Color(0xFFFF6B81)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
-              child: const Icon(Icons.logout, color: Colors.white, size: 24),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF0F172A),
+                ),
+                child: const Icon(Icons.logout, color: Colors.white, size: 24),
+              ),
             ),
           ),
-        ),
+
       ],
     );
   }

@@ -3,18 +3,40 @@ import 'package:get/get.dart';
 import '../../../domain/repositories/report_repository.dart';
 import '../../../domain/models/report_model.dart';
 import '../../../core/utils/snackbar_utils.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../../core/services/websocket_service.dart';
-import '../../../config/routing/app_routes.dart' as app_routes;
-import 'package:intl/intl.dart';
+import '../../../data/model/report_api_model.dart';
+import '../../../core/services/cache_service.dart';
+import '../../dashboard/view_models/dashboard_view_model.dart';
 
 class ReportViewModel extends GetxController {
   final ReportRepository _reportRepository = Get.find<ReportRepository>();
   final WebSocketService _webSocketService = Get.find<WebSocketService>();
+  final CacheService _cacheService = Get.find<CacheService>();
 
   final dailyReports = <DailyReportModel>[].obs;
   final monthlyReports = <MonthlyReportModel>[].obs;
   final yearlyReports = <YearlyReportModel>[].obs;
   final isLoading = false.obs;
+
+  List<DailyReportModel> get filteredDailyReports {
+    if (selectedDate.value == null) return dailyReports;
+    final date = selectedDate.value!;
+    return dailyReports
+        .where(
+          (e) =>
+              e.tanggal.year == date.year &&
+              e.tanggal.month == date.month &&
+              e.tanggal.day == date.day,
+        )
+        .toList();
+  }
+
+  List<MonthlyReportModel> get filteredMonthlyReports {
+    if (selectedDate.value == null) return monthlyReports;
+    final date = selectedDate.value!;
+    return monthlyReports.where((e) => e.bulan == date.month).toList();
+  }
 
   final selectedDate = Rxn<DateTime>();
   final selectedYear = DateTime.now().year.obs;
@@ -24,19 +46,58 @@ class ReportViewModel extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    final dashboardVM = Get.find<DashboardViewModel>();
+
+    ever(dashboardVM.isActiveSubscription, (bool isActive) {
+      if (isActive && dailyReports.isEmpty) {
+        fetchAllReports();
+      }
+    });
+
+    loadCachedData();
     fetchAllReports();
     _initRealtimeListeners();
+  }
+
+  Future<void> loadCachedData() async {
+    try {
+      final cached = _cacheService.getReports();
+
+      if (cached != null) {
+        if (cached['daily'] != null) {
+          final list = (cached['daily'] as List)
+              .map(
+                (e) => DailyReportApiModel.fromJson(
+                  e as Map<String, dynamic>,
+                ).toDomain(),
+              )
+              .toList();
+          dailyReports.assignAll(list);
+        }
+      }
+    } catch (e) {
+      print('[ReportVM] Error loading cache: $e');
+    }
   }
 
   void _initRealtimeListeners() {
     _refreshSub = _webSocketService.eventStream.listen((eventData) {
       final event = (eventData['event'] ?? '').toString().toLowerCase();
+      final data = eventData['data'];
 
-      if (event == 'voucher:sold' ||
-          event == 'voucher:updated' ||
-          event == 'voucher:created' ||
-          event == 'voucher:bulkcreated') {
+      // Refresh laporan saat ada voucher yang menjadi aktif
+      if (event == 'voucher:aktif' || event == 'voucher_aktif') {
         fetchAllReports(isSilent: true);
+        return;
+      }
+
+      // Periksa event voucher:updated apakah statusnya aktif
+      if ((event == 'voucher:updated' || event == 'voucher_updated') && data != null) {
+        final statusStr = (data['status_voucher'] ?? '').toString().toLowerCase();
+        if (statusStr == 'aktif') {
+          fetchAllReports(isSilent: true);
+        }
+        return;
       }
     });
   }
@@ -48,11 +109,8 @@ class ReportViewModel extends GetxController {
   }
 
   List<double> get dailyIncomeData {
-    if (dailyReports.isEmpty) return [];
-
-    final now = DateTime.now();
-    final year = selectedDate.value?.year ?? now.year;
-    final month = selectedDate.value?.month ?? now.month;
+    final year = selectedYear.value;
+    final month = selectedDate.value?.month ?? DateTime.now().month;
 
     final daysInMonth = DateTime(year, month + 1, 0).day;
 
@@ -72,9 +130,9 @@ class ReportViewModel extends GetxController {
   }
 
   List<double> get yearlyIncomeData {
-    final currentYear = DateTime.now().year;
+    final baseYear = selectedYear.value;
     return List.generate(5, (index) {
-      final year = currentYear - 4 + index;
+      final year = baseYear - 4 + index;
       final report = yearlyReports.firstWhereOrNull((e) => e.tahun == year);
       return report?.totalPendapatan ?? 0.0;
     });
@@ -88,33 +146,78 @@ class ReportViewModel extends GetxController {
     if (!isSilent && !hasData) isLoading.value = true;
     try {
       final now = DateTime.now();
-      final year = selectedDate.value?.year ?? now.year;
+      final year = selectedYear.value;
       final month = selectedDate.value?.month ?? now.month;
 
-      final firstDay = DateTime(year, month, 1);
-      final lastDay = DateTime(year, month + 1, 0);
+      final dashboardData = await _reportRepository.getDashboardReport(
+        year: year,
+        month: month,
+      );
 
-      final startDateStr = DateFormat('yyyy-MM-dd').format(firstDay);
-      final endDateStr = DateFormat('yyyy-MM-dd').format(lastDay);
+      if (dashboardData != null) {
+        final sortedDaily = List<DailyReportModel>.from(dashboardData.perHari);
+        sortedDaily.sort((a, b) => b.tanggal.compareTo(a.tanggal));
+        dailyReports.assignAll(sortedDaily);
 
-      final results = await Future.wait([
-        _reportRepository.getGroupedReport(
-          type: 'day',
-          start: startDateStr,
-          end: endDateStr,
-        ),
-        _reportRepository.getMonthlyReports(year: selectedYear.value),
-        _reportRepository.getYearlyReports(),
-      ]);
+        monthlyReports.assignAll(dashboardData.perBulan);
 
-      dailyReports.assignAll(results[0] as List<DailyReportModel>);
-      monthlyReports.assignAll(results[1] as List<MonthlyReportModel>);
-      yearlyReports.assignAll(results[2] as List<YearlyReportModel>);
+        yearlyReports.assignAll(dashboardData.perTahun);
+
+        _cacheService.saveReports({
+          'daily': dailyReports
+              .map(
+                (e) => {
+                  'tanggal': e.tanggal.toIso8601String(),
+                  'total_pendapatan': e.totalPendapatan,
+                  'total_transaksi': e.totalTransaksi,
+                },
+              )
+              .toList(),
+          'monthly': monthlyReports
+              .map(
+                (e) => {
+                  'bulan': e.bulan,
+                  'total_pendapatan': e.totalPendapatan,
+                  'total_transaksi': e.totalTransaksi,
+                },
+              )
+              .toList(),
+          'yearly': yearlyReports
+              .map(
+                (e) => {
+                  'tahun': e.tahun,
+                  'total_pendapatan': e.totalPendapatan,
+                  'total_transaksi': e.totalTransaksi,
+                },
+              )
+              .toList(),
+        });
+      }
     } catch (e) {
-      if (!isSilent) {
-        Get.toNamed(
-          app_routes.Routes.ERROR,
-          arguments: 'Gagal memuat laporan, terjadi gangguan pada server.',
+      print('[ReportVM] fetchAllReports error: $e');
+      final hasCachedData = dailyReports.isNotEmpty ||
+          monthlyReports.isNotEmpty ||
+          yearlyReports.isNotEmpty;
+
+      if (isSilent) return; // Silent call — tidak tampilkan apapun saat error
+
+      if (ErrorUtils.isNetworkError(e)) {
+        if (!hasCachedData) {
+          SnackbarUtils.showError(
+            'Koneksi Lambat',
+            'Gagal memuat laporan. Periksa koneksi internet Anda.',
+          );
+        }
+        // Jika ada cache, biarkan silent — data lama masih ditampilkan
+      } else if (ErrorUtils.isServerError(e)) {
+        SnackbarUtils.showError(
+          'Server Bermasalah',
+          'Server sedang mengalami gangguan. Data laporan mungkin belum terbaru.',
+        );
+      } else if (!hasCachedData) {
+        SnackbarUtils.showError(
+          'Gagal Memuat',
+          'Terjadi kesalahan saat memuat laporan.',
         );
       }
     } finally {
@@ -123,21 +226,18 @@ class ReportViewModel extends GetxController {
   }
 
   void setDate(DateTime? date) {
-    selectedDate.value = date;
     if (date != null) {
+      selectedDate.value = date;
       selectedYear.value = date.year;
+      fetchAllReports();
     }
-    fetchAllReports();
   }
 
   void setYear(int year) {
     selectedYear.value = year;
 
-    if (selectedDate.value != null) {
-      selectedDate.value = DateTime(year, selectedDate.value!.month, 1);
-    } else {
-      selectedDate.value = DateTime(year, DateTime.now().month, 1);
-    }
+    final currentMonth = selectedDate.value?.month ?? DateTime.now().month;
+    selectedDate.value = DateTime(year, currentMonth, 1);
     fetchAllReports();
   }
 
@@ -149,10 +249,10 @@ class ReportViewModel extends GetxController {
         await fetchAllReports();
         SnackbarUtils.showSuccess('Berhasil', 'Laporan berhasil diperbarui');
       } else {
-        SnackbarUtils.showError('Error', 'Gagal memperbarui laporan');
+        SnackbarUtils.showError('Gagal', 'Gagal memperbarui laporan');
       }
     } catch (e) {
-      SnackbarUtils.showError('Error', 'Gagal memperbarui laporan: $e');
+      SnackbarUtils.showError('Gagal', 'Gagal memperbarui laporan: $e');
     } finally {
       isLoading.value = false;
     }

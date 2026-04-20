@@ -29,4 +29,7 @@ abstract class ReportRepository {
     required String start,
     required String end,
   });
+
+  // Cache methods
+  Future<List<DailyReportModel>> getDailyReportsFromCache({int? year, int? month});
 }

@@ -1,18 +1,22 @@
+import 'package:dio/dio.dart';
+
 class ApiConfig {
-  static const String baseUrl = 'http://76.13.197.9:3000';
-  // static const String baseUrl = 'https://api.siodev.sbs';
+  static const String baseUrl = 'https://api.siodev.sbs';
 
   // Auth endpoints
   static const String register = '$baseUrl/api/daftar-admin';
   static const String login = '$baseUrl/api/login';
+  static const String sendOtp = '$baseUrl/api/kirim-otp';
+  static const String resetPassword = '$baseUrl/api/reset-password';
 
-  // Subscription endpoints
+  // Langganan endpoints
   static const String packages = '$baseUrl/api/langganan/paket';
   static String packageDetail(int id) => '$baseUrl/api/langganan/paket/$id';
   static const String createSubscription = '$baseUrl/api/langganan';
   static const String mySubscriptions = '$baseUrl/api/langganan/saya';
-  static String updateSubscriptionStatus(int id) =>
-      '$baseUrl/api/langganan/$id/status';
+  static String updateSubscriptionStatus(int id) => '$baseUrl/api/langganan/$id/status';
+
+  // Transaksi endpoints
   static const String checkout = '$baseUrl/api/transaksi/checkout';
   static const String perpanjang = '$baseUrl/api/transaksi/perpanjang';
   static const String callback = '$baseUrl/api/transaksi/callback';
@@ -20,8 +24,8 @@ class ApiConfig {
   // Router endpoints
   static const String routers = '$baseUrl/api/router';
   static String routerPing(int id) => '$baseUrl/api/router/$id/ping';
-  static String hotspots(int idRouter) =>
-      '$baseUrl/api/hotspot?id_router=$idRouter';
+  static String hotspots(int idRouter) => '$baseUrl/api/hotspot?id_router=$idRouter';
+  static const String hotspotAll = '$baseUrl/api/hotspot/all';
   static String hotspotDetail(int id) => '$baseUrl/api/hotspot/$id';
   static String updateHotspot(int id) => '$baseUrl/api/hotspot/$id';
   static String deleteHotspot(int id) => '$baseUrl/api/hotspot/$id';
@@ -30,23 +34,23 @@ class ApiConfig {
   // Voucher endpoints
   static const String createVoucher = '$baseUrl/api/voucher';
   static const String createVoucherBulk = '$baseUrl/api/voucher/bulk';
+  static const String deleteVoucherBulk = '$baseUrl/api/voucher/bulk';
   static const String voucherPackages = '$baseUrl/api/paket-voucher';
-  static String packagesByHotspot(int idHotspot) =>
-      '$baseUrl/api/paket-voucher?id_hotspot=$idHotspot';
-  static String voucherPackageDetail(int id) =>
-      '$baseUrl/api/paket-voucher/$id';
-  static String updateVoucherPackage(int id) =>
-      '$baseUrl/api/paket-voucher/$id';
-  static String deleteVoucherPackage(int id) =>
-      '$baseUrl/api/paket-voucher/$id';
-  static String vouchersByPackage(int idPaket) =>
-      '$baseUrl/api/voucher/paket/$idPaket';
-  static String vouchersByHotspot(int idHotspot) =>
-      '$baseUrl/api/voucher/hotspot/$idHotspot'; // Keeping as a guess if package-based is too slow
-  static String voucherDetail(int id) => '$baseUrl/api/voucher/$id';
   static String deleteVoucher(int id) => '$baseUrl/api/voucher/$id';
+  static String voucherDetail(int id) => '$baseUrl/api/voucher/$id';
   static const String vouchersAktif = '$baseUrl/api/voucher/aktif';
   static String sellVoucher(int id) => '$baseUrl/api/voucher/jual/$id';
+
+
+  // paket voucher endpoints
+  static String packagesByHotspot(int idHotspot) => '$baseUrl/api/paket-voucher?id_hotspot=$idHotspot';
+  static const String paketVoucherUser = '$baseUrl/api/paket-voucher/user';
+  static String voucherPackageDetail(int id) => '$baseUrl/api/paket-voucher/$id';
+  static String updateVoucherPackage(int id) => '$baseUrl/api/paket-voucher/$id';
+  static String deleteVoucherPackage(int id) => '$baseUrl/api/paket-voucher/$id';
+  static String vouchersByPackage(int idPaket) => '$baseUrl/api/voucher/paket/$idPaket';
+  static String vouchersByHotspot(int idHotspot) => '$baseUrl/api/voucher?id_hotspot=$idHotspot';
+
 
   // Report (Laporan) endpoints
   static const String reportDashboard = '$baseUrl/api/laporan/dashboard';
@@ -71,5 +75,32 @@ class ApiConfig {
     }
 
     return headers;
+  }
+
+  static Dio createDio() {
+    final dio = Dio(
+      BaseOptions(
+        // Timeout dikurangi agar tidak terlalu lama menunggu saat jaringan lag
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 20),
+        sendTimeout: const Duration(seconds: 10),
+      ),
+    );
+
+    // Tidak ada navigasi paksa di interceptor.
+    // Exception dilempar ke caller (ViewModel) untuk ditangani.
+    // Ini mencegah double-navigation:
+    //   interceptor navigate → exception ke VM → VM navigate lagi.
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onError: (DioException e, handler) {
+          // Hanya log, biarkan ViewModel yang handle tampilan error
+          print('[Dio] Error: ${e.type} | ${e.response?.statusCode} | ${e.message}');
+          return handler.next(e);
+        },
+      ),
+    );
+
+    return dio;
   }
 }

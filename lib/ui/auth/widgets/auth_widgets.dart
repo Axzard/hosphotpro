@@ -38,6 +38,7 @@ class AuthTextField extends StatefulWidget {
   final String hint;
   final IconData prefixIcon;
   final bool isPassword;
+  final bool enabled;
 
   const AuthTextField({
     super.key,
@@ -46,6 +47,7 @@ class AuthTextField extends StatefulWidget {
     required this.hint,
     required this.prefixIcon,
     this.isPassword = false,
+    this.enabled = true,
   });
 
   @override
@@ -71,6 +73,7 @@ class _AuthTextFieldState extends State<AuthTextField> {
         const SizedBox(height: 8),
         TextField(
           controller: widget.controller,
+          enabled: widget.enabled,
           obscureText: widget.isPassword ? _obscureText : false,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(

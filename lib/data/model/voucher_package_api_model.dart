@@ -7,12 +7,10 @@ class VoucherPackageApiModel {
   final String namaPaket;
   final String durasi;
   final double harga;
-  final String namaProfileMikrotik;
   final String prefix;
   final int panjangUsername;
   final String formatKarakter;
-  final int dataLimitMb;
-  final String? dnsLogin;
+  final String? rateLimit;
   final bool gunakanSsl;
 
   VoucherPackageApiModel({
@@ -22,12 +20,10 @@ class VoucherPackageApiModel {
     required this.namaPaket,
     required this.durasi,
     required this.harga,
-    required this.namaProfileMikrotik,
     required this.prefix,
     required this.panjangUsername,
     required this.formatKarakter,
-    required this.dataLimitMb,
-    this.dnsLogin,
+    this.rateLimit,
     this.gunakanSsl = false,
   });
 
@@ -39,12 +35,10 @@ class VoucherPackageApiModel {
       namaPaket: json['nama_paket']?.toString() ?? '',
       durasi: json['durasi']?.toString() ?? '',
       harga: double.tryParse(json['harga']?.toString() ?? '0') ?? 0,
-      namaProfileMikrotik: json['nama_profile_mikrotik']?.toString() ?? '',
       prefix: json['prefix']?.toString() ?? '',
       panjangUsername: int.tryParse(json['panjang_username']?.toString() ?? '') ?? 4,
       formatKarakter: json['format_karakter']?.toString() ?? 'mix',
-      dataLimitMb: int.tryParse(json['data_limit_mb']?.toString() ?? '') ?? 0,
-      dnsLogin: json['dns_login']?.toString(),
+      rateLimit: json['rate_limit']?.toString(),
       gunakanSsl: json['gunakan_ssl'] == true || json['gunakan_ssl'] == 1,
     );
   }
@@ -57,10 +51,8 @@ class VoucherPackageApiModel {
       'panjang_username': panjangUsername,
       'format_karakter': formatKarakter,
       'durasi': durasi,
-      'data_limit_mb': dataLimitMb,
-      'harga': harga.toInt() == harga ? harga.toInt() : harga,
-      'nama_profile_mikrotik': namaProfileMikrotik,
-      'dns_login': dnsLogin,
+      'harga': harga,
+      'rate_limit': rateLimit,
       'gunakan_ssl': gunakanSsl,
     };
   }
@@ -73,12 +65,10 @@ class VoucherPackageApiModel {
       namaPaket: namaPaket,
       durasi: durasi,
       harga: harga,
-      namaProfileMikrotik: namaProfileMikrotik,
       prefix: prefix,
       panjangUsername: panjangUsername,
       formatKarakter: formatKarakter,
-      dataLimitMb: dataLimitMb,
-      dnsLogin: dnsLogin,
+      rateLimit: rateLimit,
       gunakanSsl: gunakanSsl,
     );
   }
@@ -91,12 +81,10 @@ class VoucherPackageApiModel {
       namaPaket: domain.namaPaket,
       durasi: domain.durasi,
       harga: domain.harga,
-      namaProfileMikrotik: domain.namaProfileMikrotik,
       prefix: domain.prefix,
       panjangUsername: domain.panjangUsername,
       formatKarakter: domain.formatKarakter,
-      dataLimitMb: domain.dataLimitMb,
-      dnsLogin: domain.dnsLogin,
+      rateLimit: domain.rateLimit,
       gunakanSsl: domain.gunakanSsl,
     );
   }

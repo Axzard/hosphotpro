@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'view_models/hotspot_view_model.dart';
-import '../../../domain/models/hotspot_model.dart';
 import '../../../domain/models/router_model.dart';
+import '../core/widgets/responsive_layout.dart';
+import '../core/widgets/responsive_max_width.dart';
+import '../core/widgets/desktop_page_wrapper.dart';
 import 'widgets/hotspot_header.dart';
 import 'widgets/hotspot_item_card.dart';
-import 'widgets/hotspot_form_sheet.dart';
 
 class HotspotManagementScreen extends GetView<HotspotViewModel> {
   const HotspotManagementScreen({super.key});
@@ -17,53 +18,92 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
     const cardColor = Color(0xFF1E293B);
     const accentColor = Color(0xFF00C2FF);
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const HotspotHeader(accentColor: accentColor),
-            // Router Selector
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Obx(() => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+    return DesktopPageWrapper(
+      child: Scaffold(
+        backgroundColor: bgColor,
+        body: SafeArea(
+          child: Column(
+            children: [
+              HotspotHeader(accentColor: accentColor),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 8.0,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<RouterModel>(
-                              value: controller.selectedRouter.value,
-                              hint: const Text('Pilih Router', style: TextStyle(color: Colors.white54)),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: Obx(() {
+                            final currentRouter =
+                                controller.selectedRouter.value;
+                            final dropdownValue = (currentRouter?.id == 'all')
+                                ? RouterModel.semua
+                                : controller.routers.firstWhereOrNull(
+                                    (r) => r.id == currentRouter?.id,
+                                  );
+                            final filteredRouters = controller.routers
+                                .where((r) => r.id != 'all')
+                                .toList();
+                            return DropdownButton<RouterModel>(
+                              value: dropdownValue,
+                              hint: const Text(
+                                'Pilih Router',
+                                style: TextStyle(color: Colors.white54),
+                              ),
                               dropdownColor: cardColor,
                               isExpanded: true,
-                              icon: const Icon(Icons.router, color: accentColor),
-                              style: GoogleFonts.plusJakartaSans(color: Colors.white),
-                              items: controller.routers.map((router) {
-                                return DropdownMenuItem<RouterModel>(
-                                  value: router,
-                                  child: Text(router.namaRouter),
-                                );
-                              }).toList(),
+                              icon: const Icon(
+                                Icons.router,
+                                color: accentColor,
+                              ),
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                              ),
+                              items: [
+                                DropdownMenuItem<RouterModel>(
+                                  value: RouterModel.semua,
+                                  child: const Text('Semua Mikrotik'),
+                                ),
+                                ...filteredRouters.map((router) {
+                                  return DropdownMenuItem<RouterModel>(
+                                    value: router,
+                                    child: Text(router.namaRouter),
+                                  );
+                                }),
+                              ],
                               onChanged: controller.onRouterChanged,
-                            ),
-                          ),
-                        )),
-                  ),
-                  const SizedBox(width: 12),
-                  Obx(() => Container(
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Obx(() {
+                      final isAllRouter =
+                          controller.selectedRouter.value?.id == 'all';
+                      if (isAllRouter) return const SizedBox.shrink();
+                      return Container(
                         decoration: BoxDecoration(
                           color: accentColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: accentColor.withValues(alpha: 0.2)),
+                          border: Border.all(
+                            color: accentColor.withValues(alpha: 0.2),
+                          ),
                         ),
                         child: IconButton(
-                          onPressed: controller.isLoading.value ? null : () => controller.syncHotspots(),
+                          onPressed: controller.isLoading.value
+                              ? null
+                              : () => controller.syncHotspots(),
                           icon: controller.isLoading.value
                               ? const SizedBox(
                                   width: 20,
@@ -73,99 +113,104 @@ class HotspotManagementScreen extends GetView<HotspotViewModel> {
                                     color: accentColor,
                                   ),
                                 )
-                              : const Icon(Icons.sync_rounded, color: accentColor),
-                          tooltip: 'Sinkronkan Hotspot',
+                              : const Icon(
+                                  Icons.sync_rounded,
+                                  color: accentColor,
+                                ),
+                          tooltip: 'Sinkronkan Server',
                         ),
-                      )),
-                ],
-              ),
-            ),
-
-            Expanded(
-              child: Obx(() {
-                if (controller.isLoading.value && controller.hotspots.isEmpty) {
-                  return const Center(child: CircularProgressIndicator(color: accentColor));
-                }
-
-                if (controller.hotspots.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.wifi_off, size: 64, color: Colors.white.withValues(alpha: 0.2)),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Tidak ada hotspot server',
-                          style: GoogleFonts.plusJakartaSans(color: Colors.white54),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: controller.loadHotspots,
-                  color: accentColor,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    itemCount: controller.hotspots.length,
-                    itemBuilder: (context, index) {
-                      final hotspot = controller.hotspots[index];
-                      return HotspotItemCard(
-                        hotspot: hotspot,
-                        cardColor: cardColor,
-                        accentColor: accentColor,
-                        onEdit: (h) => _showEditSheet(h),
-                        onDelete: (h) => _showDeleteConfirm(h),
                       );
-                    },
-                  ),
-                );
-              }),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+                    }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ResponsiveMaxWidth(
+                  child: Obx(() {
+                    if (controller.isLoading.value &&
+                        controller.hotspots.isEmpty) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: accentColor),
+                      );
+                    }
+                    if (controller.hotspots.isEmpty) {
+                      return RefreshIndicator(
+                        onRefresh: controller.loadHotspots,
+                        color: accentColor,
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(height: Get.height * 0.3),
+                            Icon(
+                              Icons.wifi_off,
+                              size: 64,
+                              color: Colors.white.withValues(alpha: 0.2),
+                            ),
+                            const SizedBox(height: 16),
+                            Center(
+                              child: Text(
+                                'Tidak ada hotspot server',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white54,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
 
-  void _showEditSheet(HotspotModel hotspot) {
-    controller.prepareEdit(hotspot);
-    Get.bottomSheet(
-      HotspotFormSheet(hotspot: hotspot),
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-    );
-  }
+                    final isDesktop = ResponsiveLayout.isDesktop(context);
+                    if (isDesktop) {
+                      return RefreshIndicator(
+                        onRefresh: controller.loadHotspots,
+                        color: accentColor,
+                        child: GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 400,
+                                mainAxisExtent: 220,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                              ),
+                          itemCount: controller.hotspots.length,
+                          itemBuilder: (context, index) {
+                            final hotspot = controller.hotspots[index];
+                            return HotspotItemCard(
+                              hotspot: hotspot,
+                              cardColor: cardColor,
+                              accentColor: accentColor,
+                            );
+                          },
+                        ),
+                      );
+                    }
 
-  void _showDeleteConfirm(HotspotModel hotspot) {
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: Text(
-          'Hapus Hotspot',
-          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Apakah Anda yakin ingin menghapus server "${hotspot.namaServer}"?',
-          style: GoogleFonts.plusJakartaSans(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('Batal', style: GoogleFonts.plusJakartaSans(color: Colors.white54)),
+                    return RefreshIndicator(
+                      onRefresh: controller.loadHotspots,
+                      color: accentColor,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        itemCount: controller.hotspots.length,
+                        itemBuilder: (context, index) {
+                          final hotspot = controller.hotspots[index];
+                          return HotspotItemCard(
+                            hotspot: hotspot,
+                            cardColor: cardColor,
+                            accentColor: accentColor,
+                          );
+                        },
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Get.back();
-              controller.deleteHotspot(hotspot.idHotspot);
-            },
-            child: Text(
-              'Hapus',
-              style: GoogleFonts.plusJakartaSans(color: Colors.redAccent, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

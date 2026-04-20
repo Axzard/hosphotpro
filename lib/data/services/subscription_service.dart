@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../model/subscription_package_api_model.dart';
 import '../model/transaction_api_model.dart';
 import '../model/api_response.dart';
@@ -7,22 +8,27 @@ import '../../config/api_config.dart';
 import '../model/user_subscription_api_model.dart';
 import 'token_service.dart';
 
+List<SubscriptionPackageApiModel> _parsePackages(dynamic data) {
+  final list = data as List<dynamic>;
+  return list.map((json) => SubscriptionPackageApiModel.fromJson(json as Map<String, dynamic>)).toList();
+}
+
+List<UserSubscriptionApiModel> _parseSubscriptions(dynamic data) {
+  final list = data as List<dynamic>;
+  return list.map((json) => UserSubscriptionApiModel.fromJson(json as Map<String, dynamic>)).toList();
+}
+
 class SubscriptionService extends GetxService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
-      sendTimeout: const Duration(seconds: 15),
-    ),
-  );
+  final Dio _dio = ApiConfig.createDio();
   final TokenService _tokenService = Get.find<TokenService>();
 
   Future<ApiResponse<List<SubscriptionPackageApiModel>>> getPackages() async {
     try {
       final token = _tokenService.getToken();
+      final url = ApiConfig.packages;
 
       final response = await _dio.get(
-        ApiConfig.packages,
+        url,
         options: Options(
           headers: ApiConfig.headers(token: token),
           validateStatus: (status) => status! < 500,
@@ -31,9 +37,8 @@ class SubscriptionService extends GetxService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final List<dynamic> packagesData = response.data['data'] ?? [];
-        final packages = packagesData
-            .map((json) => SubscriptionPackageApiModel.fromJson(json))
-            .toList();
+        final packages = await compute(_parsePackages, packagesData);
+
 
         return ApiResponse(
           success: true,
@@ -167,9 +172,8 @@ class SubscriptionService extends GetxService {
 
       if (response.statusCode == 200) {
         final List<dynamic> subscriptionsData = response.data['data'] ?? [];
-        final subscriptions = subscriptionsData
-            .map((json) => UserSubscriptionApiModel.fromJson(json))
-            .toList();
+        final subscriptions = await compute(_parseSubscriptions, subscriptionsData);
+
 
         return ApiResponse(
           success: true,

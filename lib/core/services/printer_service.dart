@@ -1,43 +1,27 @@
-import 'package:flutter_blue_plus/flutter_blue_plus.dart' as fbp;
+import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../domain/models/voucher_model.dart';
-import 'dart:typed_data';
-import 'dart:async';
 import 'dart:io';
 
 class PrinterService extends GetxService {
   final isConnected = false.obs;
   final isScanning = false.obs;
-  final devices = <fbp.BluetoothDevice>[].obs;
-  final selectedDevice = Rxn<fbp.BluetoothDevice>();
-  StreamSubscription? _connectionSubscription;
-  StreamSubscription? _scanSubscription;
+  final devices = <BluetoothInfo>[].obs;
+  final selectedDevice = Rxn<BluetoothInfo>();
 
   @override
   void onInit() {
     super.onInit();
-    _initPrinter();
+    _checkInitialConnection();
   }
 
-  @override
-  void onClose() {
-    _connectionSubscription?.cancel();
-    _scanSubscription?.cancel();
-    super.onClose();
-  }
-
-  void _initPrinter() {
-    fbp.FlutterBluePlus.adapterState.listen((state) {
-      if (state == fbp.BluetoothAdapterState.on) {
-        scanDevices();
-      }
-    });
-
-    fbp.FlutterBluePlus.isScanning.listen((scanning) {
-      isScanning.value = scanning;
-    });
+  Future<void> _checkInitialConnection() async {
+    try {
+      final bool result = await PrintBluetoothThermal.connectionStatus;
+      isConnected.value = result;
+    } catch (_) {}
   }
 
   Future<bool> _requestPermissions() async {
@@ -63,67 +47,40 @@ class PrinterService extends GetxService {
     }
 
     try {
+      isScanning.value = true;
       devices.clear();
 
-      final List<fbp.BluetoothDevice> bonded =
-          await fbp.FlutterBluePlus.bondedDevices;
-      for (var device in bonded) {
-        if (!devices.any((d) => d.remoteId == device.remoteId)) {
-          devices.add(device);
-        }
+      final List<BluetoothInfo> listResult =
+          await PrintBluetoothThermal.pairedBluetooths;
+
+      if (listResult.isNotEmpty) {
+        devices.value = listResult;
       }
-
-      final List<fbp.BluetoothDevice> system =
-          await fbp.FlutterBluePlus.systemDevices([]);
-      for (var device in system) {
-        if (!devices.any((d) => d.remoteId == device.remoteId)) {
-          devices.add(device);
-        }
-      }
-
-      await fbp.FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
-
-      _scanSubscription?.cancel();
-      _scanSubscription = fbp.FlutterBluePlus.scanResults.listen((results) {
-        for (fbp.ScanResult r in results) {
-          if (r.device.platformName.isNotEmpty) {
-            if (!devices.any((d) => d.remoteId == r.device.remoteId)) {
-              devices.add(r.device);
-            }
-          }
-        }
-      });
     } catch (e) {
       print("Error scanning devices: $e");
+    } finally {
+      isScanning.value = false;
     }
   }
 
-  Future<void> connectToDevice(fbp.BluetoothDevice device) async {
-    if (isConnected.value) {
-      await disconnect();
-    }
-
+  Future<void> connectToDevice(BluetoothInfo device) async {
     try {
-      print("Connecting to ${device.platformName} (${device.remoteId})");
-      await device.connect(autoConnect: false, license: fbp.License.free);
-      selectedDevice.value = device;
-      isConnected.value = true;
+      if (isConnected.value) {
+        await disconnect();
+      }
 
-      _connectionSubscription?.cancel();
-      _connectionSubscription = device.connectionState.listen((state) {
-        print("Connection state changed: $state");
-        if (state == fbp.BluetoothConnectionState.disconnected) {
-          isConnected.value = false;
-          selectedDevice.value = null;
-        }
-      });
+      print("Connecting to ${device.name} (${device.macAdress})");
 
-      if (Platform.isAndroid) {
-        try {
-          await device.requestMtu(512);
-        } catch (e) {
-          print("Error requesting MTU: $e");
-        }
+      final bool result = await PrintBluetoothThermal.connect(
+        macPrinterAddress: device.macAdress,
+      );
+
+      if (result) {
+        selectedDevice.value = device;
+        isConnected.value = true;
+      } else {
+        isConnected.value = false;
+        throw Exception("Failed to connect to ${device.name}");
       }
     } catch (e) {
       print("Error connecting to device: $e");
@@ -133,9 +90,7 @@ class PrinterService extends GetxService {
 
   Future<void> disconnect() async {
     try {
-      if (selectedDevice.value != null) {
-        await selectedDevice.value!.disconnect();
-      }
+      await PrintBluetoothThermal.disconnect;
       isConnected.value = false;
       selectedDevice.value = null;
     } catch (e) {
@@ -144,57 +99,16 @@ class PrinterService extends GetxService {
   }
 
   Future<void> printVoucher(VoucherModel voucher) async {
-    if (!isConnected.value || selectedDevice.value == null) return;
+    if (!isConnected.value) return;
 
-    final profile = await CapabilityProfile.load();
-    final generator = Generator(PaperSize.mm58, profile);
-    List<int> bytes = [];
+    try {
+      final profile = await CapabilityProfile.load();
+      final generator = Generator(PaperSize.mm58, profile);
 
-    bytes += generator.text(
-      'HosphotPro',
-      styles: const PosStyles(
-        align: PosAlign.center,
-        bold: true,
-        height: PosTextSize.size2,
-        width: PosTextSize.size2,
-      ),
-    );
-    bytes += generator.feed(1);
-    bytes += generator.text(
-      voucher.namaServer,
-      styles: const PosStyles(align: PosAlign.center),
-    );
-    bytes += generator.hr();
+      List<int> bytes = [];
 
-    bytes += generator.text(
-      'DATA LOGIN VOUCHER',
-      styles: const PosStyles(align: PosAlign.center, bold: true),
-    );
-    bytes += generator.feed(1);
-
-    bytes += generator.text(
-      'USERNAME / KODE',
-      styles: const PosStyles(align: PosAlign.center),
-    );
-    bytes += generator.text(
-      voucher.kodeVoucher,
-      styles: const PosStyles(
-        align: PosAlign.center,
-        bold: true,
-        height: PosTextSize.size2,
-        width: PosTextSize.size2,
-      ),
-    );
-
-    if (voucher.passwordVoucher.isNotEmpty &&
-        voucher.passwordVoucher != voucher.kodeVoucher) {
-      bytes += generator.feed(1);
       bytes += generator.text(
-        'PASSWORD',
-        styles: const PosStyles(align: PosAlign.center),
-      );
-      bytes += generator.text(
-        voucher.passwordVoucher,
+        'HOTSPOTSIO',
         styles: const PosStyles(
           align: PosAlign.center,
           bold: true,
@@ -202,56 +116,86 @@ class PrinterService extends GetxService {
           width: PosTextSize.size2,
         ),
       );
-    }
 
-    bytes += generator.hr();
-    bytes += generator.text(
-      'Terima Kasih',
-      styles: const PosStyles(align: PosAlign.center, bold: true),
-    );
+      bytes += generator.feed(1);
 
-    bytes += generator.feed(1);
-    bytes += generator.cut();
+      bytes += generator.text(
+        voucher.namaServer,
+        styles: const PosStyles(align: PosAlign.center),
+      );
 
-    await _writeToPrinter(Uint8List.fromList(bytes));
-  }
+      bytes += generator.hr();
 
-  Future<void> _writeToPrinter(Uint8List bytes) async {
-    final device = selectedDevice.value;
-    if (device == null) return;
+      bytes += generator.text(
+        'DATA LOGIN VOUCHER',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      );
 
-    List<fbp.BluetoothService> services = await device.discoverServices();
-    fbp.BluetoothCharacteristic? writeCharacteristic;
+      bytes += generator.feed(1);
 
-    for (var service in services) {
-      for (var characteristic in service.characteristics) {
-        if (characteristic.properties.write ||
-            characteristic.properties.writeWithoutResponse) {
-          writeCharacteristic = characteristic;
-          break;
-        }
-      }
-      if (writeCharacteristic != null) break;
-    }
+      bytes += generator.text(
+        'USERNAME / KODE',
+        styles: const PosStyles(align: PosAlign.center),
+      );
 
-    if (writeCharacteristic != null) {
-      int actualMtu = 23;
-      try {
-        actualMtu = await device.mtu.first;
-      } catch (_) {}
+      bytes += generator.text(
+        voucher.kodeVoucher,
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: PosTextSize.size2,
+          width: PosTextSize.size2,
+        ),
+      );
 
-      int chunkSize = actualMtu - 3;
-      if (chunkSize < 20) chunkSize = 20;
+      if (voucher.passwordVoucher.isNotEmpty &&
+          voucher.passwordVoucher != voucher.kodeVoucher) {
+        bytes += generator.feed(1);
 
-      for (int i = 0; i < bytes.length; i += chunkSize) {
-        int end = (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
-        await writeCharacteristic.write(
-          bytes.sublist(i, end),
-          withoutResponse: writeCharacteristic.properties.writeWithoutResponse,
+        bytes += generator.text(
+          'PASSWORD',
+          styles: const PosStyles(align: PosAlign.center),
+        );
+
+        bytes += generator.text(
+          voucher.passwordVoucher,
+          styles: const PosStyles(
+            align: PosAlign.center,
+            bold: true,
+            height: PosTextSize.size2,
+            width: PosTextSize.size2,
+          ),
         );
       }
-    } else {
-      throw Exception("Could not find a writable characteristic on the device");
+
+      bytes += generator.hr();
+
+      bytes += generator.text(
+        'Terima Kasih',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      );
+
+      bytes += generator.feed(3);
+
+      bytes += [0x1B, 0x64, 0x00];
+
+      await _writeToPrinter(bytes);
+    } catch (e) {
+      print("Error generating voucher print: $e");
+      throw Exception("Print voucher failed: $e");
+    }
+  }
+
+  Future<void> _writeToPrinter(List<int> bytes) async {
+    try {
+      final bool result = await PrintBluetoothThermal.writeBytes(bytes);
+
+      if (!result) {
+        throw Exception("Failed to write to printer");
+      }
+    } catch (e) {
+      print("Error writing to printer: $e");
+      throw Exception("Could not write print data: $e");
     }
   }
 }

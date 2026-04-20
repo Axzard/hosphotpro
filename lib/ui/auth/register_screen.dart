@@ -18,7 +18,7 @@ class RegisterScreen extends GetView<AuthViewModel> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 20),
-                const AuthLogo(title: 'Hosphotpro'),
+                const AuthLogo(title: 'hotspotsio'),
                 const SizedBox(height: 50),
                 
                 const Align(

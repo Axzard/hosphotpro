@@ -5,9 +5,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'view_models/voucher_package_view_model.dart';
 import '../../../domain/models/voucher_package_model.dart';
 import '../../../domain/models/hotspot_model.dart';
+import '../core/widgets/responsive_layout.dart';
+import '../core/widgets/responsive_max_width.dart';
+import '../core/widgets/desktop_page_wrapper.dart';
+import '../../core/utils/currency_formatter.dart';
 import 'widgets/voucher_package_header.dart';
 import 'widgets/voucher_package_item_card.dart';
-import '../../core/utils/currency_formatter.dart';
 
 class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
   const VoucherPackageManagementScreen({super.key});
@@ -18,20 +21,19 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
     const cardColor = Color(0xFF1E293B);
     const accentColor = Color(0xFF00C2FF);
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const VoucherPackageHeader(accentColor: accentColor),
-            // Hotspot Selector
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 12.0,
-              ),
-              child: Obx(
-                () => Container(
+    return DesktopPageWrapper(
+      child: Scaffold(
+        backgroundColor: bgColor,
+        body: SafeArea(
+          child: Column(
+            children: [
+              const VoucherPackageHeader(accentColor: accentColor),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 12.0,
+                ),
+                child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: cardColor,
@@ -41,96 +43,136 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                     ),
                   ),
                   child: DropdownButtonHideUnderline(
-                    child: DropdownButton<HotspotModel>(
-                      value: controller.selectedHotspot.value,
-                      hint: const Text(
-                        'Pilih Hotspot',
-                        style: TextStyle(color: Colors.white54),
-                      ),
-                      dropdownColor: cardColor,
-                      isExpanded: true,
-                      icon: const Icon(
-                        Icons.wifi_tethering,
-                        color: accentColor,
-                      ),
-                      style: GoogleFonts.plusJakartaSans(color: Colors.white),
-                      items: controller.hotspots.map((hotspot) {
-                        return DropdownMenuItem<HotspotModel>(
-                          value: hotspot,
-                          child: Text(hotspot.namaServer),
-                        );
-                      }).toList(),
-                      onChanged: controller.onHotspotFilterChanged,
-                    ),
+                    child: Obx(() {
+                      final currentHotspot = controller.selectedHotspot.value;
+                      final dropdownValue = controller.hotspots.firstWhereOrNull(
+                        (h) => h.idHotspot == currentHotspot?.idHotspot,
+                      );
+
+                      return DropdownButton<HotspotModel>(
+                        value: dropdownValue,
+                        hint: const Text(
+                          'Pilih Server',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                        dropdownColor: cardColor,
+                        isExpanded: true,
+                        icon: const Icon(
+                          Icons.wifi_tethering,
+                          color: accentColor,
+                        ),
+                        style: GoogleFonts.plusJakartaSans(color: Colors.white),
+                        items: controller.hotspots.map((hotspot) {
+                          return DropdownMenuItem<HotspotModel>(
+                            value: hotspot,
+                            child: Text(hotspot.namaServer),
+                          );
+                        }).toList(),
+                        onChanged: controller.onHotspotFilterChanged,
+                      );
+                    }),
                   ),
                 ),
               ),
-            ),
+              Expanded(
+                child: ResponsiveMaxWidth(
+                  child: Obx(() {
+                    if (controller.isLoading.value && controller.packages.isEmpty) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: accentColor),
+                      );
+                    }
 
-            Expanded(
-              child: Obx(() {
-                if (controller.isLoading.value && controller.packages.isEmpty) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: accentColor),
-                  );
-                }
-
-                if (controller.packages.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 64,
-                          color: Colors.white.withValues(alpha: 0.2),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Tidak ada paket voucher',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: controller.loadPackages,
-                  color: accentColor,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(
-                      left: 24,
-                      right: 24,
-                      bottom: 80,
-                    ),
-                    itemCount: controller.packages.length,
-                    itemBuilder: (context, index) {
-                      final package = controller.packages[index];
-                      return VoucherPackageItemCard(
-                        package: package,
-                        cardColor: cardColor,
-                        accentColor: accentColor,
-                        onEdit: (p) => _showFormSheet(context, package: p),
-                        onDelete: (p) => _showDeleteConfirm(context, p),
-                        isDeleting: controller.deletingPackageIds.contains(
-                          package.id,
+                    if (controller.packages.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.inventory_2_outlined,
+                              size: 64,
+                              color: Colors.white.withValues(alpha: 0.2),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Tidak ada User Profile',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white54,
+                              ),
+                            ),
+                          ],
                         ),
                       );
-                    },
-                  ),
-                );
-              }),
-            ),
-          ],
+                    }
+
+                    final isDesktop = ResponsiveLayout.isDesktop(context);
+                    if (isDesktop) {
+                      return GridView.builder(
+                        padding: const EdgeInsets.only(
+                          left: 24,
+                          right: 24,
+                          bottom: 80,
+                        ),
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 450,
+                          mainAxisExtent: 220,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: controller.packages.length,
+                        itemBuilder: (context, index) {
+                          final package = controller.packages[index];
+                          return VoucherPackageItemCard(
+                            package: package,
+                            cardColor: cardColor,
+                            accentColor: accentColor,
+                            onEdit: (p) => _showFormSheet(context, package: p),
+                            onDelete: (p) => _showDeleteConfirm(context, p),
+                            isDeleting: controller.deletingPackageIds.contains(
+                              package.id,
+                            ),
+                          );
+                        },
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: controller.loadPackages,
+                      color: accentColor,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(
+                          left: 24,
+                          right: 24,
+                          bottom: 80,
+                        ),
+                        itemCount: controller.packages.length,
+                        itemBuilder: (context, index) {
+                          final package = controller.packages[index];
+                          return VoucherPackageItemCard(
+                            package: package,
+                            cardColor: cardColor,
+                            accentColor: accentColor,
+                            onEdit: (p) => _showFormSheet(context, package: p),
+                            onDelete: (p) => _showDeleteConfirm(context, p),
+                            isDeleting: controller.deletingPackageIds.contains(
+                              package.id,
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showFormSheet(context),
-        backgroundColor: accentColor,
-        child: const Icon(Icons.add_rounded, color: Colors.white),
+        floatingActionButton: FloatingActionButton(
+          heroTag: null,
+          onPressed: () => _showFormSheet(context),
+          backgroundColor: accentColor,
+          child: const Icon(Icons.add_rounded, color: Colors.white),
+        ),
       ),
     );
   }
@@ -143,7 +185,20 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
       controller.namaPaketController.clear();
       controller.durasiController.clear();
       controller.hargaController.clear();
-      controller.profileMikrotikController.clear();
+      controller.prefixController.clear();
+      controller.panjangUsernameController.clear();
+      controller.rateLimitController.clear();
+      controller.gunakanSsl.value = false;
+
+      if (controller.selectedHotspot.value != null &&
+          controller.selectedHotspot.value!.idHotspot != -1) {
+        controller.formSelectedHotspot.value = controller.selectedHotspot.value;
+      } else if (controller.hotspots.isNotEmpty) {
+        controller.formSelectedHotspot.value = controller.hotspots.firstWhere(
+          (h) => h.idHotspot != -1,
+          orElse: () => controller.hotspots.first,
+        );
+      }
     }
 
     Get.bottomSheet(
@@ -174,7 +229,6 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
               const SizedBox(height: 24),
               Row(
                 children: [
-                  if (isEdit)
                     GestureDetector(
                       onTap: () => Get.back(),
                       child: Container(
@@ -192,7 +246,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                       ),
                     ),
                   Text(
-                    isEdit ? 'Edit Paket Voucher' : 'Tambah Paket Voucher',
+                    isEdit ? 'Edit User Profile' : 'Tambah User Profile',
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white,
                       fontSize: 20,
@@ -202,11 +256,11 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                 ],
               ),
               const SizedBox(height: 24),
-              _buildHotspotSelector(),
+              _buildHotspotSelector(isEdit),
               const SizedBox(height: 16),
               _buildTextField(
                 controller.namaPaketController,
-                'Nama Paket',
+                'Nama User Profile',
                 hint: 'Contoh: Paket 1 Jam',
               ),
               const SizedBox(height: 16),
@@ -236,37 +290,24 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                       keyboardType: TextInputType.text,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildDataLimitField(),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller.hargaController,
-                      'Harga',
-                      hint: '5000',
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [CurrencyFormatter()],
-                    ),
-                  ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildTextField(
-                      controller.profileMikrotikController,
-                      'Profile Mikrotik',
-                      hint: 'profile-1jam',
+                      controller.rateLimitController,
+                      'Rate Limit (Speed)',
+                      hint: '3M/3M',
+                      keyboardType: TextInputType.text,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               _buildTextField(
-                controller.dnsLoginController,
-                'DNS Login',
-                hint: 'hotspot.domain.com',
+                controller.hargaController,
+                'Harga',
+                hint: '5000',
+                keyboardType: TextInputType.number,
+                inputFormatters: [CurrencyFormatter()],
               ),
               const SizedBox(height: 16),
               Obx(
@@ -282,9 +323,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                   value: controller.gunakanSsl.value,
                   onChanged: (val) => controller.gunakanSsl.value = val,
                   activeThumbColor: const Color(0xFF00C2FF),
-                  activeTrackColor: const Color(
-                    0xFF00C2FF,
-                  ).withValues(alpha: 0.5),
+                  activeTrackColor: const Color(0xFF00C2FF).withValues(alpha: 0.5),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -303,11 +342,22 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    isEdit ? 'Simpan Perubahan' : 'Buat Paket',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Obx(
+                    () => controller.isLoading.value
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            isEdit ? 'Simpan Perubahan' : 'Buat User Profile',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -320,9 +370,14 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
     );
   }
 
-  Widget _buildHotspotSelector() {
-    return Obx(
-      () => Container(
+  Widget _buildHotspotSelector(bool isEdit) {
+    return Obx(() {
+      final currentHotspot = controller.formSelectedHotspot.value;
+      final dropdownValue = controller.hotspots.firstWhereOrNull(
+        (h) => h.idHotspot == currentHotspot?.idHotspot,
+      );
+
+      return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.05),
@@ -331,7 +386,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<HotspotModel>(
-            value: controller.selectedHotspot.value,
+            value: dropdownValue,
             hint: const Text(
               'Pilih Hotspot Server',
               style: TextStyle(color: Colors.white54),
@@ -346,11 +401,17 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
                 child: Text(hotspot.namaServer),
               );
             }).toList(),
-            onChanged: controller.onHotspotChanged,
+            onChanged: isEdit
+                ? null
+                : (val) {
+                    if (val != null) {
+                      controller.onFormHotspotChanged(val);
+                    }
+                  },
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildFormatKarakterSelector() {
@@ -402,63 +463,6 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
     );
   }
 
-  Widget _buildDataLimitField() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          flex: 4,
-          child: _buildTextField(
-            controller.dataLimitMbController,
-            'Limit Data',
-            hint: '0 (Unlimited)',
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 2,
-          child: Container(
-            height: 56,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-            ),
-            child: Obx(
-              () => DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: controller.selectedDataUnit.value,
-                  dropdownColor: const Color(0xFF1E293B),
-                  isExpanded: true,
-                  icon: const Icon(
-                    Icons.unfold_more,
-                    color: Color(0xFF00C2FF),
-                    size: 18,
-                  ),
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  items: controller.dataUnitOptions.map((unit) {
-                    return DropdownMenuItem<String>(
-                      value: unit,
-                      child: Text(unit),
-                    );
-                  }).toList(),
-                  onChanged: controller.onDataUnitChanged,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   void _showDeleteConfirm(BuildContext context, VoucherPackageModel package) {
     Get.dialog(
       AlertDialog(
@@ -501,7 +505,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
   }
 
   Widget _buildTextField(
-    TextEditingController controller,
+    TextEditingController textController,
     String label, {
     String? hint,
     TextInputType keyboardType = TextInputType.text,
@@ -520,7 +524,7 @@ class VoucherPackageManagementScreen extends GetView<VoucherPackageViewModel> {
         ),
         const SizedBox(height: 8),
         TextField(
-          controller: controller,
+          controller: textController,
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           style: GoogleFonts.plusJakartaSans(color: Colors.white),
